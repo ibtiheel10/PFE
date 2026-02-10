@@ -18,7 +18,7 @@ import VoirDemo from '@/components/Voirdemo.vue'
 import Securite from '@/components/Sécurité.vue'
 import Contact from '@/components/contact.vue'
 import Support from '@/components/Support.vue'
-import CreerQCM from '@/components/CreerQCM.vue'
+
 import AjoutPoste from '@/components/ajoutposte.vue'
 import Messages from '@/components/Messages.vue'
 import CondidatPage from '@/components/condidatPage.vue'
@@ -105,11 +105,7 @@ const routes: RouteRecordRaw[] = [
     name: 'Support',
     component: Support
   },
-  {
-    path: '/creer-qcm',
-    name: 'CreerQCM',
-    component: CreerQCM
-  },
+
   {
     path: '/ajout-poste',
     name: 'AjoutPoste',

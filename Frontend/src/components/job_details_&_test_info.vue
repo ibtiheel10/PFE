@@ -147,46 +147,8 @@
 
         <!-- Right Column: Test Info -->
         <div class="side-column">
-          <!-- Test Card -->
-          <div class="test-card">
-             <div class="test-header">
-               <div class="check-icon">
-                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-               </div>
-               <h3>{{ testInfo.title }}</h3>
-             </div>
-             <p class="test-desc">Pour valider votre candidature, vous devez passer une évaluation technique de référence.</p>
-             
-             <div class="test-details">
-               <div class="detail-row">
-                 <div class="d-label">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                   Durée
-                 </div>
-                 <div class="d-val">{{ testInfo.duration }}</div>
-               </div>
-               <div class="detail-row">
-                 <div class="d-label">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                   Questions
-                 </div>
-                 <div class="d-val">{{ testInfo.questionCount }}</div>
-               </div>
-               <div class="detail-row last">
-                 <div class="d-label">
-                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                   Seuil de réussite
-                 </div>
-                 <div class="d-val">{{ testInfo.passingScore }}</div>
-               </div>
-             </div>
-             
-             <button class="start-test-btn" @click="startTest">
-               <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-               Passer le QCM
-             </button>
-             <p class="test-meta">REQUIS POUR CETTE OFFRE</p>
-          </div>
+          <!-- Test Card removed -->
+
 
           <!-- Help Card -->
           <div class="help-card">
@@ -223,15 +185,6 @@ onMounted(() => {
   job.value = MockData.getJob(id) || MockData.jobs[0];
 });
 
-// Mock Test Info
-const testInfo = ref({
-  title: 'Test de Compétences',
-  duration: '20 min',
-  questionCount: '30 QCM',
-  passingScore: '70 %',
-  required: true
-});
-
 // --- Actions ---
 
 const toggleSave = () => {
@@ -248,17 +201,8 @@ const applyToJob = () => {
     }
 };
 
-const startTest = () => {
-    if (!job.value) return; 
-    
-    // In a real app we might check if they already applied or passed
-    const confirmStart = confirm(`Voulez-vous commencer le test pour "${job.value.title}" maintenant ?\nDurée: 20 min`);
-    
-    if (confirmStart) {
-        // Redirect to evaluation page with job ID
-        router.push(`/evaluation?jobId=${job.value.id}`);
-    }
-};
+
+
 
 const goBack = () => {
     router.back();

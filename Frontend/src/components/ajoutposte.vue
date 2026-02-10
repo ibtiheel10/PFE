@@ -168,6 +168,20 @@
             Paramètres du Recrutement
           </h2>
 
+          <!-- AI QCM Generator - Always visible -->
+          <div class="qcm-generator-section">
+            <div class="qcm-generator-header">
+              <h3>Évaluation des candidats</h3>
+              <p class="help-text">Générez automatiquement un QCM basé sur les informations de votre poste</p>
+            </div>
+            <button type="button" class="btn-generate-qcm" @click="generateQCM">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+              Générer un QCM avec l'IA
+            </button>
+          </div>
+
           <div class="form-row">
             <div class="form-group">
               <label for="deadline">Date Limite de Candidature</label>
@@ -206,10 +220,8 @@
               <option value="2">QCM Marketing Digital</option>
               <option value="3">QCM Design UX/UI</option>
             </select>
-            <button type="button" class="link-btn" @click="createNewQCM">
-              ou créer un nouveau QCM
-            </button>
           </div>
+
         </div>
 
         <!-- Action Buttons -->
@@ -286,8 +298,26 @@ const submitPost = () => {
 };
 
 const createNewQCM = () => {
-  router.push('/creer-qcm');
+  alert('Redirection vers la création manuelle de QCM...');
 };
+
+const generateQCM = () => {
+  // Vérifier que les informations de base sont remplies
+  if (!formData.value.title || !formData.value.description) {
+    alert('⚠️ Veuillez remplir au minimum le titre et la description du poste pour générer un QCM.');
+    return;
+  }
+
+  // Simuler la génération d'un QCM basé sur les données du poste
+  const jobInfo = `
+Titre: ${formData.value.title}
+Catégorie: ${formData.value.category}
+Description: ${formData.value.description.substring(0, 100)}...
+Compétences: ${formData.value.requirements.substring(0, 100)}...`;
+
+  alert(`Génération d'un QCM avec l'IA basé sur votre poste :\n${jobInfo}\n\n✨ Cette fonctionnalité sera bientôt disponible !`);
+};
+
 </script>
 
 <style scoped>
@@ -488,6 +518,62 @@ textarea {
 .link-btn:hover {
   color: #1D4ED8;
   text-decoration: underline;
+}
+
+/* QCM Actions */
+.qcm-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-generate-qcm {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+}
+
+.btn-generate-qcm:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 12px -1px rgba(37, 99, 235, 0.4);
+}
+
+.or-text {
+  color: #9CA3AF;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+/* QCM Generator Section */
+.qcm-generator-section {
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  border: 1px solid #BFDBFE;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.qcm-generator-header h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1F2937;
+}
+
+.qcm-generator-header .help-text {
+  margin: 0 0 1rem 0;
 }
 
 /* Action Buttons */

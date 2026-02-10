@@ -54,9 +54,21 @@
                     <span v-if="hasNotifications" class="notification-dot"></span>
                  </div>
             </button>
-            <button class="icon-btn" @click="openSettings">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-            </button>
+            <div class="settings-dropdown-container">
+              <button class="icon-btn" @click="toggleSettings">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+              </button>
+              <div v-if="showSettingsMenu" class="settings-dropdown">
+                <button class="dropdown-item logout" @click="handleLogout">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                  </svg>
+                  <span>Se déconnecter</span>
+                </button>
+              </div>
+            </div>
         </div>
       </header>
 
@@ -65,7 +77,7 @@
         <div v-if="activeNav === 'Dashboard'">
             <!-- Welcome Section -->
             <div class="welcome-section">
-                <h1>Bienvenue sur Skillvia, Alexandre 👋</h1>
+                <h1>Bienvenue sur Skillvia, Alexandre</h1>
                 <p>Gérez vos candidatures et suivez vos performances techniques en temps réel.</p>
             </div>
 
@@ -207,11 +219,7 @@
                 </div>
 
                 <!-- Promo Card -->
-                <div class="promo-card">
-                    <h3>Boostez votre visibilité</h3>
-                    <p>Débloquez les certifications premium et soyez mis en avant auprès des recruteurs.</p>
-                    <button class="promo-btn" @click="boostVisibility">Devenir Premium</button>
-                </div>
+                
             </div>
         </div>
 
@@ -235,6 +243,7 @@ import { ref, h } from 'vue';
 const activeNav = ref('Dashboard');
 const searchQuery = ref('');
 const hasNotifications = ref(true);
+const showSettingsMenu = ref(false);
 
 const navItems = [
     { name: 'Dashboard', icon: h('svg', { xmlns:"http://www.w3.org/2000/svg", width:"16", height:"16", viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" }, [h('rect',{x:3,y:3,width:7,height:7}),h('rect',{x:14,y:3,width:7,height:7}),h('rect',{x:14,y:14,width:7,height:7}),h('rect',{x:3,y:14,width:7,height:7})]) },
@@ -278,8 +287,13 @@ const toggleNotifications = () => {
     hasNotifications.value = !hasNotifications.value;
 };
 
-const openSettings = () => {
-    alert('Paramètres non implémentés');
+const toggleSettings = () => {
+    showSettingsMenu.value = !showSettingsMenu.value;
+};
+
+const handleLogout = () => {
+    // Redirection vers la page Home
+    window.location.href = '/';
 };
 
 const openApplication = (title: string) => {
@@ -485,6 +499,68 @@ const boostVisibility = () => {
     border-radius: 50%;
     border: 1px solid white;
 }
+
+/* Settings Dropdown */
+.settings-dropdown-container {
+    position: relative;
+}
+
+.settings-dropdown {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border: 1px solid #E5E7EB;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    min-width: 200px;
+    z-index: 100;
+    animation: dropdownFadeIn 0.2s ease-out;
+}
+
+@keyframes dropdownFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.dropdown-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    font-size: 0.85rem;
+    color: #374151;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.dropdown-item:hover {
+    background-color: #F9FAFB;
+}
+
+.dropdown-item.logout {
+    color: #DC2626;
+}
+
+.dropdown-item.logout:hover {
+    background-color: #FEF2F2;
+}
+
+.dropdown-item svg {
+    flex-shrink: 0;
+}
+
 
 .content-scroll {
   flex: 1;
