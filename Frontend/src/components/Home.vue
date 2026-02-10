@@ -1,23 +1,7 @@
 <template>
   <div class="home-page">
     <!-- Navigation Header -->
-    <header class="navbar">
-      <div class="nav-container">
-        <div class="logo">
-          <img src="../assets/logo.png" alt="Skillvia" />
-        </div>
-        <nav class="nav-links">
-          <a href="#features">Fonctionnalités</a>
-          <a href="#how-it-works">Comment ça marche</a>
-          <a href="#pricing">Tarifs</a>
-          <a href="#contact">Contact</a>
-        </nav>
-        <div class="nav-actions">
-          <router-link to="/login" class="btn-secondary">Connexion</router-link>
-          <router-link to="/inscription" class="btn-primary">Commencer</router-link>
-        </div>
-      </div>
-    </header>
+    <Navbar />
 
     <!-- Hero Section -->
     <section class="hero">
@@ -37,13 +21,13 @@
           </p>
           <div class="hero-actions">
             <router-link to="/inscription" class="btn-hero-primary">
-              <span>Commencer gratuitement</span>
+              <span>Commencer</span>
               <i class="fa-solid fa-arrow-right"></i>
             </router-link>
-            <a href="#demo" class="btn-hero-secondary">
+            <router-link to="/demo" class="btn-hero-secondary">
               <i class="fa-solid fa-play"></i>
               <span>Voir la démo</span>
-            </a>
+            </router-link>
           </div>
           <div class="hero-stats">
             <div class="stat">
@@ -170,6 +154,98 @@
       </div>
     </section>
 
+    <!-- Target Audience Section -->
+    <section class="dual-sections">
+      <div class="section-container">
+        <div class="sections-grid">
+          <!-- Section Entreprises (gauche) -->
+          <div class="enterprise-section">
+            <div class="enterprise-content">
+              <div class="section-header-left">
+                <div class="section-label">ENTREPRISES</div>
+                <h2 class="audience-title">Optimisez votre pipe de recrutement</h2>
+              </div>
+              
+              <div class="benefits-list">
+                <div class="benefit-item">
+                  <i class="fa-solid fa-circle-check check-icon green"></i>
+                  <div class="benefit-text">
+                    <strong>Réduisez le temps de pré-sélection de 75%</strong> dés le tri automatisé.
+                  </div>
+                </div>
+                <div class="benefit-item">
+                  <i class="fa-solid fa-circle-check check-icon green"></i>
+                  <div class="benefit-text">
+                    <strong>Éliminez les biais cognitifs</strong> pour un recrutement plus inclusif.
+                  </div>
+                </div>
+                <div class="benefit-item">
+                  <i class="fa-solid fa-circle-check check-icon green"></i>
+                  <div class="benefit-text">
+                    <strong>Tests anti-triche avancés</strong> pour garantir l'intégrité des résultats.
+                  </div>
+                </div>
+              </div>
+
+              <div class="testimonial-box">
+                <p class="testimonial-text">
+                  "Skillvia nous a permis de diviser par deux le nombre d'entretiens initiés tout en trouvant de meilleurs profils."
+                </p>
+                <div class="testimonial-author">
+                  <div class="author-avatar">
+                    <div class="avatar-circle">SM</div>
+                  </div>
+                  <div class="author-info">
+                    <strong>Sarah Martin</strong>
+                    <span>Senior Analyst</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section Candidats (droite) -->
+          <div class="candidate-section">
+            <div class="candidate-content">
+              <div class="section-header-left">
+                <div class="section-label blue-label">CANDIDATS</div>
+                <h2 class="audience-title">Valorisez vos compétences réelles</h2>
+              </div>
+              
+              <div class="candidate-points">
+                <div class="candidate-point">
+                  <i class="fa-solid fa-certificate point-icon verified"></i>
+                  <div class="point-content">
+                    <p class="point-text">Démontrez votre expertise au-delà d'un simple CV.</p>
+                  </div>
+                </div>
+                
+                <div class="candidate-point">
+                  <i class="fa-solid fa-bolt point-icon verified"></i>
+                  <div class="point-content">
+                    <p class="point-text">Recevez un feedback immédiat sur vos performances.</p>
+                  </div>
+                </div>
+                
+                <div class="candidate-point">
+                  <i class="fa-solid fa-scale-balanced point-icon verified"></i>
+                  <div class="point-content">
+                    <p class="point-text">Processus équitable basé uniquement sur vos capacités.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="candidate-cta-blue">
+                <h3>Prêt à briller ?</h3>
+                <p>Inscrivez-vous pour passer vos premiers tests et être repéré par les meilleures entreprises.</p>
+                <router-link to="/inscription" class="cta-button-white">Créer mon profil candidat</router-link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- CTA Section -->
     <section class="cta">
       <div class="cta-container">
@@ -178,10 +254,10 @@
           <p>Rejoignez plus de 500 entreprises qui font confiance à Skillvia</p>
           <div class="cta-actions">
             <router-link to="/inscription" class="btn-cta-primary">
-              Commencer gratuitement
+              Commencer 
               <i class="fa-solid fa-arrow-right"></i>
             </router-link>
-            <a href="#contact" class="btn-cta-secondary">Contacter l'équipe</a>
+            <router-link to="/contact" class="btn-cta-secondary">Contacter l'équipe</router-link>
           </div>
         </div>
       </div>
@@ -200,18 +276,17 @@
           <div class="footer-section">
             <h4>Produit</h4>
             <a href="#features">Fonctionnalités</a>
-            <a href="#pricing">Tarifs</a>
-            <a href="#demo">Démo</a>
+            <router-link to="/demo">Démo</router-link>
           </div>
           <div class="footer-section">
             <h4>Entreprise</h4>
             <a href="#about">À propos</a>
-            <a href="#contact">Contact</a>
+            <router-link to="/contact">Contact</router-link>
             <a href="#careers">Carrières</a>
           </div>
           <div class="footer-section">
             <h4>Légal</h4>
-            <a href="#privacy">Confidentialité</a>
+            <router-link to="/securite">Sécurité & Confidentialité</router-link>
             <a href="#terms">Conditions</a>
             <a href="#legal">Mentions légales</a>
           </div>
@@ -226,6 +301,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue';
+import Navbar from './Navbar.vue';
 
 onMounted(() => {
   // Add scroll animations
@@ -261,84 +337,8 @@ onMounted(() => {
   background: #ffffff;
 }
 
-/* Navigation */
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(31, 91, 255, 0.1);
-  z-index: 1000;
-  padding: 1rem 0;
-}
+/* Navigation Styles removed as they are now in Navbar.vue */
 
-.nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo img {
-  height: 40px;
-}
-
-.nav-links {
-  display: flex;
-  gap: 2rem;
-}
-
-.nav-links a {
-  color: #333;
-  text-decoration: none;
-  font-weight: 500;
-  font-size: 0.95rem;
-  transition: color 0.3s ease;
-}
-
-.nav-links a:hover {
-  color: #1f5bff;
-}
-
-.nav-actions {
-  display: flex;
-  gap: 1rem;
-}
-
-.btn-secondary {
-  padding: 0.6rem 1.5rem;
-  border: 2px solid #1f5bff;
-  color: #1f5bff;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-  background: #1f5bff;
-  color: white;
-}
-
-.btn-primary {
-  padding: 0.6rem 1.5rem;
-  background: linear-gradient(135deg, #1f5bff 0%, #0d47a1 100%);
-  color: white;
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(31, 91, 255, 0.3);
-}
-
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(31, 91, 255, 0.4);
-}
 
 /* Hero Section */
 .hero {
@@ -693,6 +693,189 @@ onMounted(() => {
   color: #666;
   line-height: 1.7;
   font-size: 1rem;
+}
+
+
+/* Dual Sections (Enterprise vs Candidate) */
+.dual-sections {
+  padding: 100px 2rem;
+  background: white;
+}
+
+.sections-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: stretch;
+}
+
+@media (max-width: 968px) {
+  .sections-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.enterprise-section, .candidate-section {
+  background-color: #f8f9ff;
+  border-radius: 20px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.enterprise-content, .candidate-content {
+  padding: 3rem;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.section-label {
+  color: #1f5bff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+}
+
+.audience-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1a1a1a;
+  line-height: 1.3;
+  margin-bottom: 2rem;
+}
+
+.benefits-list {
+  margin-bottom: 2.5rem;
+}
+
+.benefit-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.check-icon.green {
+  color: #10b981;
+  font-size: 1.25rem;
+  margin-top: 0.2rem;
+}
+
+.benefit-text {
+  color: #4b5563;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.testimonial-box {
+  background-color: white;
+  padding: 2rem;
+  border-radius: 16px;
+  margin-top: auto;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-left: 4px solid #1f5bff;
+}
+
+.testimonial-text {
+  font-style: italic;
+  font-size: 1.05rem;
+  color: #1a1a1a;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+}
+
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  background: #1f5bff;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.author-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.author-info strong {
+  font-size: 0.95rem;
+  color: #1a1a1a;
+}
+
+.author-info span {
+  color: #666;
+  font-size: 0.85rem;
+}
+
+/* Candidate Section Specifics */
+.candidate-points {
+  margin-bottom: 2.5rem;
+  flex: 1;
+}
+
+.candidate-point {
+  background-color: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  border-left: 3px solid #1f5bff;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  transition: transform 0.3s ease;
+}
+
+.candidate-point:hover {
+  transform: translateX(5px);
+}
+
+.point-icon.verified {
+  color: #1f5bff;
+  font-size: 1.25rem;
+  margin-top: 0.2rem;
+}
+
+.point-text {
+  color: #4b5563;
+  font-size: 1.05rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.candidate-cta-blue {
+  background: linear-gradient(135deg, #1f5bff 0%, #0d47a1 100%);
+  padding: 2.5rem;
+  border-radius: 16px;
+  text-align: center;
+  color: white;
+}
+
+.candidate-cta-blue h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 1rem;
+}
+
+.candidate-cta-blue p {
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+  line-height: 1.6;
 }
 
 /* CTA Section */

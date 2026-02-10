@@ -8,10 +8,10 @@
         </div>
 
         <nav class="nav-menu">
-          <a href="#" class="nav-link">Dashboard</a>
-          <a href="#" class="nav-link">Tests</a>
-          <a href="#" class="nav-link">Postes</a>
-          <a href="#" class="nav-link">Profil</a>
+          <router-link to="/jobs" class="nav-link">Dashboard</router-link>
+          <router-link to="/evaluation" class="nav-link">Tests</router-link>
+          <router-link to="/jobs" class="nav-link">Postes</router-link>
+          <router-link to="/candidature" class="nav-link">Profil</router-link>
         </nav>
 
         <div class="header-actions">
@@ -32,15 +32,23 @@
     <div class="result-page">
       <div class="result-container">
         
-        <!-- Success Message -->
-        <div class="success-section">
+        <!-- Success/Fail Message -->
+        <div class="success-section" v-if="isSuccess">
           <div class="success-icon">
             <i class="fa-solid fa-circle-check"></i>
           </div>
           <h1 class="success-title">Félicitations !</h1>
           <p class="success-message">
-            Excellent travail ! Vous avez validé les compétences requises pour le poste de 
-            <strong>Développeur Fullstack Senior</strong>. Votre profil a été transmis aux recruteurs.
+            Excellent travail ! Vous avez validé les compétences requises. Votre profil a été transmis aux recruteurs.
+          </p>
+        </div>
+        <div class="success-section" v-else>
+          <div class="success-icon failure" style="background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">
+            <i class="fa-solid fa-circle-xmark"></i>
+          </div>
+          <h1 class="success-title">Non retenu</h1>
+          <p class="success-message">
+            Malheureusement, vous n'avez pas atteint le score minimum requis (70%). Vous pourrez réessayer dans 30 jours.
           </p>
         </div>
 
@@ -49,9 +57,9 @@
           <!-- Status Header -->
           <div class="status-header">
             <span class="status-label">Statut de l'évaluation</span>
-            <span class="status-badge success">
-              <i class="fa-solid fa-circle-check"></i>
-              Réussi
+            <span class="status-badge" :class="isSuccess ? 'success' : 'failure'">
+              <i :class="isSuccess ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
+              {{ isSuccess ? 'Réussi' : 'Échoué' }}
             </span>
           </div>
 
@@ -61,10 +69,10 @@
             <div class="score-circle-container">
               <svg class="score-circle" viewBox="0 0 160 160">
                 <circle class="score-bg" cx="80" cy="80" r="70" />
-                <circle class="score-progress" cx="80" cy="80" r="70" :stroke-dasharray="circumference" :stroke-dashoffset="progressOffset" />
+                <circle class="score-progress" cx="80" cy="80" r="70" :stroke-dasharray="circumference" :stroke-dashoffset="progressOffset" :stroke="isSuccess ? '#1f5bff' : '#ef4444'" />
               </svg>
               <div class="score-content">
-                <div class="score-value">85%</div>
+                <div class="score-value">{{ score }}%</div>
                 <div class="score-label">SCORE GLOBAL</div>
               </div>
             </div>
@@ -73,7 +81,7 @@
             <div class="stats-grid">
               <div class="stat-item">
                 <div class="stat-label">RANG</div>
-                <div class="stat-value primary">Top 10%</div>
+                <div class="stat-value primary">{{ isSuccess ? 'Top 10%' : '-' }}</div>
               </div>
               <div class="stat-item">
                 <div class="stat-label">TEMPS</div>
@@ -81,7 +89,7 @@
               </div>
               <div class="stat-item">
                 <div class="stat-label">PRÉCISION</div>
-                <div class="stat-value">92%</div>
+                <div class="stat-value">{{ score }}%</div>
               </div>
             </div>
           </div>
@@ -141,11 +149,11 @@
 
         <!-- Action Buttons -->
         <div class="action-buttons">
-          <button class="btn btn-primary">
+          <button class="btn btn-primary" @click="goToJobs">
             <i class="fa-solid fa-table-columns"></i>
             Retour au Dashboard
           </button>
-          <button class="btn btn-secondary">
+          <button class="btn btn-secondary" @click="goToJobs">
             <i class="fa-solid fa-search"></i>
             Voir d'autres postes
           </button>
@@ -163,15 +171,40 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
-const score = ref(85);
+const route = useRoute();
+const router = useRouter();
+const score = ref(0);
+
+onMounted(() => {
+  const s = Number(route.query.score);
+  score.value = isNaN(s) ? 0 : s;
+});
+
+const isSuccess = computed(() => score.value >= 70);
+
+// The following computed properties are not used in this component and seem to belong to a different context (e.g., a test-taking component).
+// They are included here as per the user's instruction, but would ideally be removed if not needed.
+// const formattedTime = computed(() => {
+//   const m = Math.floor(timeRemainingSeconds.value / 60).toString().padStart(2, '0');
+//   const s = (timeRemainingSeconds.value % 60).toString().padStart(2, '0');
+//   return `${m}:${s}`;
+// });
+// const difficultyClass = computed(() => {
+//     return currentQuestion.value ? `difficulty-${currentQuestion.value.difficulty}` : '';
+// });
 
 // Calculate circle progress
 const circumference = 2 * Math.PI * 70;
 const progressOffset = computed(() => {
   return circumference - (score.value / 100) * circumference;
 });
+
+const goToJobs = () => {
+    router.push('/jobs');
+};
 </script>
 
 <style scoped>
@@ -359,6 +392,11 @@ const progressOffset = computed(() => {
 .status-badge.success {
   background: #d1fae5;
   color: #059669;
+}
+
+.status-badge.failure {
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .status-badge i {

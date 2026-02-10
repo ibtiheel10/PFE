@@ -14,33 +14,33 @@
       <div class="header-right">
         <div class="progress-info">
           <span class="progress-label">PROGRESS</span>
-          <span class="progress-text">Question {{ currentQuestion }} of {{ totalQuestions }}</span>
+          <span class="progress-text">Question {{ currentQuestionNumber }} of {{ totalQuestions }}</span>
         </div>
         <div class="timer">
           <i class="fa-regular fa-clock"></i>
-          <span>{{ timeRemaining }} remaining</span>
+          <span>{{ formattedTime }} remaining</span>
         </div>
       </div>
     </header>
 
     <!-- Main Content -->
-    <div class="eval-container">
+    <div class="eval-container" v-if="currentQuestion">
       
       <!-- Question Metadata -->
       <div class="question-meta">
         <span class="difficulty-badge" :class="difficultyClass">
           <i class="fa-solid fa-signal"></i>
-          DIFFICULTY: {{ difficulty.toUpperCase() }}
+          DIFFICULTY: {{ currentQuestion.difficulty.toUpperCase() }}
         </span>
         <span class="topic-badge">
           <i class="fa-solid fa-lightbulb"></i>
-          TOPIC: {{ topic.toUpperCase() }}
+          TOPIC: {{ currentQuestion.topic.toUpperCase() }}
         </span>
       </div>
 
       <!-- Question Card -->
       <div class="question-card">
-        <h2 class="question-text">{{ questionText }}</h2>
+        <h2 class="question-text">{{ currentQuestion.text }}</h2>
       </div>
 
       <!-- Answers Section -->
@@ -49,22 +49,22 @@
         
         <div class="answers-list">
           <div 
-            v-for="(answer, index) in answers" 
+            v-for="(answer, index) in currentQuestion.answers" 
             :key="index"
             class="answer-option"
-            :class="{ selected: selectedAnswer === index }"
+            :class="{ selected: selectedAnswers[currentInfoIndex] === index }"
             @click="selectAnswer(index)"
           >
             <div class="answer-radio">
               <div class="radio-outer">
-                <div class="radio-inner" v-if="selectedAnswer === index"></div>
+                <div class="radio-inner" v-if="selectedAnswers[currentInfoIndex] === index"></div>
               </div>
             </div>
             <div class="answer-content">
               <p class="answer-text">{{ answer.text }}</p>
               <p class="answer-hint">{{ answer.hint }}</p>
             </div>
-            <div class="answer-check" v-if="selectedAnswer === index">
+            <div class="answer-check" v-if="selectedAnswers[currentInfoIndex] === index">
               <i class="fa-solid fa-circle-check"></i>
             </div>
           </div>
@@ -79,10 +79,10 @@
         </p>
         <button 
           class="next-btn" 
-          :disabled="selectedAnswer === null"
+          :disabled="selectedAnswers[currentInfoIndex] === null"
           @click="nextQuestion"
         >
-          Next Question
+          {{ currentInfoIndex === totalQuestions - 1 ? 'Finish Quiz' : 'Next Question' }}
           <i class="fa-solid fa-arrow-right"></i>
         </button>
       </div>
@@ -107,57 +107,121 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { useRouter } from 'vue-router';
+
+const router = useRouter();
 
 interface Answer {
   text: string;
   hint: string;
+  correct?: boolean;
 }
 
-const currentQuestion = ref(5);
-const totalQuestions = ref(20);
-const timeRemaining = ref('12:45');
-const difficulty = ref('intermediate');
-const topic = ref('design principles');
+interface Question {
+  id: number;
+  text: string;
+  answers: Answer[];
+  difficulty: 'easy' | 'intermediate' | 'hard';
+  topic: string;
+}
 
-const questionText = ref(
-  "Which of the following best describes the principle of 'Separation of Concerns' in software architecture?"
-);
-
-const answers = ref<Answer[]>([
+// Internal Mock Questions (could be moved to MockData)
+const questions = ref<Question[]>([
   {
-    text: "Dividing a program into distinct sections, such that each section addresses a separate concern.",
-    hint: "Ensures modularity and easier maintenance"
+    id: 1,
+    text: "Which of the following best describes the principle of 'Separation of Concerns'?",
+    difficulty: 'intermediate',
+    topic: 'Architecture',
+    answers: [
+      { text: "Dividing a program into distinct sections, such that each section addresses a separate concern.", hint: "Modularity", correct: true },
+      { text: "Encapsulating data and methods within a single class.", hint: "Encapsulation", correct: false },
+      { text: "Optimizing code for maximum execution speed.", hint: "Performance", correct: false },
+      { text: "Using multiple servers to balance load.", hint: "Scalability", correct: false }
+    ]
   },
   {
-    text: "Encapsulating data and methods within a single class to prevent outside access.",
-    hint: "Focuses on data privacy"
+    id: 2,
+    text: "What is the primary purpose of a 'key' prop in Vue.js list rendering?",
+    difficulty: 'easy',
+    topic: 'Vue.js',
+    answers: [
+      { text: "To give a unique class name to elements.", hint: "CSS", correct: false },
+      { text: "It serves as a hint for Vue's virtual DOM algorithm to identify nodes.", hint: "Reactivity", correct: true },
+      { text: "To make the list sorting faster.", hint: "Performance", correct: false },
+      { text: "It is required for accessibility (ARIA).", hint: "A11y", correct: false }
+    ]
   },
   {
-    text: "The process of optimizing code for maximum execution speed and minimal memory usage.",
-    hint: "Focuses on performance"
-  },
-  {
-    text: "The technique of using multiple servers to balance the load of a web application.",
-    hint: "Focuses on scalability"
+    id: 3,
+    text: "In RESTful API design, which HTTP method is idempotent?",
+    difficulty: 'intermediate',
+    topic: 'API Design',
+    answers: [
+      { text: "POST", hint: "Creates resources", correct: false },
+      { text: "PUT", hint: "Replaces resources", correct: true },
+      { text: "PATCH", hint: "Partially updates", correct: false },
+      { text: "All of the above", hint: "Trick question", correct: false }
+    ]
   }
 ]);
 
-const selectedAnswer = ref<number | null>(0);
+// State
+const currentInfoIndex = ref(0); // 0-based index
+const selectedAnswers = ref<(number | null)[]>(new Array(questions.value.length).fill(null));
+const timeRemainingSeconds = ref(20 * 60); // 20 minutes
 
-const difficultyClass = computed(() => {
-  return `difficulty-${difficulty.value.toLowerCase()}`;
+// Computed
+const currentQuestion = computed(() => questions.value[currentInfoIndex.value]);
+const currentQuestionNumber = computed(() => currentInfoIndex.value + 1);
+const totalQuestions = computed(() => questions.value.length);
+const formattedTime = computed(() => {
+  const m = Math.floor(timeRemainingSeconds.value / 60).toString().padStart(2, '0');
+  const s = (timeRemainingSeconds.value % 60).toString().padStart(2, '0');
+  return `${m}:${s}`;
 });
+const difficultyClass = computed(() => `difficulty-${currentQuestion.value?.difficulty}`);
 
+// Timer
+let timerInterval: any;
+onMounted(() => {
+  timerInterval = setInterval(() => {
+    if (timeRemainingSeconds.value > 0) {
+      timeRemainingSeconds.value--;
+    } else {
+      submitQuiz();
+    }
+  }, 1000);
+});
+onUnmounted(() => clearInterval(timerInterval));
+
+// Actions
 const selectAnswer = (index: number) => {
-  selectedAnswer.value = index;
+  selectedAnswers.value[currentInfoIndex.value] = index;
 };
 
 const nextQuestion = () => {
-  if (selectedAnswer.value !== null) {
-    // Handle next question logic
-    console.log('Moving to next question with answer:', selectedAnswer.value);
+  if (currentInfoIndex.value < totalQuestions.value - 1) {
+    currentInfoIndex.value++;
+  } else {
+    submitQuiz();
   }
+};
+
+const submitQuiz = () => {
+  // Calculate Score
+  let score = 0;
+  questions.value.forEach((q, idx) => {
+    const selectedIdx = selectedAnswers.value[idx];
+    if (selectedIdx !== null && typeof selectedIdx === 'number' && q.answers[selectedIdx]?.correct) {
+      score++;
+    }
+  });
+  
+  const percentage = Math.round((score / totalQuestions.value) * 100);
+  
+  alert('Evaluation Terminée!');
+  router.push(`/result?score=${percentage}`);
 };
 </script>
 

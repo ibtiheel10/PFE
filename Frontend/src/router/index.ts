@@ -8,9 +8,21 @@ import Home from '@/components/Home.vue'
 import LoginEntreprise from '@/components/LoginEntreprise.vue'
 import InscriptionEntreprise from '@/components/InscriptionEntreprise.vue'
 import Result from '@/components/Result.vue'
-import Candidature from '@/components/Candidature.vue'
+
 import Evaluation from '@/components/Evaluation.vue'
 import JobBoard from '@/components/JobBoard.vue'
+import JobDetails from '@/components/job_details_&_test_info.vue'
+import EmployerDashboard from '@/components/employer_dashboard.vue'
+import Tarifs from '@/components/tarifs.vue'
+import VoirDemo from '@/components/Voirdemo.vue'
+import Securite from '@/components/Sécurité.vue'
+import Contact from '@/components/contact.vue'
+import Support from '@/components/Support.vue'
+import CreerQCM from '@/components/CreerQCM.vue'
+import AjoutPoste from '@/components/ajoutposte.vue'
+import Messages from '@/components/Messages.vue'
+import CondidatPage from '@/components/condidatPage.vue'
+import AdminPage from '@/components/adminPage.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -46,7 +58,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/candidature',
     name: 'Candidature',
-    component: Candidature
+    component: CondidatPage
   },
   {
     path: '/evaluation',
@@ -57,6 +69,66 @@ const routes: RouteRecordRaw[] = [
     path: '/jobs',
     name: 'JobBoard',
     component: JobBoard
+  },
+  {
+    path: '/job-details/:id',
+    name: 'JobDetails',
+    component: JobDetails
+  },
+  {
+    path: '/employer-dashboard',
+    name: 'EmployerDashboard',
+    component: EmployerDashboard
+  },
+  {
+    path: '/tarifs',
+    name: 'Tarifs',
+    component: Tarifs
+  },
+  {
+    path: '/demo',
+    name: 'VoirDemo',
+    component: VoirDemo
+  },
+  {
+    path: '/securite',
+    name: 'Securite',
+    component: Securite
+  },
+  {
+    path: '/contact',
+    name: 'Contact',
+    component: Contact
+  },
+  {
+    path: '/support',
+    name: 'Support',
+    component: Support
+  },
+  {
+    path: '/creer-qcm',
+    name: 'CreerQCM',
+    component: CreerQCM
+  },
+  {
+    path: '/ajout-poste',
+    name: 'AjoutPoste',
+    component: AjoutPoste
+  },
+  {
+    path: '/messages',
+    name: 'Messages',
+    component: Messages
+  },
+  {
+    path: '/dashboard-candidat',
+    name: 'CondidatPage',
+    component: CondidatPage
+  },
+  {
+    path: '/admin',
+    name: 'AdminPage',
+    component: AdminPage
   }
 ]
 

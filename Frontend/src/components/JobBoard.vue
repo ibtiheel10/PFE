@@ -8,24 +8,43 @@
         </div>
 
         <nav class="nav-menu">
-          <a href="#" class="nav-link active">Jobs</a>
-          <a href="#" class="nav-link">Evaluations</a>
-          <a href="#" class="nav-link">My Applications</a>
-          <a href="#" class="nav-link">Messages</a>
+          <router-link to="/jobs" class="nav-link active">Jobs</router-link>
+          <router-link to="/evaluation" class="nav-link">Evaluations</router-link>
+          <router-link to="/candidature" class="nav-link">My Applications</router-link>
+          <router-link to="/messages" class="nav-link">Messages</router-link>
         </nav>
 
-        <div class="header-right">
-          <div class="search-bar">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input type="text" placeholder="Search jobs..." />
+          <div class="header-right">
+            <div class="search-bar">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="text" placeholder="Search jobs..." v-model="searchQuery" />
+            </div>
+            <button class="icon-btn">
+              <i class="fa-regular fa-bell"></i>
+            </button>
+            <div class="profile-container">
+              <div class="profile-avatar" @click="toggleProfileMenu">
+                <img src="https://i.pravatar.cc/150?img=8" alt="Profile" />
+              </div>
+              
+              <!-- Profile Dropdown -->
+              <div v-if="showProfileMenu" class="profile-dropdown">
+                <div class="dropdown-header">
+                  <span class="user-name">Alex Johnson</span>
+                  <span class="user-email">alex.j@example.com</span>
+                </div>
+                <div class="dropdown-divider"></div>
+                <a href="#" class="dropdown-item">
+                  <i class="fa-solid fa-gear"></i>
+                  Paramètres
+                </a>
+                <a href="#" class="dropdown-item logout" @click.prevent="handleLogout">
+                  <i class="fa-solid fa-right-from-bracket"></i>
+                  Se déconnecter
+                </a>
+              </div>
+            </div>
           </div>
-          <button class="icon-btn">
-            <i class="fa-regular fa-bell"></i>
-          </button>
-          <div class="profile-avatar">
-            <img src="https://i.pravatar.cc/150?img=8" alt="Profile" />
-          </div>
-        </div>
       </div>
     </header>
 
@@ -76,21 +95,12 @@
               <input type="text" placeholder="Find company..." v-model="companySearch" />
             </div>
             <div class="filter-options">
-              <label class="checkbox-option">
-                <input type="checkbox" v-model="filters.companies" value="techcorp" />
+              <label v-for="company in filteredCompanyList" :key="company" class="checkbox-option">
+                <input type="checkbox" v-model="filters.companies" :value="company.toLowerCase()" />
                 <span class="checkmark"></span>
-                <span class="option-text">TechCorp</span>
+                <span class="option-text">{{ company }}</span>
               </label>
-              <label class="checkbox-option">
-                <input type="checkbox" v-model="filters.companies" value="innovate" />
-                <span class="checkmark"></span>
-                <span class="option-text">Innovate Solutions</span>
-              </label>
-              <label class="checkbox-option">
-                <input type="checkbox" v-model="filters.companies" value="future" />
-                <span class="checkmark"></span>
-                <span class="option-text">Future Ventures</span>
-              </label>
+              <p v-if="filteredCompanyList.length === 0" class="no-results">No companies found</p>
             </div>
           </div>
 
@@ -110,7 +120,7 @@
           <div class="jobs-header">
             <div class="jobs-info">
               <h1>Available Jobs</h1>
-              <p>Found <strong>743 job offers</strong> matching your profile</p>
+              <p>Found <strong>{{ filteredJobs.length }} job offers</strong> matching your profile</p>
             </div>
             <div class="sort-section">
               <label>Sort by:</label>
@@ -124,7 +134,7 @@
 
           <!-- Job Cards -->
           <div class="jobs-list">
-            <div v-for="job in jobs" :key="job.id" class="job-card">
+            <div v-for="job in paginatedJobs" :key="job.id" class="job-card">
               <div class="job-icon" :style="{ background: job.iconColor }">
                 <i :class="job.icon"></i>
               </div>
@@ -155,7 +165,7 @@
                     <i class="fa-solid fa-list-check"></i>
                     {{ job.mcqDuration }} min MCQ
                   </div>
-                  <button class="job-btn">Consulter</button>
+                  <button class="job-btn" @click="viewJob(job.id)">Consulter</button>
                 </div>
               </div>
             </div>
@@ -204,18 +214,21 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { MockData } from '../services/MockData';
 
-interface Job {
-  id: number;
-  title: string;
-  company: string;
-  location: string;
-  category: string;
-  description: string;
-  mcqDuration: number;
-  icon: string;
-  iconColor: string;
-}
+const router = useRouter();
+
+const showProfileMenu = ref(false);
+const toggleProfileMenu = () => {
+    showProfileMenu.value = !showProfileMenu.value;
+};
+
+const handleLogout = () => {
+    localStorage.removeItem('userToken');
+    localStorage.removeItem('userRole');
+    router.push('/');
+};
 
 const filters = ref({
   themes: [] as string[],
@@ -224,67 +237,71 @@ const filters = ref({
 
 const companySearch = ref('');
 const sortBy = ref('recent');
-const currentPage = ref(1);
-const totalPages = ref(12);
+const searchQuery = ref('');
 
-const jobs = ref<Job[]>([
-  {
-    id: 1,
-    title: 'Senior Fullstack Developer',
-    company: 'TechCorp',
-    location: 'Paris, FR (Remote)',
-    category: 'IT',
-    description: "Join our core platform team to build scalable APIs and modern UIs. We're looking for an expert in Node.js and React with a passion for clean code.",
-    mcqDuration: 25,
-    icon: 'fa-solid fa-code',
-    iconColor: '#3b82f6'
-  },
-  {
-    id: 2,
-    title: 'Marketing Content Specialist',
-    company: 'Innovate Solutions',
-    location: 'Berlin, DE',
-    category: 'MARKETING',
-    description: 'Elevate our brand presence through compelling storytelling and SEO-optimized content. You will collaborate with design and product teams to drive user engagement.',
-    mcqDuration: 10,
-    icon: 'fa-solid fa-bullhorn',
-    iconColor: '#8b5cf6'
-  },
-  {
-    id: 3,
-    title: 'Financial Audit Associate',
-    company: 'Future Ventures',
-    location: 'London, UK',
-    category: 'FINANCE',
-    description: 'Manage internal audits and ensure financial compliance across our European subsidiaries. Strong analytical skills and knowledge of IFRS required.',
-    mcqDuration: 30,
-    icon: 'fa-solid fa-chart-line',
-    iconColor: '#10b981'
-  },
-  {
-    id: 4,
-    title: 'Cloud Systems Architect',
-    company: 'TechCorp',
-    location: 'Remote',
-    category: 'IT',
-    description: 'Design and implement scalable cloud infrastructure using AWS/GCP. You will be responsible for security, reliability, and cost-optimization of our cloud services.',
-    mcqDuration: 20,
-    icon: 'fa-solid fa-cloud',
-    iconColor: '#06b6d4'
-  }
-]);
-
-const visiblePages = computed(() => {
-  const pages = [];
-  for (let i = 1; i <= Math.min(3, totalPages.value); i++) {
-    pages.push(i);
-  }
-  return pages;
+// --- Filter Logic ---
+const availableCompanies = computed(() => {
+  const companies = MockData.jobs.map(j => j.company);
+  return [...new Set(companies)];
 });
+
+const filteredCompanyList = computed(() => {
+  if (!companySearch.value.trim()) return availableCompanies.value;
+  const q = companySearch.value.toLowerCase();
+  return availableCompanies.value.filter(c => c.toLowerCase().includes(q));
+});
+
+// --- Pagination State ---
+const currentPage = ref(1);
+const itemsPerPage = 5;
+
+// --- Filter Logic ---
+const filteredJobs = computed(() => {
+  let result = MockData.jobs;
+
+  // 1. Text Search
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase();
+    result = result.filter(j => 
+       j.title.toLowerCase().includes(q) || 
+       j.company.toLowerCase().includes(q)
+    );
+  }
+
+  // 2. Theme Filter
+  if (filters.value.themes.length > 0) {
+    result = result.filter(j => 
+      filters.value.themes.some(theme => j.category.toLowerCase() === theme.toLowerCase())
+    );
+  }
+
+  // 3. Company Filter
+  if (filters.value.companies.length > 0) {
+    result = result.filter(j => 
+      filters.value.companies.some(c => j.company.toLowerCase().includes(c.toLowerCase()))
+    );
+  }
+
+  return result;
+});
+
+const totalPages = computed(() => Math.ceil(filteredJobs.value.length / itemsPerPage));
+
+const paginatedJobs = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage;
+  const end = start + itemsPerPage;
+  return filteredJobs.value.slice(start, end);
+});
+
+// --- Actions ---
+const viewJob = (id: number) => {
+  router.push(`/job-details/${id}`);
+};
 
 const clearFilters = () => {
   filters.value.themes = [];
   filters.value.companies = [];
+  searchQuery.value = '';
 };
 
 const prevPage = () => {
@@ -298,6 +315,18 @@ const nextPage = () => {
 const goToPage = (page: number) => {
   currentPage.value = page;
 };
+
+const visiblePages = computed(() => {
+  const pages = [];
+  // Simple pagination logic for demo
+  const max = Math.min(5, totalPages.value);
+  for (let i = 1; i <= max; i++) {
+    pages.push(i);
+  }
+  return pages;
+});
+
+// Duplicates removed
 </script>
 
 <style scoped>
@@ -411,6 +440,10 @@ const goToPage = (page: number) => {
   font-size: 18px;
 }
 
+.profile-container {
+  position: relative;
+}
+
 .profile-avatar {
   width: 36px;
   height: 36px;
@@ -418,6 +451,84 @@ const goToPage = (page: number) => {
   overflow: hidden;
   border: 2px solid #e2e8f0;
   cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.profile-avatar:hover {
+  border-color: #1f5bff;
+}
+
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e2e8f0;
+  z-index: 1000;
+  padding: 8px 0;
+}
+
+.dropdown-header {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-header .user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.dropdown-header .user-email {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 8px 0;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  font-size: 14px;
+  color: #475569;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.dropdown-item i {
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.dropdown-item:hover {
+  background: #f8fafc;
+  color: #1f5bff;
+}
+
+.dropdown-item:hover i {
+  color: #1f5bff;
+}
+
+.dropdown-item.logout {
+  color: #ef4444;
+}
+
+.dropdown-item.logout:hover {
+  background: #fef2f2;
+}
+
+.dropdown-item.logout:hover i {
+  color: #ef4444;
 }
 
 .profile-avatar img {

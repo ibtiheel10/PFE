@@ -116,21 +116,19 @@
             <label>Mot de passe</label>
             <div class="password-wrapper">
               <input
-  id="password"
-  name="password"
-  :type="showPassword ? 'text' : 'password'"
-  v-model="password"
-  class="form-control"
-  autocomplete="new-password"
-  minlength="8"
-  required
-  :class="{
-    'input-error': password && passwordStrength === 'weak',
-    'input-warning': password && passwordStrength === 'medium',
-    'input-valid': password && passwordStrength === 'strong'
-  }"
-  placeholder="Mot de passe"
-/>
+                id="password"
+                name="password"
+                :type="showPassword ? 'text' : 'password'"
+                v-model="password"
+                class="form-control"
+                autocomplete="new-password"
+                required
+                :class="{
+                  'input-error': password && passwordError,
+                  'input-valid': password && !passwordError
+                }"
+                placeholder="Mot de passe"
+              />
 
               <span class="eye" @click="togglePassword">
                 <EyeIcon v-if="!showPassword" class="icon" />
@@ -139,34 +137,67 @@
             </div>
 
             <!-- Password Helper Text -->
+            <div v-if="password" class="password-feedback">
+                <p v-if="passwordError" class="helper error">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>{{ passwordError }}</span>
+                </p>
+                <p v-else class="helper valid">
+                     <i class="fa-solid fa-circle-check"></i>
+                </p>
+            </div>
+
+             <!-- CONFIRM PASSWORD -->
+            <label>Confirmer le mot de passe</label>
+            <div class="password-wrapper">
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                v-model="confirmPassword"
+                class="form-control"
+                required
+                :class="{
+                  'input-error': confirmPassword && confirmPasswordError,
+                   'input-valid': confirmPassword && !confirmPasswordError
+                }"
+                placeholder="Confirmer mot de passe"
+              />
+
+              <span class="eye" @click="toggleConfirmPassword">
+                <EyeIcon v-if="!showConfirmPassword" class="icon" />
+                <EyeSlashIcon v-else class="icon" />
+              </span>
+            </div>
+
             <p
-              v-if="password"
-              :class="['helper', passwordStrength]">
-              <i
-                :class="
-                  passwordStrength === 'strong'
-                  ? 'fa-solid fa-circle-check'
-                  : passwordStrength === 'medium'
-                  ? 'fa-solid fa-circle-exclamation'
-                  : 'fa-solid fa-circle-xmark'">
-              </i>
-              <span>{{ passwordMessage }}</span>
+               v-if="confirmPassword"
+               :class="['helper', confirmPasswordError ? 'error' : 'valid']">
+                <i :class="confirmPasswordError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'"></i>
+                <span v-if="confirmPasswordError">{{ confirmPasswordError }}</span>
             </p>
+            
+            <div class="password-tools" style="margin-top: 15px;">
+              <button type="button" class="generate-btn" @click="generateSecurePassword">
+                <i class="fa-solid fa-key"></i> Suggérer un mot de passe sécurisé
+              </button>
+            </div>
 
             <!-- CONDITIONS -->
             <label class="checkbox-label">
-  <input type="checkbox" />
-  <span>
-    J'accepte les
-    <a href="#">Conditions d'Utilisation</a>
-    et la
-    <a href="#">Politique de confidentialité</a>.
-  </span>
-</label>
+              <input type="checkbox" v-model="acceptedTerms" />
+              <span>
+                J'accepte les
+                <a href="#">Conditions d'Utilisation</a>
+                et la
+                <a href="#">Politique de confidentialité</a>.
+              </span>
+            </label>
 
             <button
               class="login-btn"
-              :disabled="!canSubmit">
+              :disabled="!canSubmit"
+              @click.prevent="handleSignup">
               Créer mon compte →
             </button>
           </form>
@@ -184,7 +215,10 @@
 </template>
 <script setup lang="ts">
     import { ref, computed } from "vue";
+    import { useRouter } from "vue-router";
     import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
+    
+    const router = useRouter();
     
     const role = ref<'candidat' | 'entreprise'>('entreprise');
     
@@ -197,6 +231,10 @@
     const showPassword = ref(false);
     const togglePassword = () => showPassword.value = !showPassword.value;
     
+    const confirmPassword = ref("");
+    const showConfirmPassword = ref(false);
+    const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value;
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const freeEmailProviders = ['gmail.com', 'yahoo.com', 'yahoo.fr', 'hotmail.com', 'hotmail.fr', 'outlook.com', 'outlook.fr', 'live.com', 'live.fr', 'icloud.com', 'aol.com', 'protonmail.com', 'ymail.com'];
     
@@ -206,52 +244,70 @@
       return domain && !freeEmailProviders.includes(domain);
     });
     
-    // Password validation rules
-    const passwordRules = {
-      length: (v: string) => v.length >= 8,
-      upper: (v: string) => /[A-Z]/.test(v),
-      lower: (v: string) => /[a-z]/.test(v),
-      number: (v: string) => /[0-9]/.test(v),
-      special: (v: string) => /[^A-Za-z0-9]/.test(v),
-    };
-    
-    const passwordScore = computed<number>(() => {
-      let score = 0;
-      Object.values(passwordRules).forEach(rule => {
-        if (rule(password.value)) score++;
-      });
-      return score;
+    // Strict Password Validation
+    const passwordError = computed(() => {
+      if (!password.value) return "Le mot de passe est obligatoire.";
+      if (password.value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
+      if (!/[A-Z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre majuscule.";
+      if (!/[a-z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre minuscule.";
+      if (!/[0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un chiffre.";
+      if (!/[^A-Za-z0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un caractère spécial (@, #, $, %, etc.).";
+      return null;
+    });
+
+    const confirmPasswordError = computed(() => {
+        if (!confirmPassword.value) return "Veuillez confirmer votre mot de passe.";
+        if (confirmPassword.value !== password.value) return "Les mots de passe ne correspondent pas.";
+        return null;
     });
     
-    const passwordStrength = computed<string>(() => {
-      if (password.value.length === 0) return '';
-      if (passwordScore.value <= 2) return 'weak';
-      if (passwordScore.value <= 4) return 'medium';
-      return 'strong';
-    });
-    
-    const passwordMessage = computed<string>(() => {
-      switch (passwordStrength.value) {
-        case 'weak':
-          return 'Mot de passe faible';
-        case 'medium':
-          return 'Mot de passe correct mais améliorable';
-        case 'strong':
-          return 'Mot de passe fort et sécurisé';
-        default:
-          return '';
-      }
-    });
+    const isPasswordValid = computed(() => passwordError.value === null);
     
     const canSubmit = computed(() => {
       return (
         fullname.value.length > 2 &&
         sector.value.length > 2 &&
         isProfessionalEmail.value &&
-        passwordStrength.value === 'strong' &&
+        isPasswordValid.value &&
+        confirmPasswordError.value === null &&
         acceptedTerms.value
       );
     });
+
+    const handleSignup = () => {
+        if (!acceptedTerms.value) {
+            alert("Veuillez accepter les conditions d'utilisation.");
+            return;
+        }
+        // Mock Signup
+        localStorage.setItem('userRole', 'recruiter');
+        localStorage.setItem('userToken', 'mock-token-recruiter-new');
+        // Redirect to Employer Dashboard
+        router.push('/login-entreprise');
+    };
+    
+    const generateSecurePassword = () => {
+      const length = 12;
+      const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+      let retVal = "";
+      
+      // Ensure at least one of each required type
+      retVal += "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(Math.floor(Math.random() * 26));
+      retVal += "abcdefghijklmnopqrstuvwxyz".charAt(Math.floor(Math.random() * 26));
+      retVal += "0123456789".charAt(Math.floor(Math.random() * 10));
+      retVal += "!@#$%^&*".charAt(Math.floor(Math.random() * 8));
+
+      for (let i = 0, n = charset.length; i < length - 4; ++i) {
+        retVal += charset.charAt(Math.floor(Math.random() * n));
+      }
+      
+      // Shuffle the password
+      password.value = retVal.split('').sort(function(){return 0.5-Math.random()}).join('');
+      confirmPassword.value = password.value;
+      // Show password so user can save it
+      showPassword.value = true;
+      showConfirmPassword.value = true;
+    };
     </script>
 <style scoped>
 /* ===============================
@@ -734,6 +790,34 @@ form label {
 
 .helper.strong {
   color: #22c55e;
+}
+
+/* ===============================
+   PASSWORD GENERATOR BUTTON
+================================ */
+.generate-btn {
+  background: none;
+  border: none;
+  color: #1f5bff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.generate-btn:hover {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+
+.generate-btn i {
+  font-size: 14px;
 }
 
 </style>

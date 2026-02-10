@@ -8,8 +8,8 @@
     </div>
 
     <div class="header-links">
-      <a href="#">Besoin d'aide ?</a>
-      <a href="#" class="contact-btn">Contactez-nous</a>
+      <router-link to="/support">Besoin d'aide ?</router-link>
+      <router-link to="/contact" class="contact-btn">Contactez-nous</router-link>
     </div>
   </div>
 </header>
@@ -95,44 +95,34 @@
 
           <div class="password-wrapper">
             <input
-  id="password"
-  name="password"
-  :type="showPassword ? 'text' : 'password'"
-  v-model="password"
-  class="form-control"
-  autocomplete="new-password"
-  minlength="8"
-  required
-  :class="{
-    'input-error': password && passwordStrength === 'weak',
-    'input-warning': password && passwordStrength === 'medium',
-    'input-valid': password && passwordStrength === 'strong'
-  }"
-  placeholder="Mot de passe"
-/>
+              id="password"
+              name="password"
+              :type="showPassword ? 'text' : 'password'"
+              v-model="password"
+              class="form-control"
+              autocomplete="new-password"
+              required
+              :class="{
+                'input-error': password && passwordError,
+                'input-valid': password && !passwordError
+              }"
+              placeholder="Mot de passe"
+            />
 
 
-<span class="eye" @mousedown.prevent @click="togglePassword">
-  <EyeSlashIcon v-if="!showPassword" class="icon" />
-  <EyeIcon v-else class="icon" />
-</span>
+            <span class="eye" @mousedown.prevent @click="togglePassword">
+              <EyeSlashIcon v-if="!showPassword" class="icon" />
+              <EyeIcon v-else class="icon" />
+            </span>
 
 
          </div>
-        <p
-        v-if="password"
-        :class="['helper', passwordStrength]">
-        <i
-        :class="
-        passwordStrength === 'strong'
-        ? 'fa-solid fa-circle-check'
-        : passwordStrength === 'medium'
-        ? 'fa-solid fa-circle-exclamation'
-        : 'fa-solid fa-circle-xmark'">
-        </i>
-
-        <span>{{ passwordMessage }}</span>
-        </p>
+        <div v-if="password" class="password-feedback">
+            <p v-if="passwordError" class="helper error">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ passwordError }}</span>
+            </p>
+        </div>
             <div class="options">
               <label class="remember">
               <input type="checkbox" />
@@ -143,7 +133,8 @@
             </div>
             <button
             class="login-btn"
-            :disabled="!canSubmit">
+            :disabled="!canSubmit"
+            @click.prevent="handleLogin">
             Se connecter
             </button>
           </form>
@@ -183,7 +174,10 @@
 
 <script setup lang="ts">
 import { ref,computed } from "vue";
+import { useRouter } from "vue-router";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
+
+const router = useRouter();
 
 const password = ref<string>("");
 const showPassword = ref<boolean>(false);
@@ -198,53 +192,37 @@ const emailRegex =
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const freeEmailProviders = ['gmail.com', 'yahoo.com', 'yahoo.fr', 'hotmail.com', 'hotmail.fr', 'outlook.com', 'outlook.fr', 'live.com', 'live.fr', 'icloud.com', 'aol.com', 'protonmail.com', 'ymail.com'];
 
-const isProfessionalEmail = computed<boolean>(() => {
-  if (!emailRegex.test(email.value)) return false;
-  const domain = email.value.split('@')[1]?.toLowerCase();
-  return domain && !freeEmailProviders.includes(domain);
-});
+    const isProfessionalEmail = computed((): boolean => {
+      if (!emailRegex.test(email.value)) return false;
+      const domain = email.value.split('@')[1]?.toLowerCase();
+      return !!(domain && !freeEmailProviders.includes(domain));
+    });
 
 const validateEmail = (): void => {
   // déclenche juste le recalcul
 };
-const passwordRules = {
-  length: (v: string) => v.length >= 8,
-  upper: (v: string) => /[A-Z]/.test(v),
-  lower: (v: string) => /[a-z]/.test(v),
-  number: (v: string) => /[0-9]/.test(v),
-  special: (v: string) => /[^A-Za-z0-9]/.test(v),
-};
+    // Strict Password Validation for Enterprise Login
+    const passwordError = computed(() => {
+      if (!password.value) return "Le mot de passe est obligatoire.";
+      if (password.value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
+      if (!/[A-Z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre majuscule.";
+      if (!/[a-z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre minuscule.";
+      if (!/[0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un chiffre.";
+      if (!/[^A-Za-z0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un caractère spécial (@, #, $, %, etc.).";
+      return null;
+    });
 
-const passwordScore = computed<number>(() => {
-  let score = 0;
-  Object.values(passwordRules).forEach(rule => {
-    if (rule(password.value)) score++;
-  });
-  return score;
-});
+    const canSubmit = computed(() => {
+      return isProfessionalEmail.value && passwordError.value === null;
+    });
 
-const passwordStrength = computed<string>(() => {
-  if (password.value.length === 0) return '';
-  if (passwordScore.value <= 2) return 'weak';
-  if (passwordScore.value <= 4) return 'medium';
-  return 'strong';
-});
-
-const passwordMessage = computed<string>(() => {
-  switch (passwordStrength.value) {
-    case 'weak':
-      return 'Mot de passe faible';
-    case 'medium':
-      return 'Mot de passe correct mais améliorable';
-    case 'strong':
-      return 'Mot de passe fort et sécurisé';
-    default:
-      return '';
-  }
-});
-const canSubmit = computed(() => {
-  return isProfessionalEmail.value && passwordStrength.value === 'strong';
-});
+    const handleLogin = () => {
+        // Mock Login
+        localStorage.setItem('userRole', 'recruiter');
+        localStorage.setItem('userToken', 'mock-token-recruiter');
+        // Redirect to Employer Dashboard
+        router.push('/employer-dashboard');
+    };
 
 </script>
 

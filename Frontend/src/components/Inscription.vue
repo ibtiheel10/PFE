@@ -3,16 +3,16 @@
 
     <!-- HEADER (inchangé) -->
     <header class="header">
-      <div class="header-container">
-        <div class="logo">
-          <img src="../assets/logo-modern.png" alt="Skillvia" />
-        </div>
+        <div class="header-container">
+    <div class="logo">
+      <img src="../assets/logo-modern.png" alt="Skillvia" />
+    </div>
 
-        <div class="header-links">
-          <a href="#">Support</a>
-          <a href="#" class="contact-btn">Sécurité</a>
-        </div>
-      </div>
+    <div class="header-links">
+      <a href="#">Besoin d'aide ?</a>
+      <a href="#" class="contact-btn">Contactez-nous</a>
+    </div>
+  </div>
     </header>
 
     <!-- PAGE -->
@@ -108,21 +108,19 @@
             <label>Mot de passe</label>
             <div class="password-wrapper">
               <input
-  id="password"
-  name="password"
-  :type="showPassword ? 'text' : 'password'"
-  v-model="password"
-  class="form-control"
-  autocomplete="new-password"
-  minlength="8"
-  required
-  :class="{
-    'input-error': password && passwordStrength === 'weak',
-    'input-warning': password && passwordStrength === 'medium',
-    'input-valid': password && passwordStrength === 'strong'
-  }"
-  placeholder="Mot de passe"
-/>
+                id="password"
+                name="password"
+                :type="showPassword ? 'text' : 'password'"
+                v-model="password"
+                class="form-control"
+                autocomplete="new-password"
+                required
+                :class="{
+                  'input-error': password && passwordError,
+                  'input-valid': password && !passwordError
+                }"
+                placeholder="Mot de passe"
+              />
 
               <span class="eye" @click="togglePassword">
                 <EyeIcon v-if="!showPassword" class="icon" />
@@ -131,37 +129,85 @@
             </div>
 
             <!-- Password Helper Text -->
+            <div v-if="password" class="password-feedback">
+                <p v-if="passwordError" class="helper error">
+                    <i class="fa-solid fa-circle-exclamation"></i>
+                    <span>{{ passwordError }}</span>
+                </p>
+                <p v-else class="helper valid">
+                     <i class="fa-solid fa-circle-check"></i>
+                </p>
+            </div>
+
+             <!-- CONFIRM PASSWORD -->
+            <label>Confirmer le mot de passe</label>
+            <div class="password-wrapper">
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                :type="showConfirmPassword ? 'text' : 'password'"
+                v-model="confirmPassword"
+                class="form-control"
+                required
+                :class="{
+                  'input-error': confirmPassword && confirmPasswordError,
+                   'input-valid': confirmPassword && !confirmPasswordError
+                }"
+                placeholder="Confirmer mot de passe"
+              />
+
+              <span class="eye" @click="toggleConfirmPassword">
+                <EyeIcon v-if="!showConfirmPassword" class="icon" />
+                <EyeSlashIcon v-else class="icon" />
+              </span>
+            </div>
+
             <p
-              v-if="password"
-              :class="['helper', passwordStrength]">
-              <i
-                :class="
-                  passwordStrength === 'strong'
-                  ? 'fa-solid fa-circle-check'
-                  : passwordStrength === 'medium'
-                  ? 'fa-solid fa-circle-exclamation'
-                  : 'fa-solid fa-circle-xmark'">
-              </i>
-              <span>{{ passwordMessage }}</span>
+               v-if="confirmPassword"
+               :class="['helper', confirmPasswordError ? 'error' : 'valid']">
+                <i :class="confirmPasswordError ? 'fa-solid fa-circle-exclamation' : 'fa-solid fa-circle-check'"></i>
+                <span v-if="confirmPasswordError">{{ confirmPasswordError }}</span>
             </p>
+            
+            <div class="password-tools" style="margin-top: 15px;">
+              <button type="button" class="generate-btn" @click="generateSecurePassword">
+                <i class="fa-solid fa-key"></i> Suggérer un mot de passe sécurisé
+              </button>
+            </div>
 
             <!-- CONDITIONS -->
             <label class="checkbox-label">
-  <input type="checkbox" />
-  <span>
-    J’accepte les
-    <a href="#">Conditions d’Utilisation</a>
-    et la
-    <a href="#">Politique de confidentialité</a>.
-  </span>
-</label>
+              <input type="checkbox" v-model="acceptedTerms" />
+              <span>
+                J’accepte les
+                <a href="#">Conditions d’Utilisation</a>
+                et la
+                <a href="#">Politique de confidentialité</a>.
+              </span>
+            </label>
 
             <button
               class="login-btn"
-              :disabled="!canSubmit">
+              :disabled="!canSubmit"
+              @click.prevent="handleSignup">
               Créer mon compte →
             </button>
           </form>
+
+          <div class="divider">
+            <span>OU CONTINUER AVEC</span>
+          </div>
+
+          <div class="social">
+            <button class="social-btn" type="button" @click="handleSocialLogin('Google')">
+              <i class="fa-brands fa-google"></i>
+              Google
+            </button>
+            <button class="social-btn" type="button" @click="handleSocialLogin('LinkedIn')">
+              <i class="fa-brands fa-linkedin"></i>
+              LinkedIn
+            </button>
+          </div>
         </div>
       </div>
 
@@ -176,66 +222,139 @@
 </template>
 <script setup lang="ts">
     import { ref, computed } from "vue";
+    import { useRouter } from "vue-router";
     import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
     
-    const role = ref<'candidat' | 'entreprise'>('candidat');
+    // const role = ref<'candidat' | 'entreprise'>('candidat'); // Unused
+    const router = useRouter();
     
     const fullname = ref("");
     const email = ref("");
     const password = ref("");
+    const confirmPassword = ref("");
     const acceptedTerms = ref(false);
     
     const showPassword = ref(false);
+    const showConfirmPassword = ref(false);
+    
     const togglePassword = () => showPassword.value = !showPassword.value;
+    const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value;
+
+    const generateSecurePassword = () => {
+      const length = 12;
+      const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+      let retVal = "";
+      
+      // Ensure at least one of each required type
+      retVal += "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(Math.floor(Math.random() * 26));
+      retVal += "abcdefghijklmnopqrstuvwxyz".charAt(Math.floor(Math.random() * 26));
+      retVal += "0123456789".charAt(Math.floor(Math.random() * 10));
+      retVal += "!@#$%^&*".charAt(Math.floor(Math.random() * 8));
+
+      for (let i = 0, n = charset.length; i < length - 4; ++i) {
+        retVal += charset.charAt(Math.floor(Math.random() * n));
+      }
+      
+      // Shuffle the password
+      password.value = retVal.split('').sort(function(){return 0.5-Math.random()}).join('');
+      confirmPassword.value = password.value;
+      // Show password so user can save it
+      showPassword.value = true;
+      showConfirmPassword.value = true;
+    };
+
+    const handleSocialLogin = (provider: string) => {
+      // Open a popup to simulate OAuth
+      const width = 500;
+      const height = 600;
+      const left = (window.screen.width / 2) - (width / 2);
+      const top = (window.screen.height / 2) - (height / 2);
+      
+      const popup = window.open(
+        '',
+        'Social Login',
+        `width=${width},height=${height},top=${top},left=${left}`
+      );
+      
+      if (popup) {
+        popup.document.write(`
+          <html>
+            <head>
+              <title>Connexion avec ${provider}</title>
+              <style>
+                body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f6fb; }
+                .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                h2 { color: #333; }
+              </style>
+            </head>
+            <body>
+              <h2>Connexion avec ${provider}...</h2>
+              <div class="loader"></div>
+              <p>Veuillez patienter pendant l'authentification.</p>
+            </body>
+          </html>
+        `);
+        
+        // Close after 2 seconds and verify
+        setTimeout(() => {
+          popup.close();
+          // Simulate successful login
+          localStorage.setItem('user_token', 'mock-social-token-' + Date.now());
+          localStorage.setItem('user_info', JSON.stringify({ name: 'User ' + provider, role: 'candidat' }));
+          
+          alert(`Authentification avec ${provider} réussie !`);
+          router.push('/jobs'); // Redirect to "Dashboard" (JobBoard)
+        }, 2000);
+      }
+    };
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isEmailValid = computed(() => emailRegex.test(email.value));
     
-    // Password validation rules
-    const passwordRules = {
-      length: (v: string) => v.length >= 8,
-      upper: (v: string) => /[A-Z]/.test(v),
-      lower: (v: string) => /[a-z]/.test(v),
-      number: (v: string) => /[0-9]/.test(v),
-      special: (v: string) => /[^A-Za-z0-9]/.test(v),
-    };
-    
-    const passwordScore = computed<number>(() => {
-      let score = 0;
-      Object.values(passwordRules).forEach(rule => {
-        if (rule(password.value)) score++;
-      });
-      return score;
+    // Strict Password Validation
+    const passwordError = computed(() => {
+      if (!password.value) return "Le mot de passe est obligatoire.";
+      if (password.value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
+      if (!/[A-Z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre majuscule.";
+      if (!/[a-z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre minuscule.";
+      if (!/[0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un chiffre.";
+      if (!/[^A-Za-z0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un caractère spécial (@, #, $, %, etc.).";
+      return null;
+    });
+
+    const confirmPasswordError = computed(() => {
+        if (!confirmPassword.value) return "Veuillez confirmer votre mot de passe.";
+        if (confirmPassword.value !== password.value) return "Les mots de passe ne correspondent pas.";
+        return null;
     });
     
-    const passwordStrength = computed<string>(() => {
-      if (password.value.length === 0) return '';
-      if (passwordScore.value <= 2) return 'weak';
-      if (passwordScore.value <= 4) return 'medium';
-      return 'strong';
-    });
-    
-    const passwordMessage = computed<string>(() => {
-      switch (passwordStrength.value) {
-        case 'weak':
-          return 'Mot de passe faible';
-        case 'medium':
-          return 'Mot de passe correct mais améliorable';
-        case 'strong':
-          return 'Mot de passe fort et sécurisé';
-        default:
-          return '';
-      }
-    });
+    // Kept for canSubmit check
+    const isPasswordValid = computed(() => passwordError.value === null);
     
     const canSubmit = computed(() => {
+      // Button validates if: Name OK, Email OK, Password Valid (No Error), Confirmation Valid, Terms ACCEPTED
       return (
         fullname.value.length > 2 &&
         isEmailValid.value &&
-        passwordStrength.value === 'strong' &&
+        isPasswordValid.value &&
+        confirmPasswordError.value === null &&
         acceptedTerms.value
       );
     });
+
+    const handleSignup = () => {
+      if (!acceptedTerms.value) {
+        alert("Veuillez accepter les conditions d'utilisation.");
+        return;
+      }
+      // Mock Success
+      localStorage.setItem('user_token', 'mock-signup-token-' + Date.now());
+      localStorage.setItem('user_info', JSON.stringify({ name: fullname.value, role: 'candidat' }));
+
+      alert(`Compte créé avec succès pour ${fullname.value} !`);
+      router.push('/login');
+    };
     </script>
 <style scoped>
 /* ===============================
@@ -528,6 +647,61 @@ form label {
 }
 
 /* ===============================
+   DETAILED PASSWORD FEEDBACK
+================================ */
+.password-feedback {
+  margin-top: 10px;
+}
+
+.strength-text {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.strength-text.weak { color: #ef4444; }
+.strength-text.medium { color: #f59e0b; }
+.strength-text.strong { color: #22c55e; }
+
+.missing-criteria {
+  list-style: none;
+  padding: 10px;
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.missing-criteria li {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.missing-criteria li:last-child {
+  margin-bottom: 0;
+}
+
+.missing-criteria li.met {
+  color: #22c55e;
+  font-weight: 600;
+}
+
+.missing-criteria li i {
+  font-size: 8px;
+}
+
+.missing-criteria li.met i {
+  font-size: 10px;
+}
+
+/* ===============================
    CONDITIONS
 ================================ */
 
@@ -633,6 +807,94 @@ form label {
   transform: translateY(-1px);
   box-shadow: 0 6px 10px -1px rgba(31, 91, 255, 0.3);
   color: white;
+}
+
+/* ===============================
+   PASSWORD TOOLS
+================================ */
+.password-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.generate-btn {
+  background: none;
+  border: none;
+  color: #1f5bff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.generate-btn:hover {
+  background: #eff6ff;
+  color: #1e40af;
+}
+
+/* ===============================
+   DIVIDER & SOCIAL
+================================ */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 24px 0;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.divider span {
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.social {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.social-btn {
+  flex: 1;
+  height: 44px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 13px;
+  color: #374151;
+}
+
+.social-btn i {
+  font-size: 16px;
+}
+
+.social-btn:hover {
+  border-color: #1f5bff;
+  background: #f5f8ff;
+  color: #1f5bff;
 }
 
 .footer {

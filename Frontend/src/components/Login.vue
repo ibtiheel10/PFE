@@ -8,8 +8,8 @@
     </div>
 
     <div class="header-links">
-      <a href="#">Besoin d'aide ?</a>
-      <a href="#" class="contact-btn">Contactez-nous</a>
+      <router-link to="/support">Besoin d'aide ?</router-link>
+      <router-link to="/contact" class="contact-btn">Contactez-nous</router-link>
     </div>
   </div>
 </header>
@@ -66,7 +66,7 @@
 
 
 
-          <form>
+          <form v-if="!showForgotPassword">
             <label>Adresse e-mail</label>
             <input
             type="email"
@@ -90,49 +90,39 @@
 
             <div class="password-row">
             <label>Mot de passe</label>
-            <a href="#" class="forgot">Mot de passe oublié ?</a>
+            <a href="#" class="forgot" @click.prevent="toggleForgotPassword">Mot de passe oublié ?</a>
             </div>
 
           <div class="password-wrapper">
             <input
-  id="password"
-  name="password"
-  :type="showPassword ? 'text' : 'password'"
-  v-model="password"
-  class="form-control"
-  autocomplete="new-password"
-  minlength="8"
-  required
-  :class="{
-    'input-error': password && passwordStrength === 'weak',
-    'input-warning': password && passwordStrength === 'medium',
-    'input-valid': password && passwordStrength === 'strong'
-  }"
-  placeholder="Mot de passe"
-/>
+              id="password"
+              name="password"
+              :type="showPassword ? 'text' : 'password'"
+              v-model="password"
+              class="form-control"
+              autocomplete="new-password"
+              required
+              :class="{
+                'input-error': password && passwordError,
+                'input-valid': password && !passwordError
+              }"
+              placeholder="Mot de passe"
+            />
 
 
-<span class="eye" @mousedown.prevent @click="togglePassword">
-  <EyeSlashIcon v-if="!showPassword" class="icon" />
-  <EyeIcon v-else class="icon" />
-</span>
+            <span class="eye" @mousedown.prevent @click="togglePassword">
+              <EyeSlashIcon v-if="!showPassword" class="icon" />
+              <EyeIcon v-else class="icon" />
+            </span>
 
 
          </div>
-        <p
-        v-if="password"
-        :class="['helper', passwordStrength]">
-        <i
-        :class="
-        passwordStrength === 'strong'
-        ? 'fa-solid fa-circle-check'
-        : passwordStrength === 'medium'
-        ? 'fa-solid fa-circle-exclamation'
-        : 'fa-solid fa-circle-xmark'">
-        </i>
-
-        <span>{{ passwordMessage }}</span>
-        </p>
+        <div v-if="password" class="password-feedback">
+            <p v-if="passwordError" class="helper error">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ passwordError }}</span>
+            </p>
+        </div>
             <div class="options">
               <label class="remember">
               <input type="checkbox" />
@@ -143,9 +133,38 @@
             </div>
             <button
             class="login-btn"
-            :disabled="!canSubmit">
+            type="button"
+            :disabled="!canSubmit"
+            @click="handleLogin">
             Se connecter
             </button>
+          </form>
+
+          <!-- FORGOT PASSWORD FORM -->
+          <form v-else @submit.prevent="handleResetPassword">
+            <h3>Récupération de mot de passe</h3>
+            <p class="subtitle" style="margin-bottom: 20px;">
+              Entrez votre adresse e-mail pour recevoir un lien de réinitialisation.
+            </p>
+            
+            <label>Adresse e-mail</label>
+            <input
+              type="email"
+              v-model="email"
+              class="form-control"
+              placeholder="nom@exemple.com"
+              required
+            />
+            
+            <button class="login-btn" type="submit" :disabled="!isEmailValid">
+              Envoyer le lien
+            </button>
+            
+            <div style="text-align: center; margin-top: 15px;">
+              <a href="#" class="forgot" @click.prevent="toggleForgotPassword">
+                <i class="fa-solid fa-arrow-left"></i> Retour à la connexion
+              </a>
+            </div>
           </form>
 
           <div class="divider">
@@ -154,11 +173,11 @@
 
 
         <div class="social">
-          <button class="social-btn">
+          <button class="social-btn" @click="handleSocialLogin('Google')">
           <i class="fa-brands fa-google"></i>
           Google
           </button>
-          <button class="social-btn">
+          <button class="social-btn" @click="handleSocialLogin('LinkedIn')">
           <i class="fa-brands fa-linkedin"></i>
           LinkedIn
           </button>
@@ -183,7 +202,10 @@
 
 <script setup lang="ts">
 import { ref,computed } from "vue";
+import { useRouter } from "vue-router";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
+
+const router = useRouter();
 
 const password = ref<string>("");
 const showPassword = ref<boolean>(false);
@@ -192,56 +214,98 @@ const togglePassword = (): void => {
   showPassword.value = !showPassword.value;
 };
 
+const showForgotPassword = ref(false);
+const toggleForgotPassword = () => {
+    showForgotPassword.value = !showForgotPassword.value;
+};
+
+const handleResetPassword = () => {
+    alert(`Un lien de réinitialisation a été envoyé à ${email.value}`);
+    showForgotPassword.value = false;
+};
+
+const handleSocialLogin = (provider: string) => {
+    // Open a popup to simulate OAuth
+    const width = 500;
+    const height = 600;
+    const left = (window.screen.width / 2) - (width / 2);
+    const top = (window.screen.height / 2) - (height / 2);
+
+    const popup = window.open(
+    '',
+    'Social Login',
+    `width=${width},height=${height},top=${top},left=${left}`
+    );
+
+    if (popup) {
+    popup.document.write(`
+        <html>
+        <head>
+            <title>Connexion avec ${provider}</title>
+            <style>
+            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f4f6fb; }
+            .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+            h2 { color: #333; }
+            </style>
+        </head>
+        <body>
+            <h2>Connexion avec ${provider}...</h2>
+            <div class="loader"></div>
+            <p>Veuillez patienter pendant l'authentification.</p>
+        </body>
+        </html>
+    `);
+
+    // Close after 2 seconds and verify
+    setTimeout(() => {
+        popup.close();
+        // Simulate successful login
+        localStorage.setItem('user_token', 'mock-social-token-' + Date.now());
+        localStorage.setItem('user_info', JSON.stringify({ name: 'User ' + provider, role: 'candidat' }));
+        
+        alert(`Authentification avec ${provider} réussie !`);
+        router.push('/jobs'); // Redirect to "Dashboard" (JobBoard)
+    }, 2000);
+    }
+};
+
 const email = ref<string>("");
 
-const emailRegex =
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    // Strict Password Validation for Login (as requested)
+    const passwordError = computed(() => {
+      if (!password.value) return "Le mot de passe est obligatoire.";
+      // While unusual for login, user requested these specific messages for "login or signup"
+      if (password.value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
+      if (!/[A-Z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre majuscule.";
+      if (!/[a-z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre minuscule.";
+      if (!/[0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un chiffre.";
+      if (!/[^A-Za-z0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un caractère spécial (@, #, $, %, etc.).";
+      return null;
+    });
 
-const isEmailValid = computed<boolean>(() => {
-  return emailRegex.test(email.value);
-});
+    const isEmailValid = computed<boolean>(() => {
+      return emailRegex.test(email.value);
+    });
+    
+    const validateEmail = (): void => {
+      // déclenche juste le recalcul
+    };
 
-const validateEmail = (): void => {
-  // déclenche juste le recalcul
-};
-const passwordRules = {
-  length: (v: string) => v.length >= 8,
-  upper: (v: string) => /[A-Z]/.test(v),
-  lower: (v: string) => /[a-z]/.test(v),
-  number: (v: string) => /[0-9]/.test(v),
-  special: (v: string) => /[^A-Za-z0-9]/.test(v),
-};
-
-const passwordScore = computed<number>(() => {
-  let score = 0;
-  Object.values(passwordRules).forEach(rule => {
-    if (rule(password.value)) score++;
-  });
-  return score;
-});
-
-const passwordStrength = computed<string>(() => {
-  if (password.value.length === 0) return '';
-  if (passwordScore.value <= 2) return 'weak';
-  if (passwordScore.value <= 4) return 'medium';
-  return 'strong';
-});
-
-const passwordMessage = computed<string>(() => {
-  switch (passwordStrength.value) {
-    case 'weak':
-      return 'Mot de passe faible';
-    case 'medium':
-      return 'Mot de passe correct mais améliorable';
-    case 'strong':
-      return 'Mot de passe fort et sécurisé';
-    default:
-      return '';
-  }
-});
-const canSubmit = computed(() => {
-  return isEmailValid.value && passwordStrength.value === 'strong';
-});
+    const canSubmit = computed(() => {
+      // For login, we now enforce the strict rules as well per user request, 
+      // or at least that it has no errors if we are showing them.
+      return isEmailValid.value && passwordError.value === null;
+    });
+    
+    const handleLogin = () => {
+        // Mock Login
+        localStorage.setItem('user_token', 'mock-login-token-' + Date.now());
+        localStorage.setItem('user_info', JSON.stringify({ name: email.value, role: 'candidat' }));
+        router.push('/jobs');
+    };
 
 </script>
 
