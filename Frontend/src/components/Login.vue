@@ -265,7 +265,7 @@ const handleSocialLogin = (provider: string) => {
         localStorage.setItem('user_info', JSON.stringify({ name: 'User ' + provider, role: 'candidat' }));
         
         alert(`Authentification avec ${provider} réussie !`);
-        router.push('/jobs'); // Redirect to "Dashboard" (JobBoard)
+        router.push('/dashboard-candidat'); // Redirect to "Dashboard" (JobBoard)
     }, 2000);
     }
 };
@@ -304,7 +304,7 @@ const email = ref<string>("");
         // Mock Login
         localStorage.setItem('user_token', 'mock-login-token-' + Date.now());
         localStorage.setItem('user_info', JSON.stringify({ name: email.value, role: 'candidat' }));
-        router.push('/jobs');
+        router.push('/dashboard-candidat');
     };
 
 </script>
