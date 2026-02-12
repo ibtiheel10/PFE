@@ -23,6 +23,7 @@ import AjoutPoste from '@/components/ajoutposte.vue'
 import Messages from '@/components/Messages.vue'
 import CondidatPage from '@/components/condidatPage.vue'
 import AdminPage from '@/components/adminPage.vue'
+import JobDetailCondidat from '@/components/job_detail_condidat.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -125,6 +126,11 @@ const routes: RouteRecordRaw[] = [
     path: '/admin',
     name: 'AdminPage',
     component: AdminPage
+  },
+  {
+    path: '/job-details-candidat/:id',
+    name: 'JobDetailCondidat',
+    component: JobDetailCondidat
   }
 ]
 

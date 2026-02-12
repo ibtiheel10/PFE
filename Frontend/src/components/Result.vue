@@ -9,7 +9,7 @@
 
         <nav class="nav-menu">
           <router-link to="/jobs" class="nav-link">Dashboard</router-link>
-          <router-link to="/evaluation" class="nav-link">Tests</router-link>
+          
           <router-link to="/jobs" class="nav-link">Postes</router-link>
           <router-link to="/candidature" class="nav-link">Profil</router-link>
         </nav>
@@ -32,68 +32,7 @@
     <div class="result-page">
       <div class="result-container">
         
-        <!-- Success/Fail Message -->
-        <div class="success-section" v-if="isSuccess">
-          <div class="success-icon">
-            <i class="fa-solid fa-circle-check"></i>
-          </div>
-          <h1 class="success-title">Félicitations !</h1>
-          <p class="success-message">
-            Excellent travail ! Vous avez validé les compétences requises. Votre profil a été transmis aux recruteurs.
-          </p>
-        </div>
-        <div class="success-section" v-else>
-          <div class="success-icon failure" style="background: #ef4444; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);">
-            <i class="fa-solid fa-circle-xmark"></i>
-          </div>
-          <h1 class="success-title">Non retenu</h1>
-          <p class="success-message">
-            Malheureusement, vous n'avez pas atteint le score minimum requis (70%). Vous pourrez réessayer dans 30 jours.
-          </p>
-        </div>
-
-        <!-- Main Card -->
-        <div class="main-card">
-          <!-- Status Header -->
-          <div class="status-header">
-            <span class="status-label">Statut de l'évaluation</span>
-            <span class="status-badge" :class="isSuccess ? 'success' : 'failure'">
-              <i :class="isSuccess ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-xmark'"></i>
-              {{ isSuccess ? 'Réussi' : 'Échoué' }}
-            </span>
-          </div>
-
-          <!-- Stats Section -->
-          <div class="stats-section">
-            <!-- Circular Score -->
-            <div class="score-circle-container">
-              <svg class="score-circle" viewBox="0 0 160 160">
-                <circle class="score-bg" cx="80" cy="80" r="70" />
-                <circle class="score-progress" cx="80" cy="80" r="70" :stroke-dasharray="circumference" :stroke-dashoffset="progressOffset" :stroke="isSuccess ? '#1f5bff' : '#ef4444'" />
-              </svg>
-              <div class="score-content">
-                <div class="score-value">{{ score }}%</div>
-                <div class="score-label">SCORE GLOBAL</div>
-              </div>
-            </div>
-
-            <!-- Stats Grid -->
-            <div class="stats-grid">
-              <div class="stat-item">
-                <div class="stat-label">RANG</div>
-                <div class="stat-value primary">{{ isSuccess ? 'Top 10%' : '-' }}</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">TEMPS</div>
-                <div class="stat-value">18:45</div>
-              </div>
-              <div class="stat-item">
-                <div class="stat-label">PRÉCISION</div>
-                <div class="stat-value">{{ score }}%</div>
-              </div>
-            </div>
-          </div>
-        </div>
+        
 
         <!-- Competencies Card -->
         <div class="competencies-card">

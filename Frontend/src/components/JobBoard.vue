@@ -7,18 +7,9 @@
           <img src="../assets/logo-modern.png" alt="Skillvia" />
         </div>
 
-        <nav class="nav-menu">
-          <router-link to="/jobs" class="nav-link active">Jobs</router-link>
-          <router-link to="/evaluation" class="nav-link">Evaluations</router-link>
-          <router-link to="/candidature" class="nav-link">My Applications</router-link>
-          <router-link to="/messages" class="nav-link">Messages</router-link>
-        </nav>
 
           <div class="header-right">
-            <div class="search-bar">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" placeholder="Search jobs..." v-model="searchQuery" />
-            </div>
+            
             <button class="icon-btn">
               <i class="fa-regular fa-bell"></i>
             </button>
@@ -111,7 +102,7 @@
         <main class="jobs-content">
           <!-- Breadcrumb -->
           <div class="breadcrumb">
-            <a href="#">Home</a>
+            <a href="/dashboard-candidat">Home</a>
             <span class="separator">/</span>
             <span class="current">Available Jobs</span>
           </div>
@@ -295,7 +286,7 @@ const paginatedJobs = computed(() => {
 
 // --- Actions ---
 const viewJob = (id: number) => {
-  router.push(`/job-details/${id}`);
+  router.push(`/job-details-candidat/${id}`);
 };
 
 const clearFilters = () => {
