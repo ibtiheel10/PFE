@@ -97,7 +97,7 @@
                                 <span class="stat-num">12</span>
                             </div>
                         </div>
-                        <span class="trend-badge positive">+2%</span>
+                        
                     </div>
 
                     <div class="stat-card">
@@ -110,7 +110,7 @@
                                 <span class="stat-num">450</span>
                             </div>
                         </div>
-                        <span class="trend-badge positive">+15%</span>
+                       
                     </div>
 
                     <div class="stat-card">
@@ -123,20 +123,29 @@
                                 <span class="stat-num">78%</span>
                             </div>
                         </div>
-                        <span class="trend-badge negative">-3%</span>
+                        
                     </div>
 
                     <div class="stat-card">
                         <div class="stat-icon-bg bg-green">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                        </div>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <!-- Lignes de la liste -->
+        <line x1="8" y1="6" x2="20" y2="6"></line>
+        <line x1="8" y1="12" x2="20" y2="12"></line>
+        <line x1="8" y1="18" x2="20" y2="18"></line>
+        <!-- Petits cercles pour les bullets -->
+        <circle cx="4" cy="6" r="1"></circle>
+        <circle cx="4" cy="12" r="1"></circle>
+        <circle cx="4" cy="18" r="1"></circle>
+    </svg>
+</div>
                         <div class="stat-content">
-                            <span class="stat-label">Temps d'embauche</span>
+                            <span class="stat-label">Candidatures à traiter</span>
                             <div class="stat-value-row">
-                                <span class="stat-num">14j</span>
+                                <span class="stat-num">14</span>
                             </div>
                         </div>
-                        <span class="trend-badge positive">+1%</span>
+                        
                     </div>
                 </div>
 
@@ -144,52 +153,8 @@
                 <div class="dashboard-grid">
                     <!-- Left Column (Wide) -->
                     <div class="grid-col-left">
-                        <!-- Candidates Table -->
-                        <div class="card candidates-card">
-                            <div class="card-header">
-                                <h3>Meilleurs Candidats</h3>
-                                <a href="#" class="view-all">Voir tout</a>
-                            </div>
-                            <div class="table-responsive">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th>CANDIDAT</th>
-                                            <th>POSTE</th>
-                                            <th>SCORE MCQ</th>
-                                            <th>STATUS</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="candidate in displayCandidates" :key="candidate.name">
-                                            <td>
-                                                <div class="candidate-info">
-                                                    <img :src="candidate.avatar" class="c-avatar" alt="">
-                                                    <div>
-                                                        <div class="c-name">{{ candidate.name }}</div>
-                                                        <div class="c-time">{{ candidate.time }}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td class="c-role">{{ candidate.role }}</td>
-                                            <td>
-                                                <div class="score-pill">
-                                                    <div class="progress-track">
-                                                        <div class="progress-fill" :class="getScoreColor(candidate.score)" :style="{width: candidate.score + '%'}"></div>
-                                                    </div>
-                                                    <span class="score-text" :class="getScoreTextClass(candidate.score)">{{ candidate.score }}%</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="status-badge" :class="candidate.statusClass">
-                                                    {{ candidate.status }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                        <!-- Candidates Component -->
+                        <Top5Candidates :candidates="candidatesSource" @view-all="activeNav = 'Candidats'" />
 
                         <!-- Score Chart -->
                         <div class="card chart-card">
@@ -197,7 +162,6 @@
                                 <h3>Répartition des Scores</h3>
                                 <div class="chart-legend">
                                     <span class="big-score">78.4%</span>
-                                    <span class="trend-mini positive">+3.2PT</span>
                                 </div>
                             </div>
                             <p class="chart-subtitle">Analyse globale des 450 derniers candidats</p>
@@ -246,10 +210,10 @@
                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                                            {{ job.applicants }} inscrits
                                        </div>
-                                       <div class="meta-item">
-                                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                                           {{ job.daysLeft }} j restants
-                                       </div>
+                                        <div class="meta-item">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                                            Session dans {{ job.daysLeft }}j
+                                        </div>
                                    </div>
                                    <div class="job-progress">
                                        <div class="progress-bg"><div class="progress-val" :style="{width: job.progress + '%'}"></div></div>
@@ -271,169 +235,17 @@
             
             <!-- Placeholder for other tabs -->
             <!-- Full Pages for other tabs -->
-            <div v-else-if="activeNav === 'Mes Postes'" class="content-container">
-                <div class="page-header">
-                    <div>
-                        <h1>Mes Postes</h1>
-                        <p class="subtitle">Gérez vos offres d'emploi et suivez les candidatures.</p>
-                    </div>
-                    <button class="new-post-btn" style="width: auto; padding: 0.5rem 1rem;" @click="createNewPost">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                        Nouveau poste
-                    </button>
-                </div>
-                
-                <div class="card">
-                     <div class="table-responsive">
-                        <table class="full-table">
-                            <thead>
-                                <tr>
-                                    <th>TITRE DU POSTE</th>
-                                    <th>STATUS</th>
-                                    <th>INSCRITS</th>
-                                    <th>TEMPS RESTANT</th>
-                                    <th>PROGRESSION</th>
-                                    <th>QUALITÉ</th>
-                                    <th>ACTIONS</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr v-for="job in displayJobs" :key="job.title">
-                                    <td class="fw-600" style="cursor: pointer; color: #2563EB;" @click="goToJobDetails(job.id)">{{ job.title }}</td>
-                                    <td><span class="status-tag" :class="job.status === 'ACTIVE' ? 'active' : 'draft'">{{ job.status }}</span></td>
-                                    <td>{{ job.applicants }}</td>
-                                    <td>{{ job.daysLeft }} jours</td>
-                                    <td style="width: 150px;">
-                                        <div class="progress-bg"><div class="progress-val" :style="{width: job.progress + '%'}"></div></div>
-                                    </td>
-                                    <td><span class="mcq-quality">{{ job.quality }}</span></td>
-                                    <td>
-                                        <button class="icon-btn">
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                                        </button>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+            <!-- Full Pages for other tabs -->
+            <ListePosteEntreprise 
+                v-else-if="activeNav === 'Mes Postes'" 
+                :searchQuery="searchQuery" 
+            />
 
-            <div v-else-if="activeNav === 'Candidats'" class="content-container">
-                 <div class="page-header">
-                    <div>
-                        <h1>Candidats</h1>
-                        <p class="subtitle">Gérez et évaluez les candidats pour tous vos postes.</p>
-                    </div>
-                    <div class="header-actions-right">
-                        <button class="export-btn" @click="exportData">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                            Exporter
-                        </button>
-                    </div>
-                </div>
+            <ListeCondidat 
+                v-else-if="activeNav === 'Candidats'" 
+                :candidates="candidatesSource" 
+            />
 
-                <!-- Filters Bar -->
-                <div class="filters-bar">
-                    <div class="search-wrap">
-                         <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" v-model="searchQuery" placeholder="Rechercher...">
-                    </div>
-                    
-                    <select v-model="selectedJobFilter" class="filter-select">
-                        <option value="">Tous les postes</option>
-                        <option v-for="job in uniqueJobs" :key="job" :value="job">{{ job }}</option>
-                    </select>
-
-                    <select v-model="selectedStatusFilter" class="filter-select">
-                        <option value="">Tous les statuts</option>
-                        <option value="NOUVEAU">Nouveau</option>
-                        <option value="À INTERVIEWER">À Interviewer</option>
-                        <option value="REJETÉ">Rejeté</option>
-                        <option value="SHORTLISTÉ">Shortlisté</option>
-                    </select>
-                </div>
-
-                <!-- Bulk Actions Bar -->
-                <div v-if="selectedCandidates.length > 0" class="bulk-actions-bar">
-                    <span class="selected-count">{{ selectedCandidates.length }} sélectionné(s)</span>
-                    <div class="bulk-btns">
-                        <button class="bulk-btn" @click="bulkAction('shortlist')">Shortlist</button>
-                        <button class="bulk-btn" @click="bulkAction('reject')">Rejeter</button>
-                        <button class="bulk-btn" @click="bulkAction('message')">Message Groupé</button>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th style="width: 40px;">
-                                        <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll">
-                                    </th>
-                                    <th @click="sortBy('name')" class="sortable">
-                                        CANDIDAT <span v-if="sortField === 'name'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
-                                    </th>
-                                    <th @click="sortBy('role')" class="sortable">
-                                        POSTE <span v-if="sortField === 'role'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
-                                    </th>
-                                    <th @click="sortBy('score')" class="sortable">
-                                        SCORE MCQ <span v-if="sortField === 'score'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
-                                    </th>
-                                    <th @click="sortBy('status')" class="sortable">
-                                        STATUS <span v-if="sortField === 'status'">{{ sortOrder === 'asc' ? '↑' : '↓' }}</span>
-                                    </th>
-                                    <th>ACTIONS</th>
-                                </tr>
-                            </thead>
-                             <tbody>
-                                <tr v-for="candidate in filteredCandidates" :key="candidate.name" :class="{'row-selected': isSelected(candidate)}">
-                                    <td>
-                                        <input type="checkbox" :checked="isSelected(candidate)" @change="toggleSelection(candidate)">
-                                    </td>
-                                    <td>
-                                        <div class="candidate-info">
-                                            <img :src="candidate.avatar" class="c-avatar" alt="">
-                                            <div>
-                                                <div class="c-name">{{ candidate.name }}</div>
-                                                <div class="c-time">{{ candidate.time }}</div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td class="c-role">{{ candidate.role }}</td>
-                                    <td>
-                                        <div class="score-pill">
-                                            <div class="progress-track">
-                                                <div class="progress-fill" :class="getScoreColor(candidate.score)" :style="{width: candidate.score + '%'}"></div>
-                                            </div>
-                                            <span class="score-text" :class="getScoreTextClass(candidate.score)">{{ candidate.score }}%</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span class="status-badge" :class="candidate.statusClass">
-                                            {{ candidate.status }}
-                                        </span>
-                                    </td>
-                                     <td>
-                                        <div class="action-buttons">
-                                            <button class="btn-icon-xs success" title="Shortlist" @click="updateStatus(candidate, 'SHORTLISTÉ')">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                                            </button>
-                                            <button class="btn-icon-xs danger" title="Rejeter" @click="updateStatus(candidate, 'REJETÉ')">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                                            </button>
-                                             <button class="btn-icon-xs" title="Message" @click="openMessage(candidate)">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
 
             <div v-else class="empty-state">
                 <div class="empty-content">
@@ -452,6 +264,9 @@
 import { ref, h, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { MockData } from '../services/MockData';
+import Top5Candidates from './top_5_condidat.vue';
+import ListeCondidat from './liste_condidat.vue';
+import ListePosteEntreprise from './liste_poste_entreprise.vue';
 
 // State
 const activeNav = ref('Tableau de bord');
@@ -494,13 +309,6 @@ const search = () => {
 const toggleNotifications = () => {
     hasNotifications.value = !hasNotifications.value;
 };
-
-
-
-const generateQCM = () => {
-    alert('Lancement de l\'assistant IA pour QCM...');
-};
-
 // Navigation Data using Functional Components for clean implementation
 const navItems = [
     { name: 'Tableau de bord', icon: h('svg', { xmlns:"http://www.w3.org/2000/svg", width:"15", height:"15", viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" }, [h('rect',{x:3,y:3,width:7,height:7}),h('rect',{x:14,y:3,width:7,height:7}),h('rect',{x:14,y:14,width:7,height:7}),h('rect',{x:3,y:14,width:7,height:7})]) },
@@ -508,17 +316,7 @@ const navItems = [
     { name: 'Candidats', icon: h('svg', { xmlns:"http://www.w3.org/2000/svg", width:"15", height:"15", viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"1.5", strokeLinecap:"round", strokeLinejoin:"round" }, [h('path',{d:"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"}),h('circle',{cx:9,cy:7,r:4}),h('path',{d:"M23 21v-2a4 4 0 0 0-3-3.87"}),h('path',{d:"M16 3.13a4 4 0 0 1 0 7.75"})]) },
 ];
 
-const getScoreColor = (score: number) => {
-    if (score >= 90) return 'green-fill';
-    if (score >= 80) return 'blue-fill';
-    return 'orange-fill';
-};
 
-const getScoreTextClass = (score: number) => {
-    if (score >= 90) return 'text-green';
-    if (score >= 80) return 'text-blue';
-    return 'text-orange';
-};
 
 // --- Data Connection & Filtering ---
 const allCandidates = computed(() => {
@@ -537,165 +335,28 @@ const allCandidates = computed(() => {
 });
 
 // Fallback to initial data if MockData is empty for demo purposes
-const staticCandidates = [
+const staticCandidates = ref([
     { name: 'Marc Dubois', time: 'il y a 2 heures', role: 'Développeur Senior', score: 94, status: 'À INTERVIEWER', statusClass: 'interview', avatar: 'https://i.pravatar.cc/150?u=marc' },
     { name: 'Léa Rousseau', time: 'il y a 5 heures', role: 'Product Designer', score: 89, status: 'ÉVALUÉ', statusClass: 'evaluated', avatar: 'https://i.pravatar.cc/150?u=lea' },
-    { name: 'Thomas Petit', time: 'Hier', role: 'Data Analyst', score: 82, status: 'À INTERVIEWER', statusClass: 'interview', avatar: 'https://i.pravatar.cc/150?u=thomas' }
-];
-
-const selectedJobFilter = ref("");
-const selectedStatusFilter = ref("");
-const sortField = ref("score");
-const sortOrder = ref("desc");
-const selectedCandidates = ref<any[]>([]);
-
-const uniqueJobs = computed(() => {
-    const jobs = new Set(allCandidates.value.map(c => c.role));
-    return Array.from(jobs);
+    { name: 'Thomas Petit', time: 'Hier', role: 'Data Analyst', score: 82, status: 'À INTERVIEWER', statusClass: 'interview', avatar: 'https://i.pravatar.cc/150?u=thomas' },
+    { name: 'Julie Martin', time: 'Hier', role: 'Marketing Manager', score: 76, status: 'NOUVEAU', statusClass: 'new', avatar: 'https://i.pravatar.cc/150?u=julie' },
+    { name: 'Pierre Leroy', time: 'Il y a 2 jours', role: 'Développeur Frontend', score: 65, status: 'REJETÉ', statusClass: 'rejected', avatar: 'https://i.pravatar.cc/150?u=pierre' },
+    { name: 'Sophie Bernard', time: 'Il y a 3 jours', role: 'Ux Researcher', score: 91, status: 'SHORTLISTÉ', statusClass: 'shortlisted', avatar: 'https://i.pravatar.cc/150?u=sophie' },
+    { name: 'Lucas Moreau', time: 'Il y a 4 jours', role: 'DevOps Engineer', score: 88, status: 'À INTERVIEWER', statusClass: 'interview', avatar: 'https://i.pravatar.cc/150?u=lucas' },
+    { name: 'Emma Simon', time: 'Il y a 5 jours', role: 'Product Owner', score: 72, status: 'ÉVALUÉ', statusClass: 'evaluated', avatar: 'https://i.pravatar.cc/150?u=emma' },
+    { name: 'Hugo Laurent', time: 'Il y a 1 semaine', role: 'Data Scientist', score: 95, status: 'SHORTLISTÉ', statusClass: 'shortlisted', avatar: 'https://i.pravatar.cc/150?u=hugo' },
+    { name: 'Chloé Michel', time: 'Il y a 1 semaine', role: 'HR Assistant', score: 60, status: 'REJETÉ', statusClass: 'rejected', avatar: 'https://i.pravatar.cc/150?u=chloe' },
+    { name: 'Alexandre David', time: 'Il y a 2 semaines', role: 'Backend Developer', score: 84, status: 'NOUVEAU', statusClass: 'new', avatar: 'https://i.pravatar.cc/150?u=alex' }
+]);
+const candidatesSource = computed(() => {
+    return MockData.applications.length > 0 ? allCandidates.value : staticCandidates.value;
 });
-
-const filteredCandidates = computed(() => {
-    let list = MockData.applications.length > 0 ? allCandidates.value : staticCandidates;
-    
-    // Search
-    if (searchQuery.value.trim()) {
-        const q = searchQuery.value.toLowerCase();
-        list = list.filter(c => 
-            c.name.toLowerCase().includes(q) || 
-            c.role.toLowerCase().includes(q)
-        );
-    }
-
-    // Filter by Job
-    if (selectedJobFilter.value) {
-        list = list.filter(c => c.role === selectedJobFilter.value);
-    }
-
-    // Filter by Status
-    if (selectedStatusFilter.value) {
-        list = list.filter(c => c.status === selectedStatusFilter.value);
-    }
-
-    // Sort
-    return list.slice().sort((a: any, b: any) => {
-        let modifier = sortOrder.value === 'asc' ? 1 : -1;
-        if (a[sortField.value] < b[sortField.value]) return -1 * modifier;
-        if (a[sortField.value] > b[sortField.value]) return 1 * modifier;
-        return 0;
-    });
-});
-const displayCandidates = filteredCandidates; // Alias for compatibility
-
-// Sorting
-const sortBy = (field: string) => {
-    if (sortField.value === field) {
-        sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
-    } else {
-        sortField.value = field;
-        sortOrder.value = 'desc'; // Default to desc for new field (e.g. score)
-    }
-};
-
-// Selection
-const isSelected = (candidate: any) => {
-    return selectedCandidates.value.some(c => c.name === candidate.name); // Using name as ID for demo
-};
-
-const toggleSelection = (candidate: any) => {
-    if (isSelected(candidate)) {
-        selectedCandidates.value = selectedCandidates.value.filter(c => c.name !== candidate.name);
-    } else {
-        selectedCandidates.value.push(candidate);
-    }
-};
-
-const isAllSelected = computed(() => {
-    return filteredCandidates.value.length > 0 && selectedCandidates.value.length === filteredCandidates.value.length;
-});
-
-const toggleSelectAll = () => {
-    if (isAllSelected.value) {
-        selectedCandidates.value = [];
-    } else {
-        selectedCandidates.value = [...filteredCandidates.value];
-    }
-};
-
-// Actions
-const updateStatus = (candidate: any, newStatus: string) => {
-    // Optimistic UI update
-    candidate.status = newStatus;
-    candidate.statusClass = newStatus === 'SHORTLISTED' ? 'interview' : (newStatus === 'REJECTED' ? 'draft' : 'new');
-    
-    // In a real app, we would sync this to the backend
-    // MockData.updateStatus(candidate.id, newStatus); 
-    
-    // Force reactivity update if necessary (though Vue handles object property mutation well)
-    const index = allCandidates.value.findIndex(c => c.name === candidate.name);
-    if (index !== -1) {
-       // Deep update if needed, but simple mutation usually works for display
-    }
-};
-
-const openMessage = (candidate: any) => {
-    // Redirect to messages with candidate selected
-    router.push({ path: '/messages', query: { user: candidate.name } });
-};
-
-const bulkAction = (action: string) => {
-    if (selectedCandidates.value.length === 0) return;
-
-    if (action === 'shortlist') {
-        selectedCandidates.value.forEach(c => {
-            updateStatus(c, 'SHORTLISTÉ');
-        });
-    } else if (action === 'reject') {
-        selectedCandidates.value.forEach(c => {
-            updateStatus(c, 'REJETÉ');
-        });
-    } else if (action === 'message') {
-        // Group message logic mock
-        const names = selectedCandidates.value.map(c => c.name).join(', ');
-        alert(`Message de groupe envoyé à : ${names}`);
-    }
-    
-    // Clear selection
-    selectedCandidates.value = [];
-};
-
-const exportData = () => {
-    // Generate CSV Content
-    const headers = ['Nom', 'Poste', 'Score', 'Status', 'Date'];
-    const rows = filteredCandidates.value.map(c => [
-        `"${c.name}"`,
-        `"${c.role}"`,
-        `${c.score}%`,
-        `"${c.status}"`,
-        `"${c.time}"`
-    ]);
-    
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    
-    // Create Blob and Download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) { 
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'candidats_skillvia.csv');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    }
-};
-
 const displayJobs = computed(() => {
     let list = MockData.jobs.map(j => ({
         id: j.id,
         title: j.title,
-        applicants: MockData.applications.filter(a => a.jobId === j.id).length || Math.floor(Math.random() * 50),
-        daysLeft: Math.floor(Math.random() * 20) + 1,
+        applicants: MockData.getApplicantsCount(j.id),
+        daysLeft: j.daysLeft || 0,
         progress: Math.floor(Math.random() * 100),
         quality: 'ÉLEVÉE',
         status: 'ACTIVE'
@@ -705,7 +366,6 @@ const displayJobs = computed(() => {
     const q = searchQuery.value.toLowerCase();
     return list.filter(j => j.title.toLowerCase().includes(q));
 });
-
 </script>
 
 <style scoped>
@@ -900,6 +560,39 @@ const displayJobs = computed(() => {
 .user-profile-container {
     position: relative;
 }
+.search-wrap {
+  display: flex;
+  align-items: center;
+  width: 100%;          /* prend toute la largeur du conteneur */
+  max-width: 500px;     /* largeur max */
+  background-color: #F3F4F6; /* gris clair style SaaS */
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid #D1D5DB; /* bordure légère */
+  gap: 8px;
+  transition: box-shadow 0.2s;
+}
+
+.search-wrap:hover {
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.search-icon {
+  flex-shrink: 0;
+}
+
+.search-input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+  background-color: transparent;
+  color: #111827;
+}
+
+.search-input::placeholder {
+  color: #9CA3AF;
+}
 
 .user-profile {
     display: flex;
@@ -1046,17 +739,7 @@ const displayJobs = computed(() => {
     transition: background-color 0.1s;
 }
 
-.sortable:hover {
-    background-color: #F3F4F6;
-}
 
-.row-selected {
-    background-color: #EFF6FF !important;
-}
-
-.row-selected:hover {
-    background-color: #DBEAFE !important;
-}
 
 .action-buttons {
     display: flex;
@@ -1295,122 +978,17 @@ const displayJobs = computed(() => {
 }
 
 /* Candidates Table */
-.candidates-card {
-    overflow: hidden;
-}
 
-.table-responsive {
-    overflow-x: auto;
-}
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-}
 
-th {
-    text-align: left;
-    color: #9CA3AF;
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid #F3F4F6;
-}
 
-td {
-    padding: 0.8rem 0;
-    border-bottom: 1px solid #F3F4F6;
-    vertical-align: middle;
-}
 
-tr:last-child td {
-    border-bottom: none;
-}
-
-.candidate-info {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.c-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-}
-
-.c-name {
-    font-weight: 600;
-    color: #111827;
-    font-size: 0.85rem;
-}
-
-.c-time {
-    font-size: 0.7rem;
-    color: #9CA3AF;
-}
-
-.c-role {
-    font-weight: 500;
-    color: #4B5563;
-    font-size: 0.8rem;
-}
 
 /* Score Pill */
-.score-pill {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 120px;
-}
 
-.progress-track {
-    flex: 1;
-    height: 5px; /* Thinner */
-    background: #F3F4F6;
-    border-radius: 3px;
-    overflow: hidden;
-}
-
-.progress-fill {
-    height: 100%;
-    border-radius: 3px;
-}
-
-.green-fill { background: #10B981; }
-.blue-fill { background: #2563EB; }
-.orange-fill { background: #F59E0B; }
-
-.score-text {
-    font-weight: 700;
-    font-size: 0.8rem;
-}
-
-.text-green { color: #10B981; }
-.text-blue { color: #2563EB; }
-.text-orange { color: #F59E0B; }
 
 /* Status Badges */
-.status-badge {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-}
 
-.status-badge.interview {
-    background: #EFF6FF;
-    color: #2563EB;
-}
-
-.status-badge.evaluated {
-    background: #FFFAF0;
-    color: #D97706;
-}
 
 /* Chart Card */
 .chart-card {
@@ -1646,4 +1224,21 @@ tr:last-child td {
     border-radius: 12px;
     border: 1px solid #E5E7EB;
 }
+
+/* --- New Candidates Tab Styles --- */
+
+.animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+
+
+
+
+
 </style>
