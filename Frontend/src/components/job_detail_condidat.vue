@@ -3,6 +3,12 @@
     <!-- Navigation / Top Bar -->
     <header class="top-nav">
       <div class="nav-content">
+        <!-- Back Button -->
+        <button @click="goBack" class="back-btn">
+          <i class="fa-solid fa-arrow-left"></i>
+          <span>Retour</span>
+        </button>
+
         <div class="logo-section">
           <div class="logo-box">
             <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -39,13 +45,13 @@
 
     <main class="main-body container">
       <!-- Header Card -->
-      <section class="job-header-card" v-if="job">
+      <section class="job-header-card animate-slide-up" v-if="job">
         <div class="job-header-content">
            <div class="company-logo">
-             <div class="logo-placeholder">TECHFLOW</div>
+             <div class="logo-placeholder animated-logo">TECHFLOW</div>
            </div>
            <div class="job-main-info">
-             <h1>{{ job.title }}</h1>
+             <h1 class="job-title-main">{{ job.title }}</h1>
              <div class="job-meta-row">
                 <span class="company-name">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
@@ -66,22 +72,21 @@
            </div>
         </div>
         <div class="header-actions">
-           <button class="btn-secondary" @click="router.push('/dashboard-candidat')">
-             <span class="icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-             </span>
-             Dashboard Candidat
+           <button class="btn-apply" @click="applyToJob">
+             <i class="fa-solid fa-paper-plane"></i>
+             <span>Postuler</span>
+             <i class="fa-solid fa-arrow-right btn-arrow"></i>
            </button>
         </div>
       </section>
 
       <div class="content-grid" v-if="job">
-        <!-- Left Column: Details -->
+        <!-- Left Column: Details with Animations -->
         <div class="details-column">
            <!-- Description Section -->
-           <section class="detail-card">
+           <section class="detail-card animate-card" style="--animation-order: 0">
              <div class="section-title">
-               <span class="icon-blue">📄</span>
+               <span class="icon-emoji">📄</span>
                <h2>À propos de la mission</h2>
              </div>
              <div class="text-content">
@@ -96,41 +101,40 @@
            </section>
 
            <!-- Skills Section -->
-           <section class="detail-card">
+           <section class="detail-card animate-card" style="--animation-order: 1">
               <div class="section-title">
-                 <span class="icon-blue-marker">
-                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                 </span>
+                 <i class="fa-solid fa-star section-icon"></i>
                  <h2>Compétences requises</h2>
               </div>
               <div class="skills-list">
-                <span class="skill-badge" v-for="skill in job.skills" :key="skill">{{ skill }}</span>
+                <span class="skill-badge skill-animated" v-for="(skill, index) in job.skills" :key="skill" :style="{ '--skill-index': index }">{{ skill }}</span>
               </div>
            </section>
 
            <!-- Process Section -->
-           <section class="detail-card">
+           <section class="detail-card animate-card" style="--animation-order: 2">
              <div class="section-title">
+               <i class="fa-solid fa-route section-icon"></i>
                <h2>Processus de recrutement</h2>
              </div>
              <div class="process-steps">
-               <div class="step-item">
+               <div class="step-item step-animated" style="--step-index: 0">
                  <div class="step-circle">1</div>
                  <div class="step-info">
                    <div class="step-title">Dépôt du dossier</div>
                    <div class="step-desc">Examen de votre CV et de vos projets passés.</div>
                  </div>
                </div>
-               <div class="step-line"></div>
-               <div class="step-item">
+               <div class="step-line step-line-animated" style="--step-index: 0"></div>
+               <div class="step-item step-animated" style="--step-index: 1">
                  <div class="step-circle">2</div>
                  <div class="step-info">
                    <div class="step-title">Test Skillvia (QCM)</div>
                    <div class="step-desc">Évaluation objective de vos compétences techniques.</div>
                  </div>
                </div>
-               <div class="step-line"></div>
-               <div class="step-item step-last">
+               <div class="step-line step-line-animated" style="--step-index: 1"></div>
+               <div class="step-item step-last step-animated" style="--step-index: 2">
                  <div class="step-circle step-gray">3</div>
                  <div class="step-info">
                    <div class="step-title">Entretien technique</div>
@@ -141,13 +145,32 @@
            </section>
         </div>
 
-        <!-- Right Column: Test Info -->
+        <!-- Right Column: Info Cards with Animations -->
         <div class="side-column">
-          <!-- Test Card removed -->
-
+          <!-- Info Card -->
+          <div class="info-card animate-slide-left">
+            <div class="info-header">
+              <i class="fa-solid fa-lightbulb"></i>
+              <h3>Conseils</h3>
+            </div>
+            <div class="info-content">
+              <div class="info-item">
+                <i class="fa-solid fa-check"></i>
+                <span>Personnalisez votre candidature</span>
+              </div>
+              <div class="info-item">
+                <i class="fa-solid fa-check"></i>
+                <span>Préparez-vous au test technique</span>
+              </div>
+              <div class="info-item">
+                <i class="fa-solid fa-check"></i>
+                <span>Mettez en avant vos projets</span>
+              </div>
+            </div>
+          </div>
 
           <!-- Help Card -->
-          <div class="help-card">
+          <div class="help-card animate-slide-left" style="animation-delay: 0.2s">
             <div class="help-icon">?</div>
             <div class="help-content">
               <strong>Besoin d'aide ?</strong>
@@ -678,5 +701,382 @@ const goBack = () => {
   color: #2563EB;
   text-decoration: none;
   font-weight: 600;
+}
+
+/* Back Button */
+.back-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px solid #E5E7EB;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  color: #374151;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.back-btn:hover {
+  background: #F3F4F6;
+  border-color: #2563EB;
+  color: #2563EB;
+  transform: translateX(-4px);
+}
+
+.back-btn i {
+  transition: transform 0.3s;
+}
+
+.back-btn:hover i {
+  transform: translateX(-2px);
+}
+
+/* Modern Icon Button */
+.icon-btn {
+  background: transparent;
+  border: none;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.3s;
+  color: #6B7280;
+}
+
+.icon-btn:hover {
+  background: #F3F4F6;
+  color: #2563EB;
+}
+
+/* Header Card Animations */
+.job-header-card {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.job-header-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.05), transparent);
+  transition: left 0.6s;
+}
+
+.job-header-card:hover::before {
+  left: 100%;
+}
+
+.job-header-card:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+/* Animated Logo */
+.animated-logo {
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.job-header-card:hover .animated-logo {
+  transform: rotate(5deg) scale(1.05);
+}
+
+/* Job Title Animation */
+.job-title-main {
+  transition: color 0.3s;
+}
+
+.job-header-card:hover .job-title-main {
+  color: #2563EB;
+}
+
+/* Apply Button */
+.btn-apply {
+  background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-apply::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-apply:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-apply:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+}
+
+.btn-arrow {
+  transition: transform 0.3s;
+}
+
+.btn-apply:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+/* Card Animations */
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-card {
+  animation: cardFadeIn 0.6s ease-out backwards;
+  animation-delay: calc(var(--animation-order) * 0.15s);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes cardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-card:hover {
+  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.12);
+  transform: translateY(-4px);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.animate-slide-left {
+  animation: slideLeft 0.6s ease-out;
+}
+
+@keyframes slideLeft {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Section Icon */
+.section-icon {
+  color: #2563EB;
+  font-size: 1.25rem;
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+.icon-emoji {
+  font-size: 1.5rem;
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+/* Skill Badge Animations */
+.skill-animated {
+  animation: skillPop 0.5s ease-out backwards;
+  animation-delay: calc(var(--skill-index) * 0.05s);
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes skillPop {
+  0% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.skill-badge:hover {
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+  background: #2563EB;
+  color: white;
+}
+
+/* Step Animations */
+.step-animated {
+  animation: stepFadeIn 0.6s ease-out backwards;
+  animation-delay: calc(var(--step-index) * 0.2s);
+}
+
+@keyframes stepFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.step-line-animated {
+  animation: lineGrow 0.5s ease-out backwards;
+  animation-delay: calc(var(--step-index) * 0.2s + 0.3s);
+  transform-origin: top;
+}
+
+@keyframes lineGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+.step-circle {
+  transition: all 0.3s;
+}
+
+.step-item:hover .step-circle {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+/* Info Card */
+.info-card {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #E5E7EB;
+  margin-bottom: 1.5rem;
+  transition: all 0.3s;
+}
+
+.info-card:hover {
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
+  border-color: rgba(37, 99, 235, 0.2);
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.info-header i {
+  color: #F59E0B;
+  font-size: 1.25rem;
+}
+
+.info-header h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+  color: #111827;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: #4B5563;
+  transition: all 0.3s;
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+
+.info-item:hover {
+  background: #F3F4F6;
+  transform: translateX(4px);
+}
+
+.info-item i {
+  color: #10B981;
+  font-size: 0.875rem;
+}
+
+/* Help Card Enhancement */
+.help-card {
+  transition: all 0.3s;
+}
+
+.help-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Tag Enhancements */
+.tag.green {
+  transition: all 0.3s;
+}
+
+.tag.green:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(21, 128, 61, 0.3);
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 </style>

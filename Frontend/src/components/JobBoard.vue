@@ -1,44 +1,5 @@
 <template>
   <div class="page-wrapper">
-    <!-- Header -->
-    <header class="header">
-      <div class="header-container">
-        <div class="logo">
-          <img src="../assets/logo-modern.png" alt="Skillvia" />
-        </div>
-
-
-          <div class="header-right">
-            
-            <button class="icon-btn">
-              <i class="fa-regular fa-bell"></i>
-            </button>
-            <div class="profile-container">
-              <div class="profile-avatar" @click="toggleProfileMenu">
-                <img src="https://i.pravatar.cc/150?img=8" alt="Profile" />
-              </div>
-              
-              <!-- Profile Dropdown -->
-              <div v-if="showProfileMenu" class="profile-dropdown">
-                <div class="dropdown-header">
-                  <span class="user-name">Alex Johnson</span>
-                  <span class="user-email">alex.j@example.com</span>
-                </div>
-                <div class="dropdown-divider"></div>
-                <a href="#" class="dropdown-item">
-                  <i class="fa-solid fa-gear"></i>
-                  Paramètres
-                </a>
-                <a href="#" class="dropdown-item logout" @click.prevent="handleLogout">
-                  <i class="fa-solid fa-right-from-bracket"></i>
-                  Se déconnecter
-                </a>
-              </div>
-            </div>
-          </div>
-      </div>
-    </header>
-
     <!-- Main Content -->
     <div class="jobboard-page">
       <div class="jobboard-container">
@@ -102,7 +63,7 @@
         <main class="jobs-content">
           <!-- Breadcrumb -->
           <div class="breadcrumb">
-            <a href="/dashboard-candidat">Home</a>
+            <router-link to="/candidat/dashboard">Home</router-link>
             <span class="separator">/</span>
             <span class="current">Available Jobs</span>
           </div>
@@ -123,9 +84,14 @@
             </div>
           </div>
 
-          <!-- Job Cards -->
-          <div class="jobs-list">
-            <div v-for="job in paginatedJobs" :key="job.id" class="job-card">
+          <!-- Job Cards with Staggered Animation -->
+          <TransitionGroup name="job-list" tag="div" class="jobs-list">
+            <div 
+              v-for="(job, index) in paginatedJobs" 
+              :key="job.id" 
+              class="job-card"
+              :style="{ '--animation-order': index }"
+            >
               <div class="job-icon" :style="{ background: job.iconColor }">
                 <i :class="job.icon"></i>
               </div>
@@ -149,18 +115,28 @@
                   </span>
                 </div>
 
-                <p class="job-description">{{ job.description }}</p>
+                <p class="job-description">{{ job.description.intro }} {{ job.description.mission }}</p>
+                
+                <div class="job-skills">
+                  <span v-for="skill in job.skills.slice(0, 3)" :key="skill" class="skill-tag">
+                    {{ skill }}
+                  </span>
+                  <span v-if="job.skills.length > 3" class="skill-tag more">+{{ job.skills.length - 3 }}</span>
+                </div>
 
                 <div class="job-footer">
                   <div class="mcq-badge">
                     <i class="fa-solid fa-list-check"></i>
                     {{ job.mcqDuration }} min MCQ
                   </div>
-                  <button class="job-btn" @click="viewJob(job.id)">Consulter</button>
+                  <button class="job-btn" @click="viewJob(job.id)">
+                    <span>Consulter</span>
+                    <i class="fa-solid fa-arrow-right"></i>
+                  </button>
                 </div>
               </div>
             </div>
-          </div>
+          </TransitionGroup>
 
           <!-- Pagination -->
           <div class="pagination">
@@ -209,17 +185,6 @@ import { useRouter } from 'vue-router';
 import { MockData } from '../services/MockData';
 
 const router = useRouter();
-
-const showProfileMenu = ref(false);
-const toggleProfileMenu = () => {
-    showProfileMenu.value = !showProfileMenu.value;
-};
-
-const handleLogout = () => {
-    localStorage.removeItem('userToken');
-    localStorage.removeItem('userRole');
-    router.push('/');
-};
 
 const filters = ref({
   themes: [] as string[],
@@ -316,15 +281,12 @@ const visiblePages = computed(() => {
   }
   return pages;
 });
-
-// Duplicates removed
 </script>
 
 <style scoped>
 .page-wrapper {
-  min-height: 100vh;
-  background: #f8f9fb;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  /* Layout handled by parent */
+  width: 100%;
 }
 
 /* Header */
@@ -530,8 +492,7 @@ const visiblePages = computed(() => {
 
 /* Main Layout */
 .jobboard-page {
-  padding-top: 60px;
-  min-height: 100vh;
+  padding-top: 0;
   display: flex;
   flex-direction: column;
 }
@@ -548,13 +509,22 @@ const visiblePages = computed(() => {
 
 /* Sidebar Filters */
 .filters-sidebar {
-  background: white;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
   padding: 24px;
   height: fit-content;
   position: sticky;
   top: 92px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.filters-sidebar:hover {
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
 }
 
 .filters-header {
@@ -632,14 +602,21 @@ const visiblePages = computed(() => {
   width: 18px;
   height: 18px;
   border: 2px solid #cbd5e1;
-  border-radius: 4px;
+  border-radius: 6px;
   position: relative;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.checkbox-option:hover .checkmark {
+  border-color: #3b82f6;
+  transform: scale(1.1);
 }
 
 .checkbox-option input:checked + .checkmark {
-  background: #1f5bff;
+  background: linear-gradient(135deg, #1f5bff 0%, #3b82f6 100%);
   border-color: #1f5bff;
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(31, 91, 255, 0.3);
 }
 
 .checkmark::after {
@@ -651,12 +628,14 @@ const visiblePages = computed(() => {
   height: 8px;
   border: solid white;
   border-width: 0 2px 2px 0;
-  transform: rotate(45deg);
+  transform: rotate(45deg) scale(0);
   opacity: 0;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 }
 
 .checkbox-option input:checked + .checkmark::after {
   opacity: 1;
+  transform: rotate(45deg) scale(1);
 }
 
 .option-text {
@@ -808,30 +787,56 @@ const visiblePages = computed(() => {
 
 .job-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 16px;
   padding: 24px;
   display: flex;
   gap: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s;
-  border: 1px solid transparent;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.job-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(31, 91, 255, 0.05), transparent);
+  transition: left 0.5s;
 }
 
 .job-card:hover {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
-  border-color: #e2e8f0;
+  box-shadow: 0 12px 40px rgba(31, 91, 255, 0.15);
+  border-color: rgba(31, 91, 255, 0.2);
+  transform: translateY(-4px);
+}
+
+.job-card:hover::before {
+  left: 100%;
 }
 
 .job-icon {
   width: 56px;
   height: 56px;
-  border-radius: 12px;
+  border-radius: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
   font-size: 24px;
   flex-shrink: 0;
+  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  position: relative;
+}
+
+.job-card:hover .job-icon {
+  transform: rotate(5deg) scale(1.1);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .job-content {
@@ -901,7 +906,34 @@ const visiblePages = computed(() => {
   font-size: 14px;
   color: #475569;
   line-height: 1.6;
-  margin: 0 0 16px 0;
+  margin: 0 0 12px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.job-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.skill-tag {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.skill-tag.more {
+  background: white;
+  border: 1px solid #e2e8f0;
+  color: #94a3b8;
 }
 
 .job-footer {
@@ -929,20 +961,52 @@ const visiblePages = computed(() => {
 
 .job-btn {
   height: 36px;
-  padding: 0 24px;
-  background: #1f5bff;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #1f5bff 0%, #3b82f6 100%);
   color: white;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(31, 91, 255, 0.3);
+}
+
+.job-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.job-btn:hover::before {
+  width: 300px;
+  height: 300px;
 }
 
 .job-btn:hover {
-  background: #1e4ed8;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(31, 91, 255, 0.4);
+}
+
+.job-btn i {
+  transition: transform 0.3s;
+}
+
+.job-btn:hover i {
+  transform: translateX(4px);
 }
 
 /* Pagination */
@@ -1082,6 +1146,101 @@ const visiblePages = computed(() => {
   .footer-content {
     flex-direction: column;
     text-align: center;
+  }
+}
+
+/* Staggered Animation for Job Cards */
+.job-list-enter-active {
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transition-delay: calc(var(--animation-order) * 0.1s);
+}
+
+.job-list-enter-from {
+  opacity: 0;
+  transform: translateY(30px) scale(0.95);
+}
+
+.job-list-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.job-list-leave-to {
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
+}
+
+/* Pulse Animation for Apply Button */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 4px 12px rgba(31, 91, 255, 0.3);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(31, 91, 255, 0.5);
+  }
+}
+
+.apply-filters-btn {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Shimmer effect for loading state */
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Smooth page transition */
+.page-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.page-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(31, 91, 255, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+}
+
+.page-btn:hover::after {
+  width: 100px;
+  height: 100px;
+}
+
+/* Category badge glow effect */
+.job-category {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.job-card:hover .job-category {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Accessibility: Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 </style>

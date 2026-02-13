@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
-
 import Login from '@/components/Login.vue'
 import Inscription from '@/components/Inscription.vue'
 import Home from '@/components/Home.vue'
@@ -21,9 +20,13 @@ import Support from '@/components/Support.vue'
 
 import AjoutPoste from '@/components/ajoutposte.vue'
 import Messages from '@/components/Messages.vue'
-import CondidatPage from '@/components/condidatPage.vue'
 import AdminPage from '@/components/adminPage.vue'
 import JobDetailCondidat from '@/components/job_detail_condidat.vue'
+
+// Candidate Section
+import CandidateLayout from '@/layouts/CandidateLayout.vue'
+import CandidateDashboard from '@/components/candidate/Dashboard.vue'
+import CandidateHistory from '@/components/candidate/History.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -51,25 +54,48 @@ const routes: RouteRecordRaw[] = [
     name: 'InscriptionEntreprise',
     component: InscriptionEntreprise
   },
+
+  // Public/Shared Job Routes (if kept separate)
   {
-    path: '/result',
-    name: 'Result',
-    component: Result
+    path: '/jobs-public',
+    name: 'JobBoardPublic',
+    component: JobBoard
   },
+
+  // Candidate Protected Routes
   {
-    path: '/candidature',
-    name: 'Candidature',
-    component: CondidatPage
+    path: '/candidat',
+    name: 'CandidateParent',
+    component: CandidateLayout,
+    redirect: '/candidat/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'CandidateDashboard',
+        component: CandidateDashboard
+      },
+      {
+        path: 'jobs',
+        name: 'CandidateJobs',
+        component: JobBoard
+      },
+      {
+        path: 'results',
+        name: 'CandidateResults',
+        component: Result
+      },
+      {
+        path: 'history',
+        name: 'CandidateHistory',
+        component: CandidateHistory
+      }
+    ]
   },
+
   {
     path: '/evaluation',
     name: 'Evaluation',
     component: Evaluation
-  },
-  {
-    path: '/jobs',
-    name: 'JobBoard',
-    component: JobBoard
   },
   {
     path: '/job-details/:id',
@@ -119,8 +145,11 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/dashboard-candidat',
-    name: 'CondidatPage',
-    component: CondidatPage
+    redirect: '/candidat/dashboard'
+  },
+  {
+    path: '/candidature',
+    redirect: '/candidat/dashboard'
   },
   {
     path: '/admin',

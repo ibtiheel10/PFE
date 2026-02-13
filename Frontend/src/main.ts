@@ -4,4 +4,6 @@ import App from './App.vue'
 import "@fortawesome/fontawesome-free/css/all.css";
 import router from './router'
 
-createApp(App).use(router).mount('#app')
+import VueApexCharts from "vue3-apexcharts";
+
+createApp(App).use(router).use(VueApexCharts).mount('#app')

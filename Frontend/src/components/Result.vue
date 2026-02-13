@@ -1,107 +1,115 @@
 <template>
   <div class="page-wrapper">
-    <!-- Header -->
-    <header class="header">
-      <div class="header-container">
-        <div class="logo">
-          <img src="../assets/logo-modern.png" alt="Skillvia" />
-        </div>
-
-        <nav class="nav-menu">
-          <router-link to="/jobs" class="nav-link">Dashboard</router-link>
-          
-          <router-link to="/jobs" class="nav-link">Postes</router-link>
-          <router-link to="/candidature" class="nav-link">Profil</router-link>
-        </nav>
-
-        <div class="header-actions">
-          <button class="icon-btn">
-            <i class="fa-regular fa-bell"></i>
-          </button>
-          <button class="icon-btn">
-            <i class="fa-regular fa-circle-user"></i>
-          </button>
-          <div class="profile-avatar">
-            <img src="https://i.pravatar.cc/150?img=12" alt="Profile" />
-          </div>
-        </div>
-      </div>
-    </header>
-
     <!-- Main Content -->
     <div class="result-page">
       <div class="result-container">
         
-        
+        <div class="result-grid">
+            <!-- Left Column: Main Details -->
+            <div class="details-column">
+                <div class="large-result-card animate-fade-in-up">
+                    <div class="card-header-status">
+                         <div class="status-badge-large" :class="isSuccess ? 'success' : 'failure'">
+                            <i :class="isSuccess ? 'fa-solid fa-check-circle' : 'fa-solid fa-circle-xmark'"></i>
+                            {{ isSuccess ? 'Réussite' : 'Échec' }}
+                         </div>
+                         <span class="date-badge">13 Fév 2024</span>
+                    </div>
 
-        <!-- Competencies Card -->
-        <div class="competencies-card">
-          <div class="card-title">
-            <i class="fa-solid fa-chart-bar"></i>
-            Analyse par compétence
-          </div>
+                    <div class="main-score-section">
+                        <div class="score-circular">
+                            <apexchart type="radialBar" height="280" :options="radialChartOptions" :series="radialChartSeries"></apexchart>
+                        </div>
+                        <div class="score-message">
+                            <h2>{{ isSuccess ? 'Excellent Travail !' : 'Continuez vos efforts' }}</h2>
+                            <p>Vous avez obtenu un score supérieur à <strong>85%</strong> des candidats. Votre performance en <strong>Vue.js</strong> est particulièrement remarquable.</p>
+                        </div>
+                    </div>
 
-          <div class="competency-list">
-            <!-- Competency 1 -->
-            <div class="competency-item">
-              <div class="competency-header">
-                <h3 class="competency-name">Architecture React & Hooks</h3>
-                <span class="competency-score">95%</span>
-              </div>
-              <div class="competency-description">
-                Expert : Excellente maîtrise des cycles de vie et de la gestion d'état.
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: 95%"></div>
-              </div>
+                    <div class="stats-grid-large">
+                        <div class="stat-box">
+                            <div class="stat-icon bg-blue-50 text-blue-600">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                            <div>
+                                <span class="stat-label">Temps Écoulé</span>
+                                <span class="stat-value">24m 30s</span>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon bg-emerald-50 text-emerald-600">
+                                <i class="fa-solid fa-bullseye"></i>
+                            </div>
+                            <div>
+                                <span class="stat-label">Réponses Correctes</span>
+                                <span class="stat-value">18/20</span>
+                            </div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-icon bg-purple-50 text-purple-600">
+                                <i class="fa-solid fa-bolt"></i>
+                            </div>
+                            <div>
+                                <span class="stat-label">Rapidité</span>
+                                <span class="stat-value">Top 10%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="competencies-section">
+                        <h3 class="section-title">
+                            <i class="fa-solid fa-list-check"></i> Détails par Compétence
+                        </h3>
+                        <div class="competency-list">
+                            <div class="competency-item" v-for="comp in competencies" :key="comp.name">
+                                <div class="competency-header">
+                                    <span class="competency-name">{{ comp.name }}</span>
+                                    <span class="competency-score">{{ comp.score }}%</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" :style="{ width: comp.score + '%' }"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons-large">
+                        <button class="btn btn-primary" @click="goToJobs">
+                            Voir d'autres offres
+                             <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                         <button class="btn btn-secondary">
+                            Télécharger le rapport
+                             <i class="fa-solid fa-download"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
 
-            <!-- Competency 2 -->
-            <div class="competency-item">
-              <div class="competency-header">
-                <h3 class="competency-name">Algorithmique & Performance</h3>
-                <span class="competency-score">78%</span>
-              </div>
-              <div class="competency-description">
-                Maîtrise : Bonne compréhension, quelques optimisations possibles.
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: 78%"></div>
-              </div>
+            <!-- Right Column: Analytics Charts -->
+            <div class="charts-column space-y-6">
+                
+                <!-- Progression Chart -->
+                <div class="chart-card-small">
+                    <h3 class="chart-title-small">
+                        <i class="fa-solid fa-chart-line text-blue-500"></i> Progression
+                    </h3>
+                    <div class="h-[180px]">
+                         <apexchart type="area" height="100%" :options="lineChartOptions" :series="lineChartSeries"></apexchart>
+                    </div>
+                </div>
+
+                <!-- Evaluation Categories -->
+                <div class="chart-card-small">
+                    <h3 class="chart-title-small">
+                        <i class="fa-solid fa-chart-pie text-purple-500"></i> Répartition
+                    </h3>
+                     <div class="h-[180px] flex items-center justify-center">
+                        <apexchart type="donut" height="200" :options="donutChartOptions" :series="donutChartSeries"></apexchart>
+                    </div>
+                </div>
+
             </div>
-
-            <!-- Competency 3 -->
-            <div class="competency-item">
-              <div class="competency-header">
-                <h3 class="competency-name">Sécurité & API</h3>
-                <span class="competency-score">82%</span>
-              </div>
-              <div class="competency-description">
-                Maîtrise : Compréhension solide des protocoles OAuth2 et JWT.
-              </div>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width: 82%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="action-buttons">
-          <button class="btn btn-primary" @click="goToJobs">
-            <i class="fa-solid fa-table-columns"></i>
-            Retour au Dashboard
-          </button>
-          <button class="btn btn-secondary" @click="goToJobs">
-            <i class="fa-solid fa-search"></i>
-            Voir d'autres postes
-          </button>
-        </div>
-
-        <!-- Footer Note -->
-        <div class="footer-note">
-          Besoin d'aide ou de pas de détails ? 
-          <a href="#">Contactez le support Skillvia</a>
         </div>
 
       </div>
@@ -119,31 +127,193 @@ const score = ref(0);
 
 onMounted(() => {
   const s = Number(route.query.score);
-  score.value = isNaN(s) ? 0 : s;
+  score.value = isNaN(s) ? 85 : s; // Default high score for demo
 });
 
 const isSuccess = computed(() => score.value >= 70);
 
-// The following computed properties are not used in this component and seem to belong to a different context (e.g., a test-taking component).
-// They are included here as per the user's instruction, but would ideally be removed if not needed.
-// const formattedTime = computed(() => {
-//   const m = Math.floor(timeRemainingSeconds.value / 60).toString().padStart(2, '0');
-//   const s = (timeRemainingSeconds.value % 60).toString().padStart(2, '0');
-//   return `${m}:${s}`;
-// });
-// const difficultyClass = computed(() => {
-//     return currentQuestion.value ? `difficulty-${currentQuestion.value.difficulty}` : '';
-// });
+// --- Chart Data ---
 
-// Calculate circle progress
-const circumference = 2 * Math.PI * 70;
-const progressOffset = computed(() => {
-  return circumference - (score.value / 100) * circumference;
+// 1. Line Area Chart
+const lineChartSeries = ref([
+    {
+        name: 'Score Actuel',
+        data: [65, 72, 68, 85, 92, 95]
+    },
+    {
+        name: 'Moyenne Candidats',
+        data: [50, 55, 60, 58, 62, 65]
+    }
+]);
+
+const lineChartOptions = ref({
+    chart: {
+        type: 'area',
+        toolbar: { show: false },
+        background: 'transparent',
+        fontFamily: 'Inter, sans-serif',
+    },
+    colors: ['#3b82f6', '#94a3b8'],
+    stroke: {
+        curve: 'smooth',
+        width: 3
+    },
+    dataLabels: { enabled: false },
+    fill: {
+        type: 'gradient',
+        gradient: {
+            shadeIntensity: 1,
+            opacityFrom: 0.4,
+            opacityTo: 0.1,
+            stops: [0, 90, 100]
+        }
+    },
+    xaxis: {
+        categories: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+        labels: { style: { colors: '#64748b', fontSize: '12px' } },
+        axisBorder: { show: false },
+        axisTicks: { show: false }
+    },
+    yaxis: {
+        labels: { style: { colors: '#64748b', fontSize: '12px' } }
+    },
+    grid: {
+        borderColor: '#f1f5f9',
+        strokeDashArray: 4,
+        yaxis: { lines: { show: true } }
+    },
+    theme: { mode: 'light' },
+    legend: { position: 'top', horizontalAlign: 'left' }
 });
 
+// 2. Radial Bar Chart
+const radialChartSeries = computed(() => [score.value]);
+
+const radialChartOptions = ref({
+    chart: {
+        type: 'radialBar',
+        background: 'transparent',
+    },
+    plotOptions: {
+        radialBar: {
+            startAngle: -135,
+            endAngle: 135,
+            hollow: {
+                margin: 15,
+                size: '65%',
+                image: undefined,
+                imageWidth: 64,
+                imageHeight: 64,
+                imageClipped: false,
+            },
+            track: {
+                background: '#f1f5f9',
+                strokeWidth: '100%',
+                margin: 0,
+            },
+            dataLabels: {
+                show: true,
+                name: {
+                    offsetY: -10,
+                    show: true,
+                    color: '#94a3b8',
+                    fontSize: '14px',
+                    fontFamily: 'Inter, sans-serif',
+                },
+                value: {
+                    offsetY: 5,
+                    color: '#1e293b',
+                    fontSize: '36px',
+                    fontWeight: 700,
+                    show: true,
+                    fontFamily: 'Inter, sans-serif',
+                }
+            }
+        }
+    },
+    fill: {
+        type: 'gradient',
+        gradient: {
+            shade: 'light',
+            type: 'horizontal',
+            shadeIntensity: 0.5,
+            gradientToColors: ['#3b82f6'],
+            inverseColors: true,
+            opacityFrom: 1,
+            opacityTo: 1,
+            stops: [0, 100]
+        }
+    },
+    stroke: {
+        lineCap: 'round'
+    },
+    labels: ['Score Final'],
+});
+
+// 3. Donut Chart (Evaluations)
+const donutChartSeries = ref([5, 12, 3]); // Active, Completed, Ended
+
+const donutChartOptions = ref({
+    chart: {
+        type: 'donut',
+        background: 'transparent',
+    },
+    labels: ['En cours', 'Accepté', 'Refusé'],
+    colors: ['#3b82f6', '#10b981', '#f43f5e'], // Blue, Emerald, Rose
+    plotOptions: {
+        pie: {
+            donut: {
+                size: '75%',
+                labels: {
+                    show: true,
+                    name: { show: false },
+                    value: {
+                        show: true,
+                        fontSize: '32px',
+                        fontFamily: 'Inter, sans-serif',
+                        fontWeight: 700,
+                        color: '#1e293b',
+                        offsetY: 10,
+                        formatter: function (val: any) {
+                            return val;
+                        }
+                    },
+                    total: {
+                        show: true,
+                        showAlways: true,
+                        label: 'Total',
+                        fontSize: '14px',
+                        fontFamily: 'Inter, sans-serif',
+                        fontWeight: 500,
+                        color: '#94a3b8',
+                        formatter: function (w: any) {
+                            return w.globals.seriesTotals.reduce((a: any, b: any) => {
+                                return a + b
+                            }, 0)
+                        }
+                    }
+                }
+            }
+        }
+    },
+    dataLabels: { enabled: false },
+    stroke: { show: false },
+    legend: { show: false },
+    tooltip: { enabled: true }
+});
+
+
 const goToJobs = () => {
-    router.push('/jobs');
+    router.push('/candidat/jobs');
 };
+
+const competencies = ref([
+    { name: 'Vue.js Framework', score: 92 },
+    { name: 'TypeScript & ES6', score: 88 },
+    { name: 'State Management (Pinia)', score: 85 },
+    { name: 'Component Design', score: 78 },
+    { name: 'Testing Principles', score: 95 }
+]);
 </script>
 
 <style scoped>
@@ -241,360 +411,309 @@ const goToJobs = () => {
   object-fit: cover;
 }
 
-/* Main Content */
 .result-page {
-  padding-top: 64px;
+  padding-top: 0;
   min-height: 100vh;
 }
 
 .result-container {
-  max-width: 900px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 48px 24px;
+  padding: 32px 24px;
 }
 
-/* Success Section */
-.success-section {
-  text-align: center;
-  margin-bottom: 32px;
+.result-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
 }
 
-.success-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 20px;
-  border-radius: 50%;
-  background: #22c55e;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-}
-
-.success-icon i {
-  font-size: 32px;
-  color: white;
-}
-
-.success-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 12px;
-}
-
-.success-message {
-  font-size: 15px;
-  color: #64748b;
-  line-height: 1.6;
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.success-message strong {
-  color: #1e293b;
-  font-weight: 600;
-}
-
-/* Main Card */
-.main-card {
+/* Large Result Card */
+.large-result-card {
   background: white;
-  border-radius: 12px;
+  border-radius: 20px;
   padding: 32px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  margin-bottom: 24px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  border: 1px solid #f1f5f9;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.status-header {
+.card-header-status {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 32px;
 }
 
-.status-label {
-  font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.status-badge {
+.status-badge-large {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.status-badge.success {
-  background: #d1fae5;
+.status-badge-large.success {
+  background: #ecfdf5;
   color: #059669;
+  border: 1px solid #d1fae5;
 }
 
-.status-badge.failure {
-  background: #fee2e2;
+.status-badge-large.failure {
+  background: #fef2f2;
   color: #dc2626;
+  border: 1px solid #fee2e2;
 }
 
-.status-badge i {
-  font-size: 12px;
+.date-badge {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+  background: #f8fafc;
+  padding: 4px 12px;
+  border-radius: 6px;
 }
 
-/* Stats Section */
-.stats-section {
+.main-score-section {
   display: flex;
-  gap: 48px;
   align-items: center;
+  gap: 32px;
+  margin-bottom: 40px;
 }
 
-/* Circular Score */
-.score-circle-container {
-  position: relative;
-  width: 160px;
-  height: 160px;
+.score-circular {
   flex-shrink: 0;
 }
 
-.score-circle {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
-}
-
-.score-bg {
-  fill: none;
-  stroke: #e2e8f0;
-  stroke-width: 12;
-}
-
-.score-progress {
-  fill: none;
-  stroke: #1f5bff;
-  stroke-width: 12;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 1s ease;
-}
-
-.score-content {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-}
-
-.score-value {
-  font-size: 36px;
-  font-weight: 700;
+.score-message h2 {
+  font-size: 24px;
+  font-weight: 800;
   color: #1e293b;
-  line-height: 1;
+  margin: 0 0 8px 0;
 }
 
-.score-label {
-  font-size: 11px;
-  font-weight: 600;
-  color: #94a3b8;
-  letter-spacing: 0.5px;
-  margin-top: 4px;
+.score-message p {
+  font-size: 15px;
+  color: #64748b;
+  line-height: 1.6;
+  margin: 0;
 }
 
-/* Stats Grid */
-.stats-grid {
+.score-message strong {
+  color: #1f5bff;
+}
+
+.stats-grid-large {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 32px;
-  flex: 1;
+  gap: 20px;
+  margin-bottom: 40px;
+  background: #f8fafc;
+  padding: 24px;
+  border-radius: 16px;
 }
 
-.stat-item {
-  text-align: left;
+.stat-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.stat-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
 }
 
 .stat-label {
-  font-size: 11px;
+  display: block;
+  font-size: 12px;
   font-weight: 600;
   color: #94a3b8;
-  letter-spacing: 0.5px;
-  margin-bottom: 8px;
+  margin-bottom: 2px;
 }
 
 .stat-value {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1e293b;
-}
-
-.stat-value.primary {
-  color: #1f5bff;
-}
-
-/* Competencies Card */
-.competencies-card {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-  margin-bottom: 32px;
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  display: block;
   font-size: 16px;
   font-weight: 700;
   color: #1e293b;
-  margin-bottom: 24px;
 }
 
-.card-title i {
-  color: #1f5bff;
+/* Competencies Section */
+.competencies-section {
+  margin-bottom: 32px;
+  padding-top: 24px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.section-title {
   font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-title i {
+  color: #1f5bff;
 }
 
 .competency-list {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 16px;
 }
 
 .competency-item {
-  padding-bottom: 24px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.competency-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .competency-header {
   display: flex;
   justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 8px;
+  align-items: center;
 }
 
 .competency-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: #1e293b;
-  margin: 0;
+  color: #475569;
 }
 
 .competency-score {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   color: #1f5bff;
 }
 
-.competency-description {
-  font-size: 13px;
-  color: #64748b;
-  margin-bottom: 12px;
-}
-
-/* Progress Bar */
 .progress-bar {
   height: 8px;
-  background: #e2e8f0;
-  border-radius: 10px;
+  background: #f1f5f9;
+  border-radius: 4px;
   overflow: hidden;
 }
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, #1f5bff 0%, #3b82f6 100%);
-  border-radius: 10px;
-  transition: width 1s ease;
+  background: linear-gradient(90deg, #3b82f6 0%, #1f5bff 100%);
+  border-radius: 4px;
+  transition: width 1s ease-out;
 }
 
-/* Action Buttons */
-.action-buttons {
+.action-buttons-large {
   display: flex;
   gap: 16px;
-  margin-bottom: 24px;
+  margin-top: auto;
 }
 
-.btn {
-  flex: 1;
-  height: 48px;
-  border: none;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
+/* Small Chart Cards */
+.chart-card-small {
+  background: white;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f1f5f9;
+}
+
+.chart-title-small {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 16px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.btn-primary {
-  background: #1f5bff;
-  color: white;
-  box-shadow: 0 4px 6px rgba(31, 91, 255, 0.2);
-}
-
-.btn-primary:hover {
-  background: #1e4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 10px rgba(31, 91, 255, 0.3);
-}
-
-.btn-secondary {
-  background: white;
-  color: #64748b;
-  border: 1.5px solid #e2e8f0;
-}
-
-.btn-secondary:hover {
-  border-color: #1f5bff;
-  color: #1f5bff;
-  background: #f8fafc;
-}
-
-.btn i {
-  font-size: 16px;
-}
-
-/* Footer Note */
-.footer-note {
-  text-align: center;
-  font-size: 13px;
-  color: #94a3b8;
-}
-
-.footer-note a {
-  color: #1f5bff;
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.footer-note a:hover {
-  text-decoration: underline;
+  gap: 8px;
 }
 
 /* Responsive */
+@media (max-width: 1024px) {
+  .result-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 768px) {
-  .stats-section {
+  .stats-grid-large {
+    grid-template-columns: 1fr;
+  }
+  
+  .main-score-section {
     flex-direction: column;
-    gap: 32px;
+    text-align: center;
   }
+}
 
-  .stats-grid {
-    width: 100%;
+@keyframes badgePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
   }
-
-  .action-buttons {
-    flex-direction: column;
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
   }
+}
 
-  .nav-menu {
-    display: none;
+/* Button Enhancements */
+.btn-explore {
+  position: relative;
+  overflow: hidden;
+  gap: 0.5rem;
+}
+
+.btn-arrow {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-left: auto;
+}
+
+.btn-explore:hover .btn-arrow {
+  transform: translateX(4px);
+}
+
+.btn-explore::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(59, 130, 246, 0.2);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.btn-explore:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Charts Container Grid */
+.charts-container {
+  perspective: 1000px;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
 </style>
