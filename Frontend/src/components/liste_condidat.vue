@@ -130,8 +130,13 @@
                                 <div class="action-buttons-lg">
                                     
                                     <div class="divider-vertical"></div>
-                                    <button class="btn-icon-modern danger" title="Rejeter" @click="updateStatus(candidate, 'REJETÉ')">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                                    <button class="btn-icon-modern danger" title="Rejeter" @click="openDeleteDialog(candidate)">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
                                     </button>
                                 </div>
                             </td>
@@ -165,6 +170,37 @@
                 </div>
             </div>
         </div>
+
+        <!-- Delete Confirmation Dialog -->
+        <div v-if="showDeleteDialog" class="modal-overlay" @click="closeDeleteDialog">
+            <div class="modal-dialog" @click.stop>
+                <div class="modal-icon-wrapper">
+                    <div class="modal-icon-bg">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                        </svg>
+                    </div>
+                </div>
+                
+                <h3 class="modal-title">Rejeter le candidat?</h3>
+                <p class="modal-description">
+                    Cette action rejettera définitivement <strong>{{ candidateToDelete?.name }}</strong> pour le poste de <strong>{{ candidateToDelete?.role }}</strong>. 
+                    Cette action ne peut pas être annulée.
+                </p>
+                
+                <div class="modal-actions">
+                    <button class="modal-btn modal-btn-cancel" @click="closeDeleteDialog">
+                        Annuler
+                    </button>
+                    <button class="modal-btn modal-btn-delete" @click="confirmReject">
+                        Rejeter
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -183,6 +219,8 @@ const selectedStatusFilter = ref('');
 const sortField = ref('score');
 const sortOrder = ref('desc');
 const selectedCandidates = ref<any[]>([]);
+const showDeleteDialog = ref(false);
+const candidateToDelete = ref<any>(null);
 const router = useRouter();
 
 
@@ -296,6 +334,23 @@ const bulkAction = (action: string) => {
     selectedCandidates.value = [];
 };
 
+const openDeleteDialog = (candidate: any) => {
+    showDeleteDialog.value = true;
+    candidateToDelete.value = candidate;
+};
+
+const closeDeleteDialog = () => {
+    showDeleteDialog.value = false;
+    candidateToDelete.value = null;
+};
+
+const confirmReject = () => {
+    if (candidateToDelete.value) {
+        updateStatus(candidateToDelete.value, 'REJETÉ');
+        closeDeleteDialog();
+    }
+};
+
 const exportData = () => {
     // Generate CSV Content
     const headers = ['Nom', 'Poste', 'Score', 'Status', 'Date'];
@@ -343,6 +398,18 @@ const exportData = () => {
     justify-content: space-between;
     align-items: flex-end;
     margin-bottom: 2rem;
+    animation: slideDown 0.4s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .page-header h1 {
@@ -368,34 +435,38 @@ const exportData = () => {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: white;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%);
     border: 1px solid #D1D5DB;
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 1.2rem;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     font-weight: 600;
     color: #374151;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .action-btn-secondary:hover {
-    background: #F9FAFB;
+    background: #FFFFFF;
     border-color: #9CA3AF;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 /* Modern Filters */
 .filters-card {
-    background: white;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    padding: 1rem;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 16px;
+    padding: 1.25rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
     margin-bottom: 1.5rem;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    animation: fadeIn 0.5s ease-out;
 }
 
 .search-wrap-lg {
@@ -440,24 +511,26 @@ const exportData = () => {
     appearance: none;
     background: white;
     border: 1px solid #E5E7EB;
-    padding: 0.6rem 2.5rem 0.6rem 1rem;
+    padding: 0.65rem 2.5rem 0.65rem 1rem;
     border-radius: 8px;
-    font-size: 0.85rem;
+    font-size: 0.875rem;
     color: #374151;
     font-weight: 500;
     cursor: pointer;
     outline: none;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     min-width: 160px;
 }
 
 .filter-select-modern:hover {
     border-color: #D1D5DB;
+    background: #F9FAFB;
 }
 
 .filter-select-modern:focus {
     border-color: #2563EB;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+    background: white;
 }
 
 .select-arrow {
@@ -496,14 +569,20 @@ const exportData = () => {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     background: white;
     color: white;
 }
 
-.checkbox-wrapper.checked {
-    background: #2563EB;
+.checkbox-wrapper:hover {
     border-color: #2563EB;
+    transform: scale(1.1);
+}
+
+.checkbox-wrapper.checked {
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    border-color: #2563EB;
+    transform: scale(1.05);
 }
 
 .bulk-btn.primary {
@@ -531,10 +610,10 @@ const exportData = () => {
 .table-card {
     padding: 0;
     overflow: hidden;
-    background: white;
-    border: 1px solid #E5E7EB;
-    border-radius: 12px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+    background: linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .table-responsive {
@@ -564,8 +643,37 @@ const exportData = () => {
     vertical-align: middle;
 }
 
+.modern-table tbody tr {
+    animation: fadeInRow 0.4s ease-out backwards;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.modern-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
+.modern-table tbody tr:nth-child(2) { animation-delay: 0.1s; }
+.modern-table tbody tr:nth-child(3) { animation-delay: 0.15s; }
+.modern-table tbody tr:nth-child(4) { animation-delay: 0.2s; }
+.modern-table tbody tr:nth-child(5) { animation-delay: 0.25s; }
+.modern-table tbody tr:nth-child(6) { animation-delay: 0.3s; }
+.modern-table tbody tr:nth-child(7) { animation-delay: 0.35s; }
+.modern-table tbody tr:nth-child(8) { animation-delay: 0.4s; }
+
 .modern-table tr:hover td {
     background: #F9FAFB;
+}
+
+.modern-table tr.row-selected td {
+    background: #EFF6FF !important;
 }
 
 .candidate-profile {
@@ -660,7 +768,7 @@ const exportData = () => {
     fill: none;
     stroke-width: 3;
     stroke-linecap: round;
-    transition: stroke-dasharray 0.5s ease;
+    transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .green-fill .circle { stroke: #10B981; }
 .blue-fill .circle { stroke: #2563EB; }
@@ -815,5 +923,121 @@ const exportData = () => {
     opacity: 0.5;
     cursor: not-allowed;
     background: #F9FAFB;
+}
+
+/* Modal Dialog Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.modal-dialog {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUpFade 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUpFade {
+    from {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.modal-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-icon-bg {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #DC2626;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    text-align: center;
+    margin: 0 0 1rem 0;
+}
+
+.modal-description {
+    color: #6B7280;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    text-align: center;
+    margin: 0 0 2rem 0;
+}
+
+.modal-description strong {
+    color: #374151;
+    font-weight: 600;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.modal-btn {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border: none;
+}
+
+.modal-btn-cancel {
+    background: #F3F4F6;
+    color: #374151;
+}
+
+.modal-btn-cancel:hover {
+    background: #E5E7EB;
+    transform: translateY(-1px);
+}
+
+.modal-btn-delete {
+    background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.modal-btn-delete:hover {
+    box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+    transform: translateY(-2px);
+}
+
+.modal-btn-delete:active {
+    transform: translateY(0);
 }
 </style>

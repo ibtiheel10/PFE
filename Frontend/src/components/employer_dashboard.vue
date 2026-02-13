@@ -1,80 +1,132 @@
 <template>
-  <div class="dashboard-container">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="logo-area">
-        <div class="logo-icon">
-          <img src="../assets/logo.png" alt="Skillvia Logo" width="28" height="28" />
+  <div class="flex h-screen bg-[#F3F4F6] font-[Inter]">
+    <!-- SIDEBAR -->
+    <aside 
+      class="bg-white border-r border-gray-200 flex flex-col justify-between transition-all duration-300"
+      :class="isSidebarCollapsed ? 'w-20' : 'w-64'"
+    >
+      <div>
+        <!-- Logo -->
+        <div class="h-16 flex items-center border-b border-gray-100 overflow-hidden whitespace-nowrap"
+             :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
+          <div class="flex items-center gap-3">
+             <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30 flex-shrink-0">
+                S
+             </div>
+             <div v-if="!isSidebarCollapsed" class="flex flex-col transition-opacity duration-200">
+                <span class="font-bold text-gray-900 text-lg tracking-tight">Skillvia</span>
+                <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Recruteur</span>
+             </div>
+          </div>
         </div>
-        <div class="logo-text">
-          <span class="brand">Skillvia</span>
-          <span class="sub-brand">Recruitement Portal</span>
-        </div>
+
+        <!-- Nav -->
+        <nav class="p-4 space-y-1">
+          <a 
+             href="#"
+             v-for="item in navItems" 
+             :key="item.name"
+             @click.prevent="activeNav = item.name"
+             class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap"
+             :class="[
+                activeNav === item.name ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
+                isSidebarCollapsed ? 'justify-center px-0' : ''
+             ]"
+             :title="isSidebarCollapsed ? item.name : ''"
+          >
+            <component 
+              :is="item.icon" 
+              class="w-5 h-5 transition-colors flex-shrink-0"
+              :class="activeNav === item.name ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'" 
+            />
+            <span v-if="!isSidebarCollapsed" class="font-medium text-sm transition-opacity duration-200">{{ item.name }}</span>
+          </a>
+        </nav>
       </div>
 
-      <nav class="nav-menu">
-        <a href="#" 
-           v-for="item in navItems" 
-           :key="item.name"
-           class="nav-item"
-           :class="{ active: activeNav === item.name }"
-           @click.prevent="handleNavClick(item)">
-          <component :is="item.icon" class="nav-icon" />
-          {{ item.name }}
-        </a>
-      </nav>
-      <div class="sidebar-footer">
-          <button class="new-post-btn" @click="createNewPost">
-             <span style="font-size: 1.2rem; line-height: 0; margin-bottom: 2px;">+</span>
-              Nouveau poste
-          </button>
-      </div>
+       <!-- Footer Actions -->
+       <div class="p-4 border-t border-gray-100">
+            <button 
+                @click="createNewPost"
+                class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg transition-all shadow-lg shadow-blue-500/30 active:scale-95"
+                :class="isSidebarCollapsed ? 'px-0' : 'px-4'"
+            >
+                <PlusIcon class="w-5 h-5" />
+                <span v-if="!isSidebarCollapsed" class="font-semibold text-sm">Nouveau poste</span>
+            </button>
+       </div>
     </aside>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <!-- Top Bar -->
-        <header class="top-bar">
-            <div class="search-bar">
-                <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                <input type="text" v-model="searchQuery" placeholder="Rechercher un candidat ou un poste...">
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden relative">
+      <!-- HEADER -->
+      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 transition-all duration-300">
+        <!-- Left Side: Toggle & Title -->
+        <div class="flex items-center gap-4">
+            <button @click="toggleSidebar" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none ring-offset-2 focus:ring-2 ring-blue-500/20">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="9" y1="3" x2="9" y2="21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+
+            <h1 class="text-xl font-bold text-gray-800">{{ activeNav }}</h1>
+        </div>
+
+        <!-- Right Side -->
+        <div class="flex items-center gap-6">
+            <!-- Search -->
+            <div class="relative group hidden md:block">
+                <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-blue-500 transition-colors" />
+                <input 
+                  type="text" 
+                  v-model="searchQuery" 
+                  placeholder="Rechercher..." 
+                  class="pl-10 pr-4 py-2 w-64 bg-gray-50 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                />
             </div>
             
-            <div class="user-actions">
-                <button class="icon-btn" @click="toggleNotifications">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4B5563" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                    <span v-if="hasNotifications" class="notification-dot"></span>
+            <!-- Notifications -->
+            <button @click="toggleNotifications" class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
+                <BellIcon class="w-6 h-6" />
+                <span v-if="hasNotifications" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+            </button>
+
+            <!-- Profile -->
+            <div class="relative">
+                <button @click="toggleProfileMenu" class="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full border border-transparent hover:border-gray-200 transition-all">
+                    <img src="https://i.pravatar.cc/150?u=sarah" alt="User" class="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm" />
+                    <div class="hidden md:flex flex-col items-start">
+                        <span class="text-sm font-bold text-gray-700 leading-none">Sarah Meyer</span>
+                        <span class="text-[11px] font-medium text-blue-600 mt-1">RH Manager</span>
+                    </div>
+                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
                 </button>
-                <div class="user-profile-container">
-                    <div class="user-profile" @click="toggleProfileMenu">
-                        <div class="user-text">
-                            <span class="user-name">Sarah Meyer</span>
-                            <span class="user-role">RH Manager</span>
-                        </div>
-                        <img src="https://i.pravatar.cc/150?u=sarah" alt="User" class="avatar">
-                    </div>
 
-                    <!-- Profile Dropdown -->
-                    <div v-if="showProfileMenu" class="profile-dropdown">
-                        <div class="dropdown-header">
-                            <span class="d-name">Sarah Meyer</span>
-                            <span class="d-role">RH Manager</span>
+                 <!-- Dropdown -->
+                <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
+                    <div v-if="showProfileMenu" class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                        <div class="px-4 py-3 border-b border-gray-50">
+                            <p class="text-sm font-bold text-gray-900">Sarah Meyer</p>
+                            <p class="text-xs text-gray-500 truncate">sarah.meyer@skillvia.com</p>
                         </div>
-                        <div class="dropdown-divider"></div>
-                        <a href="#" class="dropdown-item">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                            Paramètres
+                        <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                            <UserCircleIcon class="w-4 h-4" /> Profil
                         </a>
-                        <a href="#" class="dropdown-item logout" @click.prevent="handleLogout">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-                            Se déconnecter
+                        <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                            <Cog6ToothIcon class="w-4 h-4" /> Paramètres
+                        </a>
+                         <div class="h-px bg-gray-100 my-1"></div>
+                        <a href="#" @click.prevent="handleLogout" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                            <ArrowRightOnRectangleIcon class="w-4 h-4" /> Se déconnecter
                         </a>
                     </div>
-                </div>
+                </transition>
             </div>
-        </header>
+        </div>
+      </header>
 
-        <div class="scroll-wrapper">
+      <div class="flex-1 overflow-y-auto bg-[#F3F4F6] p-6">
             <div v-if="activeNav === 'Tableau de bord'" class="content-container">
                 <!-- Header -->
                 <div class="page-header">
@@ -87,65 +139,91 @@
 
                 <!-- Stats Cards -->
                 <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-icon-bg bg-blue">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                    <div class="stat-card animate-fade-in-up" style="animation-delay: 0.1s">
+                        <div class="stat-header">
+                            <div class="stat-icon-bg bg-blue">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+                            </div>
+                            <span class="trend-badge trend-positive">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                </svg>
+                                +12.5%
+                            </span>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">Postes Actifs</span>
+                            <span class="stat-label">Total Revenue</span>
                             <div class="stat-value-row">
                                 <span class="stat-num">12</span>
+                                <span class="stat-unit">Postes</span>
                             </div>
+                            <p class="stat-description">Trending up this month</p>
                         </div>
-                        
                     </div>
 
-                    <div class="stat-card">
-                        <div class="stat-icon-bg bg-purple">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9333EA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                    <div class="stat-card animate-fade-in-up" style="animation-delay: 0.2s">
+                        <div class="stat-header">
+                            <div class="stat-icon-bg bg-purple">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            </div>
+                            <span class="trend-badge trend-negative">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
+                                </svg>
+                                -30%
+                            </span>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">Candidats Évalués</span>
+                            <span class="stat-label">New Customers</span>
                             <div class="stat-value-row">
-                                <span class="stat-num">450</span>
+                                <span class="stat-num">1,234</span>
                             </div>
+                            <p class="stat-description">Down 20% this period</p>
                         </div>
-                       
                     </div>
 
-                    <div class="stat-card">
-                        <div class="stat-icon-bg bg-orange">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                    <div class="stat-card animate-fade-in-up" style="animation-delay: 0.3s">
+                        <div class="stat-header">
+                            <div class="stat-icon-bg bg-orange">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6M23 11h-6"></path></svg>
+                            </div>
+                            <span class="trend-badge trend-positive">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                </svg>
+                                +12.5%
+                            </span>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">Score MCQ Moyen</span>
+                            <span class="stat-label">Active Accounts</span>
                             <div class="stat-value-row">
-                                <span class="stat-num">78%</span>
+                                <span class="stat-num">45,678</span>
                             </div>
+                            <p class="stat-description">Strong user retention</p>
                         </div>
-                        
                     </div>
 
-                    <div class="stat-card">
-                        <div class="stat-icon-bg bg-green">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <!-- Lignes de la liste -->
-        <line x1="8" y1="6" x2="20" y2="6"></line>
-        <line x1="8" y1="12" x2="20" y2="12"></line>
-        <line x1="8" y1="18" x2="20" y2="18"></line>
-        <!-- Petits cercles pour les bullets -->
-        <circle cx="4" cy="6" r="1"></circle>
-        <circle cx="4" cy="12" r="1"></circle>
-        <circle cx="4" cy="18" r="1"></circle>
-    </svg>
-</div>
-                        <div class="stat-content">
-                            <span class="stat-label">Candidatures à traiter</span>
-                            <div class="stat-value-row">
-                                <span class="stat-num">14</span>
+                    <div class="stat-card animate-fade-in-up" style="animation-delay: 0.4s">
+                        <div class="stat-header">
+                            <div class="stat-icon-bg bg-green">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                                </svg>
                             </div>
+                            <span class="trend-badge trend-positive">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                                </svg>
+                                +4.6%
+                            </span>
                         </div>
-                        
+                        <div class="stat-content">
+                            <span class="stat-label">Growth Rate</span>
+                            <div class="stat-value-row">
+                                <span class="stat-num">4.5%</span>
+                            </div>
+                            <p class="stat-description">Steady performance increase</p>
+                        </div>
                     </div>
                 </div>
 
@@ -157,33 +235,61 @@
                         <Top5Candidates :candidates="candidatesSource" @view-all="activeNav = 'Candidats'" />
 
                         <!-- Score Chart -->
-                        <div class="card chart-card">
-                            <div class="card-header">
-                                <h3>Répartition des Scores</h3>
-                                <div class="chart-legend">
-                                    <span class="big-score">78.4%</span>
+                        <div class="card chart-card animate-fade-in-up" style="animation-delay: 0.5s">
+                            <div class="card-header-modern">
+                                <div>
+                                    <h3>Total Visitors</h3>
+                                    <p class="chart-subtitle-modern">Total for the last 3 months</p>
+                                </div>
+                                <div class="time-period-tabs">
+                                    <button class="period-tab">Last 3 months</button>
+                                    <button class="period-tab active">Last 30 days</button>
+                                    <button class="period-tab">Last 7 days</button>
                                 </div>
                             </div>
-                            <p class="chart-subtitle">Analyse globale des 450 derniers candidats</p>
                             
-                            <div class="chart-area">
-                                <!-- Simulated Chart with CSS -->
-                                 <div class="simple-chart">
-                                    <div class="chart-bar" style="height: 15%"></div>
-                                    <div class="chart-bar" style="height: 25%"></div>
-                                    <div class="chart-bar" style="height: 40%"></div>
-                                    <div class="chart-bar active" style="height: 65%"></div>
-                                    <div class="chart-bar" style="height: 30%"></div>
-                                    <div class="chart-bar" style="height: 10%"></div>
-                                 </div>
-                                 <div class="chart-xaxis">
-                                    <span>&lt;50%</span>
-                                    <span>50-60%</span>
-                                    <span>60-70%</span>
-                                    <span>70-80%</span>
-                                    <span>80-90%</span>
-                                    <span>90%+</span>
-                                 </div>
+                            <div class="chart-area-modern">
+                                <!-- Smooth Wave Chart -->
+                                <svg viewBox="0 0 700 200" preserveAspectRatio="none" class="wave-chart">
+                                    <defs>
+                                        <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                            <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0.3" />
+                                            <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:0" />
+                                        </linearGradient>
+                                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                            <stop offset="0%" style="stop-color:#2563EB" />
+                                            <stop offset="100%" style="stop-color:#3B82F6" />
+                                        </linearGradient>
+                                    </defs>
+                                    
+                                    <!-- Area fill -->
+                                    <path d="M0,180 L50,150 L100,170 L150,140 L200,120 L250,110 L300,90 L350,100 L400,80 L450,70 L500,85 L550,75 L600,90 L650,80 L700,100 L700,200 L0,200 Z" 
+                                          fill="url(#areaGradient)" 
+                                          class="chart-area-path"/>
+                                    
+                                    <!-- Line stroke -->
+                                    <path d="M0,180 L50,150 L100,170 L150,140 L200,120 L250,110 L300,90 L350,100 L400,80 L450,70 L500,85 L550,75 L600,90 L650,80 L700,100" 
+                                          fill="none" 
+                                          stroke="url(#lineGradient)" 
+                                          stroke-width="3" 
+                                          stroke-linecap="round"
+                                          class="chart-line-path"/>
+                                    
+                                    <!-- Dot indicators -->
+                                    <circle cx="450" cy="70" r="5" fill="#2563EB" class="chart-dot pulse-dot"/>
+                                    <circle cx="450" cy="70" r="3" fill="#FFFFFF"/>
+                                </svg>
+                                
+                                <!-- X-axis labels -->
+                                <div class="chart-labels">
+                                    <span>Jun 24</span>
+                                    <span>Jun 25</span>
+                                    <span>Jun 26</span>
+                                    <span>Jun 27</span>
+                                    <span>Jun 28</span>
+                                    <span>Jun 29</span>
+                                    <span>Jun 30</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -238,7 +344,9 @@
             <!-- Full Pages for other tabs -->
             <ListePosteEntreprise 
                 v-else-if="activeNav === 'Mes Postes'" 
-                :searchQuery="searchQuery" 
+                :searchQuery="searchQuery"
+                :openModal="shouldOpenModal"
+                @modal-opened="shouldOpenModal = false"
             />
 
             <ListeCondidat 
@@ -261,19 +369,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref, h, computed } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { MockData } from '../services/MockData';
 import Top5Candidates from './top_5_condidat.vue';
 import ListeCondidat from './liste_condidat.vue';
 import ListePosteEntreprise from './liste_poste_entreprise.vue';
+import { 
+    Squares2X2Icon, 
+    BriefcaseIcon, 
+    UsersIcon, 
+    PlusIcon,
+    MagnifyingGlassIcon, 
+    BellIcon, 
+    ChevronDownIcon,
+    UserCircleIcon, 
+    Cog6ToothIcon, 
+    ArrowRightOnRectangleIcon
+} from '@heroicons/vue/24/outline';
 
 // State
 const activeNav = ref('Tableau de bord');
 const searchQuery = ref('');
 const hasNotifications = ref(true);
 const showProfileMenu = ref(false);
+const isSidebarCollapsed = ref(false);
+const shouldOpenModal = ref(false);
 
+const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
 const toggleProfileMenu = () => {
     showProfileMenu.value = !showProfileMenu.value;
 };
@@ -292,28 +415,23 @@ const handleNavClick = (item: { name: string; icon: any }) => {
 const router = useRouter();
 
 const createNewPost = () => {
-    router.push('/ajout-poste');
+    shouldOpenModal.value = true;
+    activeNav.value = 'Mes Postes';
 };
 
 const goToJobDetails = (id: number) => {
     router.push(`/job-details/${id}`);
 };
 
-// Search is now real-time via computed properties
-/*
-const search = () => {
-    // Search is now real-time via computed properties
-};
-*/
-
 const toggleNotifications = () => {
     hasNotifications.value = !hasNotifications.value;
 };
-// Navigation Data using Functional Components for clean implementation
+
+// Navigation Data
 const navItems = [
-    { name: 'Tableau de bord', icon: h('svg', { xmlns:"http://www.w3.org/2000/svg", width:"15", height:"15", viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"2", strokeLinecap:"round", strokeLinejoin:"round" }, [h('rect',{x:3,y:3,width:7,height:7}),h('rect',{x:14,y:3,width:7,height:7}),h('rect',{x:14,y:14,width:7,height:7}),h('rect',{x:3,y:14,width:7,height:7})]) },
-    { name: 'Mes Postes', icon: h('svg', { xmlns:"http://www.w3.org/2000/svg", width:"15", height:"15", viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"1.5", strokeLinecap:"round", strokeLinejoin:"round" }, [h('rect',{x:2,y:7,width:20,height:14,rx:2,ry:2}),h('path',{d:"M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"})]) },
-    { name: 'Candidats', icon: h('svg', { xmlns:"http://www.w3.org/2000/svg", width:"15", height:"15", viewBox:"0 0 24 24", fill:"none", stroke:"currentColor", strokeWidth:"1.5", strokeLinecap:"round", strokeLinejoin:"round" }, [h('path',{d:"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"}),h('circle',{cx:9,cy:7,r:4}),h('path',{d:"M23 21v-2a4 4 0 0 0-3-3.87"}),h('path',{d:"M16 3.13a4 4 0 0 1 0 7.75"})]) },
+    { name: 'Tableau de bord', icon: Squares2X2Icon },
+    { name: 'Mes Postes', icon: BriefcaseIcon },
+    { name: 'Candidats', icon: UsersIcon },
 ];
 
 
@@ -369,435 +487,58 @@ const displayJobs = computed(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-
-/* Global Reset & Layout */
-* {
-    box-sizing: border-box;
-    /* transition: all 0.2s ease-in-out; Optional: adds global smoothness but can be heavy */ 
+/* Additional custom animations */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.dashboard-container {
-    display: flex;
-    height: 100vh;
-    width: 100%;
-    background-color: #F8F9FB;
-    font-family: 'Inter', sans-serif;
-    color: #1F2937;
-    overflow: hidden;
-    font-size: 0.85rem; /* Reduced base font size */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.8;
+    }
 }
 
-/* Sidebar */
-.sidebar {
-    width: 240px; /* Condensed width */
-    background: #FFFFFF;
-    border-right: 1px solid #E5E7EB;
-    display: flex;
-    flex-direction: column;
-    padding: 1.25rem 0.75rem; /* Tighter padding */
-    flex-shrink: 0;
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
 }
 
-.logo-area {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 2rem;
-    padding-left: 0.5rem;
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
 }
 
-    .brand {
-    font-weight: 800; /* Bolder */
-    font-size: 0.95rem;
-    color: #111827;
-    display: block;
-    line-height: 1.1;
-    letter-spacing: -0.01em;
-}
-.sub-brand {
-    font-size: 0.65rem;
-    color: #6B7280;
-    font-weight: 500;
+.animate-fade-in {
+    animation: fadeInUp 0.3s ease-out forwards;
 }
 
-.nav-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem; /* Tighter gap */
-    flex: 1;
+/* Hide scrollbar for cleaner look */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
 }
-
-.nav-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0.6rem 0.75rem; /* Reduced padding */
-    text-decoration: none;
-    color: #6B7280;
-    font-weight: 500;
-    border-radius: 6px;
-    transition: all 0.15s;
-    font-size: 0.85rem; /* Reduced */
-    cursor: pointer;
-}
-
-.nav-item:hover {
-    background-color: #F3F4F6;
-    color: #111827;
-}
-
-.nav-item.active {
-    background-color: #EFF6FF;
-    color: #2563EB;
-    font-weight: 600;
-}
-
-.nav-item-bottom {
-    margin-top: 1.5rem;
-    border-top: 1px solid #F3F4F6;
-    padding-top: 1rem;
-}
-
-.nav-icon {
-    width: 15px; /* Smaller icons matching design */
-    height: 15px;
-}
-
-.sidebar-footer {
-    margin-top: auto;
-}
-
-.new-post-btn {
-    width: 100%;
-    background-color: #2563EB;
-    color: white;
-    border: none;
-    padding: 0.6rem; /* Reduced */
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 8px;
-    transition: background-color 0.2s;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-    font-size: 0.85rem;
-}
-
-.new-post-btn:hover {
-    background-color: #1D4ED8;
-}
-
-/* Main Content */
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    overflow: hidden;
-}
-
-.top-bar {
-    height: 60px; /* Reduced height */
-    background: #FFFFFF;
-    border-bottom: 1px solid #E5E7EB;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 1.5rem; /* Reduced padding */
-    flex-shrink: 0;
-}
-
-.search-bar {
-    background-color: #F3F4F6;
-    border-radius: 50px;
-    padding: 0.4rem 1rem; /* Reduced padding */
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    width: 320px; /* Reduced width */
-    height: 36px;
-}
-
-.search-bar input {
-    border: none;
+::-webkit-scrollbar-track {
     background: transparent;
-    outline: none;
-    width: 100%;
-    font-size: 0.85rem;
-    color: #374151;
 }
-
-.user-actions {
-    display: flex;
-    align-items: center;
-    gap: 1.25rem;
+::-webkit-scrollbar-thumb {
+    background: #E5E7EB;
+    border-radius: 3px;
 }
-
-.icon-btn {
-    background: none;
-    border: none;
-    cursor: pointer;
-    position: relative;
-    padding: 5px;
-    display: flex;
-    align-items: center;
-}
-
-.notification-dot {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    width: 8px;
-    height: 8px;
-    background-color: #EF4444;
-    border-radius: 50%;
-    border: 1px solid white;
-}
-
-.user-profile-container {
-    position: relative;
-}
-.search-wrap {
-  display: flex;
-  align-items: center;
-  width: 100%;          /* prend toute la largeur du conteneur */
-  max-width: 500px;     /* largeur max */
-  background-color: #F3F4F6; /* gris clair style SaaS */
-  padding: 8px 12px;
-  border-radius: 8px;
-  border: 1px solid #D1D5DB; /* bordure légère */
-  gap: 8px;
-  transition: box-shadow 0.2s;
-}
-
-.search-wrap:hover {
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-
-.search-icon {
-  flex-shrink: 0;
-}
-
-.search-input {
-  border: none;
-  outline: none;
-  width: 100%;
-  font-size: 14px;
-  background-color: transparent;
-  color: #111827;
-}
-
-.search-input::placeholder {
-  color: #9CA3AF;
-}
-
-.user-profile {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 8px;
-    transition: background-color 0.2s;
-}
-
-.user-profile:hover {
-    background-color: #F3F4F6;
-}
-
-.user-text {
-    text-align: right;
-}
-
-.user-name {
-    display: block;
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #111827;
-}
-
-.user-role {
-    display: block;
-    font-size: 0.7rem;
-    color: #6B7280;
-}
-
-.avatar {
-    width: 32px; /* Smaller avatar */
-    height: 32px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 1px solid #E5E7EB;
-}
-
-/* Profile Dropdown */
-.profile-dropdown {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    width: 200px;
-    background: #FFFFFF;
-    border-radius: 10px;
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    border: 1px solid #E5E7EB;
-    z-index: 1000;
-    padding: 0.5rem 0;
-}
-
-.dropdown-header {
-    padding: 0.75rem 1rem;
-}
-
-.d-name {
-    display: block;
-    font-weight: 600;
-    font-size: 0.85rem;
-    color: #111827;
-}
-
-
-/* Filters & Bulk Actions */
-.filters-bar {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin-bottom: 1.25rem;
-    background: white;
-    padding: 0.75rem;
-    border-radius: 8px;
-    border: 1px solid #E5E7EB;
-}
-
-.filter-select {
-    padding: 0.4rem 2rem 0.4rem 0.75rem;
-    border-radius: 6px;
-    border: 1px solid #E5E7EB;
-    background-color: #F9FAFB;
-    font-size: 0.85rem;
-    color: #374151;
-    outline: none;
-    cursor: pointer;
-    min-width: 140px;
-}
-
-.header-actions-right {
-    display: flex;
-    gap: 10px;
-}
-
-.bulk-actions-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background-color: #EFF6FF;
-    border: 1px solid #BFDBFE;
-    color: #1E3A8A;
-    padding: 0.75rem 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    animation: slideDown 0.2s ease-out;
-}
-
-@keyframes slideDown {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.selected-count {
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.bulk-btns {
-    display: flex;
-    gap: 10px;
-}
-
-.bulk-btn {
-    background-color: white;
-    border: 1px solid #BFDBFE;
-    color: #2563EB;
-    padding: 0.4rem 1rem;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 0.8rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.bulk-btn:hover {
-    background-color: #DBEAFE;
-}
-
-/* Table Enhancements */
-.sortable {
-    cursor: pointer;
-    user-select: none;
-    transition: background-color 0.1s;
-}
-
-
-
-.action-buttons {
-    display: flex;
-    gap: 6px;
-}
-
-.btn-icon-xs {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    border-radius: 6px;
-    border: 1px solid #E5E7EB;
-    background: white;
-    color: #6B7280;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.btn-icon-xs:hover {
-    background-color: #F3F4F6;
-    color: #374151;
-}
-
-.btn-icon-xs.success:hover {
-    background-color: #ECFDF5;
-    color: #059669;
-    border-color: #A7F3D0;
-}
-
-.btn-icon-xs.danger:hover {
-    background-color: #FEF2F2;
-    color: #DC2626;
-    border-color: #FECACA;
-}
-
-
-.dropdown-divider {
-    height: 1px;
-    background-color: #F3F4F6;
-    margin: 0.25rem 0;
-}
-
-.dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 0.6rem 1rem;
-    font-size: 0.85rem;
-    color: #4B5563;
-    text-decoration: none;
-    transition: all 0.2s;
-}
-
-.dropdown-item:hover {
-    background-color: #F9FAFB;
-    color: #2563EB;
+::-webkit-scrollbar-thumb:hover {
+    background: #D1D5DB;
 }
 
 .dropdown-item.logout {
@@ -868,51 +609,134 @@ const displayJobs = computed(() => {
 }
 
 .stat-card {
-    background: white;
-    padding: 1.25rem; /* Reduced */
-    border-radius: 12px;
-    border: 1px solid #E5E7EB;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%);
+    padding: 1.5rem;
+    border-radius: 16px;
+    border: 1px solid rgba(229, 231, 235, 0.8);
     position: relative;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
-    min-height: 120px;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    transition: transform 0.2s;
+    gap: 1rem;
+    min-height: 140px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0;
+    animation: fadeInUp 0.6s ease-out forwards;
 }
 
 .stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08), 0 4px 8px rgba(0, 0, 0, 0.04);
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
 }
 
 .stat-icon-bg {
-    width: 36px;
-    height: 36px;
-    border-radius: 8px;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-bottom: 0.8rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
-.bg-blue { background: #EFF6FF; }
-.bg-purple { background: #FAF5FF; }
-.bg-orange { background: #FFF7ED; }
-.bg-green { background: #ECFDF5; }
+
+.stat-card:hover .stat-icon-bg {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+.bg-blue { 
+    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+}
+.bg-blue svg { stroke: #FFFFFF; }
+
+.bg-purple { 
+    background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);
+}
+.bg-purple svg { stroke: #FFFFFF; }
+
+.bg-orange { 
+    background: linear-gradient(135deg, #FB923C 0%, #F97316 100%);
+}
+.bg-orange svg { stroke: #FFFFFF; }
+
+.bg-green { 
+    background: linear-gradient(135deg, #34D399 0%, #10B981 100%);
+}
+.bg-green svg { stroke: #FFFFFF; }
+
+.trend-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    transition: all 0.2s;
+}
+
+.trend-positive {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+}
+
+.trend-positive svg {
+    stroke: #059669;
+}
+
+.trend-negative {
+    background: rgba(239, 68, 68, 0.1);
+    color: #DC2626;
+}
+
+.trend-negative svg {
+    stroke: #DC2626;
+    transform: scaleY(-1);
+}
 
 .stat-label {
-    color: #6B7280;
+    color: #9CA3AF;
     font-size: 0.75rem;
     font-weight: 600;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
     display: block;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.stat-value-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
 }
 
 .stat-num {
-    font-size: 1.5rem;
-    font-weight: 700;
+    font-size: 1.75rem;
+    font-weight: 800;
     color: #111827;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
+    line-height: 1;
+}
+
+.stat-unit {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #6B7280;
+}
+
+.stat-description {
+    font-size: 0.7rem;
+    color: #9CA3AF;
+    margin: 0;
+    font-weight: 500;
 }
 
 .trend-badge {
@@ -992,7 +816,113 @@ const displayJobs = computed(() => {
 
 /* Chart Card */
 .chart-card {
-    min-height: 280px;
+    min-height: 350px;
+    padding: 2rem;
+}
+
+.card-header-modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+}
+
+.card-header-modern h3 {
+    margin: 0 0 0.25rem 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+}
+
+.chart-subtitle-modern {
+    font-size: 0.8rem;
+    color: #9CA3AF;
+    margin: 0;
+}
+
+.time-period-tabs {
+    display: flex;
+    gap: 0.5rem;
+    background: #F3F4F6;
+    padding: 0.25rem;
+    border-radius: 8px;
+}
+
+.period-tab {
+    padding: 0.5rem 1rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 6px;
+    background: transparent;
+    color: #6B7280;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.period-tab:hover {
+    color: #374151;
+}
+
+.period-tab.active {
+    background: #FFFFFF;
+    color: #111827;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.chart-area-modern {
+    position: relative;
+}
+
+.wave-chart {
+    width: 100%;
+    height: 200px;
+    margin-bottom: 1rem;
+}
+
+.chart-area-path {
+    animation: fillChart 1.5s ease-out forwards;
+}
+
+.chart-line-path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: drawLine 2s ease-out forwards;
+}
+
+@keyframes fillChart {
+    from {
+        opacity: 0;
+        transform: scaleY(0);
+        transform-origin: bottom;
+    }
+    to {
+        opacity: 1;
+        transform: scaleY(1);
+    }
+}
+
+@keyframes drawLine {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.pulse-dot {
+    animation: pulse 2s infinite;
+}
+
+.chart-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 1rem;
+}
+
+.chart-labels span {
+    font-size: 0.7rem;
+    color: #9CA3AF;
+    font-weight: 500;
 }
 
 .big-score {
@@ -1014,40 +944,6 @@ const displayJobs = computed(() => {
     margin-bottom: 1.5rem;
 }
 
-.chart-area {
-    display: flex;
-    flex-direction: column;
-    height: 150px;
-}
-
-.simple-chart {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    height: 100%;
-    padding-bottom: 8px;
-    border-bottom: 1px solid #E5E7EB;
-}
-
-.chart-bar {
-    width: 12%;
-    background: #F3F4F6;
-    border-radius: 3px 3px 0 0;
-    transition: all 0.3s;
-}
-
-.chart-bar:hover, .chart-bar.active {
-    background: #2563EB;
-}
-
-.chart-xaxis {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 8px;
-    font-size: 0.65rem;
-    color: #9CA3AF;
-}
-
 /* Right Col: Jobs */
 .badge-total {
     font-size: 0.7rem;
@@ -1064,15 +960,17 @@ const displayJobs = computed(() => {
 
 .job-item {
     border: 1px solid #F3F4F6;
-    border-radius: 8px;
-    padding: 0.8rem;
-    transition: all 0.2s;
+    border-radius: 12px;
+    padding: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     cursor: pointer;
+    background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%);
 }
 
 .job-item:hover {
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    border-color: #E5E7EB;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    border-color: rgba(37, 99, 235, 0.2);
+    transform: translateY(-2px);
 }
 
 .job-header {
