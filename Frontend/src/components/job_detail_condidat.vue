@@ -35,13 +35,7 @@
     </header>
 
     <!-- Breadcrumb -->
-    <div class="breadcrumb">
-      <div class="container">
-        <span class="text-gray">Offres d'emploi</span>
-        <span class="separator">/</span>
-        <span class="current">Senior Full-stack Developer</span>
-      </div>
-    </div>
+    
 
     <main class="main-body container">
       <!-- Header Card -->

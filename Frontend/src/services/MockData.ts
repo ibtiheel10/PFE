@@ -13,11 +13,16 @@ export interface Job {
         responsibilities: string[];
     };
     skills: string[];
-    mcqDuration: number;
     icon: string;
     iconColor: string;
     postedTime: string;
     tags: string[];
+    daysLeft?: number;
+    mcqDuration: number;
+    mcqQuestionsCount: number;
+    mcqPassScore: number;
+    testDate?: string;
+    testTime?: string;
 }
 
 export interface Application {
@@ -37,18 +42,22 @@ export const MockData = reactive({
             company: 'TechCorp',
             location: 'Paris, FR (Remote)',
             category: 'IT',
-            salary: '€55k - €75k',
             description: {
                 intro: 'Join our core platform team to build scalable APIs.',
                 mission: 'Architect and build modern web applications.',
                 responsibilities: ['Develop Vue.js frontends', 'Design Node.js APIs', 'Mentor juniors']
             },
             skills: ['Vue.js', 'Node.js', 'TypeScript', 'AWS'],
-            mcqDuration: 25,
             icon: 'fa-solid fa-code',
             iconColor: '#3b82f6',
             postedTime: '2 days ago',
-            tags: ['FULL TIME', 'REMOTE']
+            tags: ['FULL TIME', 'REMOTE'],
+            daysLeft: 2,
+            mcqDuration: 25,
+            mcqQuestionsCount: 20,
+            mcqPassScore: 70,
+            testDate: '15 Fév 2026',
+            testTime: '14:00'
         },
         {
             id: 2,
@@ -56,18 +65,22 @@ export const MockData = reactive({
             company: 'Innovate Solutions',
             location: 'Berlin, DE',
             category: 'MARKETING',
-            salary: '€40k - €55k',
             description: {
                 intro: 'Elevate our brand presence through compelling storytelling.',
                 mission: 'Create engaging content for global campaigns.',
                 responsibilities: ['Write blog posts', 'Manage social media', 'Analyze SEO metrics']
             },
             skills: ['Copywriting', 'SEO', 'Social Media', 'Google Analytics'],
-            mcqDuration: 15,
             icon: 'fa-solid fa-bullhorn',
             iconColor: '#8b5cf6',
             postedTime: '1 day ago',
-            tags: ['HYBRID']
+            tags: ['HYBRID'],
+            daysLeft: 5,
+            mcqDuration: 15,
+            mcqQuestionsCount: 15,
+            mcqPassScore: 65,
+            testDate: '16 Fév 2026',
+            testTime: '10:30'
         },
         {
             id: 3,
@@ -75,18 +88,22 @@ export const MockData = reactive({
             company: 'Future Ventures',
             location: 'London, UK',
             category: 'FINANCE',
-            salary: '£45k - £60k',
             description: {
                 intro: 'Manage internal audits and ensure financial compliance.',
                 mission: 'Ensure accuracy in financial reporting.',
                 responsibilities: ['Conduct audits', 'Prepare reports', 'Risk assessment']
             },
             skills: ['Auditing', 'Excel', 'Risk Management', 'IFRS'],
-            mcqDuration: 30,
             icon: 'fa-solid fa-chart-line',
             iconColor: '#10b981',
             postedTime: '3 days ago',
-            tags: ['ON SITE']
+            tags: ['ON SITE'],
+            daysLeft: 10,
+            mcqDuration: 30,
+            mcqQuestionsCount: 25,
+            mcqPassScore: 75,
+            testDate: '18 Fév 2026',
+            testTime: '09:00'
         },
         {
             id: 4,
@@ -94,22 +111,48 @@ export const MockData = reactive({
             company: 'TechCorp',
             location: 'Remote',
             category: 'IT',
-            salary: '€70k - €95k',
             description: {
                 intro: 'Design and implement scalable cloud infrastructure.',
                 mission: 'Build resilient cloud systems.',
                 responsibilities: ['Manage AWS fleet', 'Optimize costs', 'Ensure security']
             },
             skills: ['AWS', 'Kubernetes', 'Terraform', 'Python'],
-            mcqDuration: 40,
             icon: 'fa-solid fa-cloud',
             iconColor: '#06b6d4',
             postedTime: '5 days ago',
-            tags: ['REMOTE']
+            tags: ['REMOTE'],
+            daysLeft: 8,
+            mcqDuration: 40,
+            mcqQuestionsCount: 30,
+            mcqPassScore: 80,
+            testDate: '20 Fév 2026',
+            testTime: '15:30'
         }
     ] as Job[],
 
-    applications: [] as Application[],
+    applications: [
+        // Job 1
+        { id: 101, jobId: 1, candidateName: 'Jean Dupont', status: 'Pending', date: '12/02/2026' },
+        { id: 102, jobId: 1, candidateName: 'Marie Claire', status: 'Accepted', date: '11/02/2026' },
+        { id: 105, jobId: 1, candidateName: 'Luc Besson', status: 'Interview', date: '10/02/2026' },
+        { id: 106, jobId: 1, candidateName: 'Sarah Connor', status: 'Pending', date: '09/02/2026' },
+        { id: 107, jobId: 1, candidateName: 'John Doe', status: 'Rejected', date: '08/02/2026' },
+        // Job 2
+        { id: 103, jobId: 2, candidateName: 'Ahmed Benali', status: 'Pending', date: '13/02/2026' },
+        { id: 104, jobId: 2, candidateName: 'Sophie Martin', status: 'Rejected', date: '10/02/2026' },
+        { id: 108, jobId: 2, candidateName: 'Thomas Muller', status: 'Accepted', date: '12/02/2026' },
+        // Job 3
+        { id: 109, jobId: 3, candidateName: 'Emma Watson', status: 'Pending', date: '11/02/2026' },
+        { id: 110, jobId: 3, candidateName: 'Paul Pogba', status: 'Interview', date: '12/02/2026' },
+        { id: 111, jobId: 3, candidateName: 'Zinedine Zidane', status: 'Pending', date: '13/02/2026' },
+        { id: 112, jobId: 3, candidateName: 'Karim Benzema', status: 'Accepted', date: '10/02/2026' },
+        // Job 4
+        { id: 113, jobId: 4, candidateName: 'Elon Musk', status: 'Pending', date: '12/02/2026' },
+        { id: 114, jobId: 4, candidateName: 'Jeff Bezos', status: 'Interview', date: '11/02/2026' },
+        { id: 115, jobId: 4, candidateName: 'Bill Gates', status: 'Accepted', date: '09/02/2026' },
+        { id: 116, jobId: 4, candidateName: 'Mark Zuckerberg', status: 'Rejected', date: '08/02/2026' },
+        { id: 117, jobId: 4, candidateName: 'Steve Jobs', status: 'Pending', date: '07/02/2026' }
+    ] as Application[],
 
     // Helper to add application
     apply(jobId: number, candidateName: string) {
@@ -124,5 +167,9 @@ export const MockData = reactive({
 
     getJob(id: number) {
         return this.jobs.find(j => j.id === id);
+    },
+
+    getApplicantsCount(jobId: number) {
+        return this.applications.filter(a => a.jobId === jobId).length;
     }
 });

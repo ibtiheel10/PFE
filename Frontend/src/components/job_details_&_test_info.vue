@@ -3,19 +3,18 @@
     <!-- Navigation / Top Bar -->
     <header class="top-nav">
       <div class="nav-content">
-        <div class="logo-section">
-          <div class="logo-box">
-            <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="32" height="32" rx="6" fill="#2563EB"/>
-                <path d="M10 22V14M16 22V10M22 22V17" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+        <div class="logo-section" @click="router.push('/employer-dashboard')" style="cursor: pointer;">
+          <div class="logo-icon">
+            <img src="../assets/logo.png" alt="Skillvia Logo" width="28" height="28" />
           </div>
-          <span class="brand-text">Skillvia</span>
+          <div class="logo-text">
+            <span class="brand-text">Skillvia</span>
+          </div>
         </div>
         
         <div class="search-wrap">
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" placeholder="Rechercher un job..." />
+          <input type="text" v-model="searchQuery" placeholder="Rechercher un job..." />
         </div>
 
        
@@ -28,12 +27,12 @@
       </div>
     </header>
 
-    <!-- Breadcrumb -->
-    <div class="breadcrumb">
-      <div class="container">
-        <span class="text-gray">Offres d'emploi</span>
-        <span class="separator">/</span>
-        <span class="current">Senior Full-stack Developer</span>
+    <div class="breadcrumb" v-if="job">
+      <div class="container breadcrumb-inner">
+        <router-link to="/employer-dashboard" class="breadcrumb-item home-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+        </router-link>
+        <span class="breadcrumb-item current">{{ job.title }}</span>
       </div>
     </div>
 
@@ -42,7 +41,7 @@
       <section class="job-header-card" v-if="job">
         <div class="job-header-content">
            <div class="company-logo">
-             <div class="logo-placeholder">TECHFLOW</div>
+             <div class="logo-placeholder">{{ job.company.charAt(0).toUpperCase() }}</div>
            </div>
            <div class="job-main-info">
              <h1>{{ job.title }}</h1>
@@ -56,23 +55,25 @@
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                   {{ job.location }}
                 </span>
+                <span class="dot">•</span>
+                <span class="applicants-count">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                  {{ applicantsCount }} inscrits
+                </span>
              </div>
              <div class="tags-row">
                <span class="tag green" v-for="tag in job.tags" :key="tag">{{ tag }}</span>
                <span class="salary">{{ job.salary }}</span>
                <span class="dot">•</span>
-               <span class="posted-time">{{ job.postedTime }}</span>
-             </div>
-           </div>
+                <span class="posted-time">{{ job.postedTime }}</span>
+                <span class="dot" v-if="job.daysLeft">•</span>
+                <span class="days-left text-orange" v-if="job.daysLeft">
+                  Session dans {{ job.daysLeft }}j
+                </span>
+              </div>
+            </div>
         </div>
-        <div class="header-actions">
-           <button class="btn-secondary" @click="router.push('/employer-dashboard')">
-              <span class="icon">
-                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
-              </span>
-              Dashboard Entreprise
-           </button>
-        </div>
+    
       </section>
 
       <div class="content-grid" v-if="job">
@@ -143,7 +144,67 @@
 
         <!-- Right Column: Test Info -->
         <div class="side-column">
-          <!-- Test Card removed -->
+          <!-- Test Card -->
+          <div class="test-card">
+            <div class="test-header">
+              <div class="check-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              </div>
+              <h3>Information du Test</h3>
+            </div>
+            <p class="test-desc">Ce poste nécessite la validation d'un test technique Skillvia.</p>
+            
+            <div class="test-details">
+              <div class="detail-row">
+                <div class="d-label">Type</div>
+                <div class="d-val">QCM Technique</div>
+              </div>
+              <div class="detail-row">
+                <div class="d-label">Durée</div>
+                <div class="d-val">{{ job.mcqDuration }} min</div>
+              </div>
+              <div class="detail-row">
+                <div class="d-label">Questions</div>
+                <div class="d-val">{{ job.mcqQuestionsCount }} questions</div>
+              </div>
+              <div class="detail-row">
+                <div class="d-label">Score de passage</div>
+                <div class="d-val">{{ job.mcqPassScore }}%</div>
+              </div>
+              <div class="detail-row last highlight-session">
+                <div class="d-label">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                  Session Groupée
+                </div>
+                <div class="d-val text-blue">{{ job.testDate }} à {{ job.testTime }}</div>
+              </div>
+            </div>
+            
+            <p class="test-meta">ÉVALUATION SKILLVIA CERTIFIÉE</p>
+          </div>
+
+          <!-- Registered Candidates Card -->
+          <div class="detail-card side-list-card">
+            <div class="section-title small">
+              <h2>Candidats Inscrits</h2>
+              <span class="count-badge">{{ jobApplications.length }}</span>
+            </div>
+            <div class="candidates-mini-list">
+              <div v-for="app in jobApplications" :key="app.id" class="candidate-mini-item">
+                <img :src="`https://i.pravatar.cc/150?u=${app.candidateName}`" alt="Avatar" class="mini-avatar">
+                <div class="mini-info">
+                  <div class="mini-name">{{ app.candidateName }}</div>
+                  <div class="mini-date">{{ app.date }}</div>
+                </div>
+                <div class="mini-status session-pending">Attente Session</div>
+              </div>
+              <div v-if="jobApplications.length === 0" class="empty-mini">
+                Aucun candidat inscrit pour le moment.
+              </div>
+            </div>
+          </div>
 
 
           <!-- Help Card -->
@@ -162,7 +223,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { MockData, type Job } from '../services/MockData';
 
@@ -173,6 +234,17 @@ const route = useRoute();
 const isSaved = ref(false);
 const searchQuery = ref('');
 const job = ref<Job | undefined>(undefined);
+
+// --- Computed ---
+const applicantsCount = computed(() => {
+  return jobApplications.value.length;
+});
+
+const jobApplications = computed(() => {
+  const currentJob = job.value;
+  if (!currentJob) return [];
+  return MockData.applications.filter(a => a.jobId === currentJob.id);
+});
 
 // --- Fetch Data ---
 onMounted(() => {
@@ -296,12 +368,40 @@ const goBack = () => {
 }
 
 .breadcrumb {
-  padding: 1.5rem 0;
+  padding: 1.25rem 0;
   font-size: 0.85rem;
+  border-bottom: 1px solid rgba(229, 231, 235, 0.5);
+  background: white;
 }
+.breadcrumb-inner {
+  display: flex;
+  align-items: center;
+}
+.breadcrumb-item {
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.home-link {
+  color: #9CA3AF;
+  display: flex;
+  align-items: center;
+}
+.home-link:hover { color: #2563EB; }
 .breadcrumb .text-gray { color: #6B7280; }
-.breadcrumb .separator { margin: 0 0.5rem; color: #9CA3AF; }
-.breadcrumb .current { font-weight: 600; color: #111827; }
+.breadcrumb .text-gray:hover { color: #2563EB; }
+.breadcrumb .separator { 
+    margin: 0 0.75rem; 
+    color: #D1D5DB; 
+    font-size: 1rem;
+    font-weight: 300;
+}
+.breadcrumb .current { 
+    font-weight: 600; 
+    color: #111827; 
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
 
 /* Job Header Card */
 .job-header-card {
@@ -375,21 +475,45 @@ const goBack = () => {
 .salary { font-weight: 600; color: #374151; }
 .posted-time { color: #6B7280; }
 
+.text-orange {
+  color: #F97316;
+  font-weight: 600;
+}
+
+.applicants-count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .header-actions {
   display: flex;
   gap: 1rem;
 }
-.btn-secondary {
-  background: #F3F4F6;
-  color: #374151;
-  border: none;
-  padding: 0.6rem 1.25rem;
-  border-radius: 6px;
+.btn-premium {
+  background: white;
+  color: #111827;
+  border: 1px solid #E5E7EB;
+  padding: 0.65rem 1.5rem;
+  border-radius: 8px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.btn-premium:hover {
+  background: #F9FAFB;
+  border-color: #D1D5DB;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+.btn-premium .icon {
+    display: flex;
+    align-items: center;
+    color: #2563EB;
 }
 .btn-primary {
   background: #2563EB;
@@ -678,5 +802,86 @@ const goBack = () => {
   color: #2563EB;
   text-decoration: none;
   font-weight: 600;
+}
+
+/* Side Column List Cards */
+.side-list-card {
+  padding: 1.25rem !important;
+}
+.section-title.small h2 {
+  font-size: 1rem;
+}
+.count-badge {
+  background: #EFF6FF;
+  color: #2563EB;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  margin-left: auto;
+}
+.candidates-mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.candidate-mini-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #F3F4F6;
+}
+.candidate-mini-item:last-child {
+  border-bottom: none;
+}
+.mini-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.mini-info {
+  flex: 1;
+}
+.mini-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+}
+.mini-date {
+  font-size: 0.7rem;
+  color: #9CA3AF;
+}
+.mini-status {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.mini-status.pending { background: #FEF3C7; color: #92400E; }
+.mini-status.rejected { background: #FEE2E2; color: #991B1B; }
+.mini-status.accepted { background: #D1FAE5; color: #065F46; }
+.mini-status.session-pending { 
+  background: #E0F2FE; 
+  color: #0369A1;
+  border: 1px solid #BAE6FD;
+}
+
+.highlight-session {
+  background: #F0F9FF;
+  margin: 0.5rem -1rem -1rem -1rem;
+  padding: 0.75rem 1rem !important;
+  border-radius: 0 0 8px 8px;
+}
+.text-blue { color: #2563EB; }
+
+.empty-mini {
+  font-size: 0.8rem;
+  color: #9CA3AF;
+  text-align: center;
+  padding: 1rem 0;
 }
 </style>
