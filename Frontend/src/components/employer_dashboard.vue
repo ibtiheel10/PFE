@@ -43,18 +43,6 @@
           </a>
         </nav>
       </div>
-
-       <!-- Footer Actions -->
-       <div class="p-4 border-t border-gray-100">
-            <button 
-                @click="createNewPost"
-                class="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg transition-all shadow-lg shadow-blue-500/30 active:scale-95"
-                :class="isSidebarCollapsed ? 'px-0' : 'px-4'"
-            >
-                <PlusIcon class="w-5 h-5" />
-                <span v-if="!isSidebarCollapsed" class="font-semibold text-sm">Nouveau poste</span>
-            </button>
-       </div>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -75,22 +63,36 @@
 
         <!-- Right Side -->
         <div class="flex items-center gap-6">
-            <!-- Search -->
-            <div class="relative group hidden md:block">
-                <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-blue-500 transition-colors" />
-                <input 
-                  type="text" 
-                  v-model="searchQuery" 
-                  placeholder="Rechercher..." 
-                  class="pl-10 pr-4 py-2 w-64 bg-gray-50 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                />
-            </div>
-            
+        
             <!-- Notifications -->
-            <button @click="toggleNotifications" class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
-                <BellIcon class="w-6 h-6" />
-                <span v-if="hasNotifications" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
-            </button>
+            <div class="relative">
+                <button @click="toggleNotifications" class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
+                    <BellIcon class="w-6 h-6" />
+                    <span v-if="hasNotifications" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                </button>
+
+                <!-- Notifications Dropdown -->
+                <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
+                    <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                        <div class="px-4 py-3 border-b border-gray-50 flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-gray-900">Notifications</h3>
+                            <button @click="hasNotifications = false" class="text-xs text-blue-600 hover:underline">Marquer comme lu</button>
+                        </div>
+                        <div class="max-h-96 overflow-y-auto">
+                            <div v-for="app in recentApplications" :key="app.id" class="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer">
+                                <p class="text-sm text-gray-800">New application from <span class="font-bold text-blue-600">{{ app.candidateName }}</span> for <span class="font-medium">{{ app.jobTitle }}</span></p>
+                                <span class="text-[10px] text-gray-400 font-medium uppercase mt-1 block">{{ app.time }}</span>
+                            </div>
+                            <div v-if="recentApplications.length === 0" class="px-4 py-8 text-center">
+                                <p class="text-sm text-gray-500">Aucune nouvelle notification</p>
+                            </div>
+                        </div>
+                        <div class="px-4 py-2 border-t border-gray-50 text-center">
+                            <button class="text-xs text-gray-500 hover:text-blue-600 font-medium">Voir toutes les notifications</button>
+                        </div>
+                    </div>
+                </transition>
+            </div>
 
             <!-- Profile -->
             <div class="relative">
@@ -144,12 +146,6 @@
                             <div class="stat-icon-bg bg-blue">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
                             </div>
-                            <span class="trend-badge trend-positive">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                                </svg>
-                                +12.5%
-                            </span>
                         </div>
                         <div class="stat-content">
                             <span class="stat-label">Total Revenue</span>
@@ -157,7 +153,7 @@
                                 <span class="stat-num">12</span>
                                 <span class="stat-unit">Postes</span>
                             </div>
-                            <p class="stat-description">Trending up this month</p>
+                            <p class="stat-description">En hausse ce mois-ci</p>
                         </div>
                     </div>
 
@@ -166,19 +162,13 @@
                             <div class="stat-icon-bg bg-purple">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
                             </div>
-                            <span class="trend-badge trend-negative">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                    <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline>
-                                </svg>
-                                -30%
-                            </span>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">New Customers</span>
+                            <span class="stat-label">Nouveaux clients</span>
                             <div class="stat-value-row">
                                 <span class="stat-num">1,234</span>
                             </div>
-                            <p class="stat-description">Down 20% this period</p>
+                            <p class="stat-description">En baisse de 20 % sur cette période</p>
                         </div>
                     </div>
 
@@ -187,19 +177,13 @@
                             <div class="stat-icon-bg bg-orange">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6M23 11h-6"></path></svg>
                             </div>
-                            <span class="trend-badge trend-positive">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                                </svg>
-                                +12.5%
-                            </span>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">Active Accounts</span>
+                            <span class="stat-label">Comptes actifs</span>
                             <div class="stat-value-row">
                                 <span class="stat-num">45,678</span>
                             </div>
-                            <p class="stat-description">Strong user retention</p>
+                            <p class="stat-description">Forte fidélisation des utilisateurs</p>
                         </div>
                     </div>
 
@@ -210,19 +194,13 @@
                                     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
                                 </svg>
                             </div>
-                            <span class="trend-badge trend-positive">
-                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                                </svg>
-                                +4.6%
-                            </span>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">Growth Rate</span>
+                            <span class="stat-label">Taux de croissance</span>
                             <div class="stat-value-row">
                                 <span class="stat-num">4.5%</span>
                             </div>
-                            <p class="stat-description">Steady performance increase</p>
+                            <p class="stat-description">Augmentation régulière des performances</p>
                         </div>
                     </div>
                 </div>
@@ -242,9 +220,15 @@
                                     <p class="chart-subtitle-modern">Total for the last 3 months</p>
                                 </div>
                                 <div class="time-period-tabs">
-                                    <button class="period-tab">Last 3 months</button>
-                                    <button class="period-tab active">Last 30 days</button>
-                                    <button class="period-tab">Last 7 days</button>
+                                    <button 
+                                        v-for="period in ['Last 3 months', 'Last 30 days', 'Last 7 days']" 
+                                        :key="period"
+                                        class="period-tab" 
+                                        :class="{ active: activePeriod === period }"
+                                        @click="activePeriod = period"
+                                    >
+                                        {{ period }}
+                                    </button>
                                 </div>
                             </div>
                             
@@ -263,32 +247,26 @@
                                     </defs>
                                     
                                     <!-- Area fill -->
-                                    <path d="M0,180 L50,150 L100,170 L150,140 L200,120 L250,110 L300,90 L350,100 L400,80 L450,70 L500,85 L550,75 L600,90 L650,80 L700,100 L700,200 L0,200 Z" 
+                                    <path :d="chartPaths.area" 
                                           fill="url(#areaGradient)" 
-                                          class="chart-area-path"/>
+                                          class="chart-area-path transition-all duration-700"/>
                                     
                                     <!-- Line stroke -->
-                                    <path d="M0,180 L50,150 L100,170 L150,140 L200,120 L250,110 L300,90 L350,100 L400,80 L450,70 L500,85 L550,75 L600,90 L650,80 L700,100" 
+                                    <path :d="chartPaths.line" 
                                           fill="none" 
                                           stroke="url(#lineGradient)" 
                                           stroke-width="3" 
                                           stroke-linecap="round"
-                                          class="chart-line-path"/>
+                                          class="chart-line-path transition-all duration-700"/>
                                     
                                     <!-- Dot indicators -->
-                                    <circle cx="450" cy="70" r="5" fill="#2563EB" class="chart-dot pulse-dot"/>
-                                    <circle cx="450" cy="70" r="3" fill="#FFFFFF"/>
+                                    <circle :cx="chartPaths.lastX" :cy="chartPaths.lastY" r="5" fill="#2563EB" class="chart-dot pulse-dot"/>
+                                    <circle :cx="chartPaths.lastX" :cy="chartPaths.lastY" r="3" fill="#FFFFFF"/>
                                 </svg>
                                 
                                 <!-- X-axis labels -->
                                 <div class="chart-labels">
-                                    <span>Jun 24</span>
-                                    <span>Jun 25</span>
-                                    <span>Jun 26</span>
-                                    <span>Jun 27</span>
-                                    <span>Jun 28</span>
-                                    <span>Jun 29</span>
-                                    <span>Jun 30</span>
+                                    <span v-for="label in chartPaths.labels" :key="label">{{ label }}</span>
                                 </div>
                             </div>
                         </div>
@@ -307,9 +285,23 @@
                                <div class="job-item" v-for="job in displayJobs" :key="job.title">
                                    <div class="job-header">
                                        <h4 @click="goToJobDetails(job.id)" style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='inherit'">{{ job.title }}</h4>
-                                       <button class="menu-dots">
-                                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                                       </button>
+                                       <div class="relative">
+                                           <button class="menu-dots" @click.stop="toggleJobMenu(job.id)">
+                                               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                           </button>
+                                           
+                                           <!-- Job Action Dropdown -->
+                                           <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
+                                               <div v-if="activeJobMenu === job.id" class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
+                                                   <button @click.stop="renameJob(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                                       <PencilSquareIcon class="w-4 h-4 text-gray-400" /> Renommer la poste
+                                                   </button>
+                                                   <button @click.stop="deleteJob(job.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                                       <TrashIcon class="w-4 h-4" /> Supprimer
+                                                   </button>
+                                               </div>
+                                           </transition>
+                                       </div>
                                    </div>
                                    <div class="job-meta">
                                        <div class="meta-item">
@@ -321,11 +313,7 @@
                                             Session dans {{ job.daysLeft }}j
                                         </div>
                                    </div>
-                                   <div class="job-progress">
-                                       <div class="progress-bg"><div class="progress-val" :style="{width: job.progress + '%'}"></div></div>
-                                   </div>
                                    <div class="job-footer">
-                                       <span class="mcq-quality">QUALITÉ MCQ: {{ job.quality }}</span>
                                        <span class="status-tag" :class="job.status === 'ACTIVE' ? 'active' : 'draft'">{{ job.status }}</span>
                                    </div>
                                </div>
@@ -364,6 +352,48 @@
             </div>
             
         </div>
+
+      <!-- Delete Job Confirmation Dialog -->
+      <div v-if="showDeleteConfirm" class="modal-overlay" @click="showDeleteConfirm = false">
+          <div class="modal-dialog" @click.stop>
+              <div class="modal-icon-wrapper">
+                  <div class="modal-icon-bg danger">
+                      <TrashIcon class="w-8 h-8 text-red-600" />
+                  </div>
+              </div>
+              <h3 class="modal-title">Supprimer le poste ?</h3>
+              <p class="modal-description">Cette action est irréversible. Toutes les données associées à ce poste seront perdues.</p>
+              <div class="modal-actions">
+                  <button class="modal-btn modal-btn-cancel" @click="showDeleteConfirm = false">Annuler</button>
+                  <button class="modal-btn modal-btn-delete" @click="confirmDeleteJob">Supprimer</button>
+              </div>
+          </div>
+      </div>
+
+      <!-- Rename Job Modal -->
+      <div v-if="showRenameModal" class="modal-overlay" @click="showRenameModal = false">
+          <div class="modal-dialog" @click.stop>
+              <div class="modal-icon-wrapper">
+                  <div class="modal-icon-bg info">
+                      <PencilSquareIcon class="w-8 h-8 text-blue-600" />
+                  </div>
+              </div>
+              <h3 class="modal-title">Renommer le poste</h3>
+              <div class="modal-body-input">
+                  <label class="block text-sm font-medium text-gray-700 mb-1">Nouveau titre</label>
+                  <input 
+                      type="text" 
+                      v-model="newJobTitle" 
+                      class="custom-modal-input"
+                      placeholder="Ex: Développeur Fullstack"
+                  />
+              </div>
+              <div class="modal-actions">
+                  <button class="modal-btn modal-btn-cancel" @click="showRenameModal = false">Annuler</button>
+                  <button class="modal-btn modal-btn-confirm" @click="confirmRenameJob">Enregistrer</button>
+              </div>
+          </div>
+      </div>
     </main>
   </div>
 </template>
@@ -385,16 +415,25 @@ import {
     ChevronDownIcon,
     UserCircleIcon, 
     Cog6ToothIcon, 
-    ArrowRightOnRectangleIcon
+    ArrowRightOnRectangleIcon,
+    TrashIcon,
+    PencilSquareIcon
 } from '@heroicons/vue/24/outline';
 
 // State
 const activeNav = ref('Tableau de bord');
+const activePeriod = ref('Last 30 days');
 const searchQuery = ref('');
 const hasNotifications = ref(true);
 const showProfileMenu = ref(false);
 const isSidebarCollapsed = ref(false);
 const shouldOpenModal = ref(false);
+const showNotifications = ref(false);
+const showDeleteConfirm = ref(false);
+const showRenameModal = ref(false);
+const jobToDelete = ref<number | null>(null);
+const jobToRename = ref<any>(null);
+const newJobTitle = ref('');
 
 const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
 const toggleProfileMenu = () => {
@@ -406,6 +445,47 @@ const handleLogout = () => {
     localStorage.removeItem('userRole');
     router.push('/');
 };
+
+const activeJobMenu = ref<number | null>(null);
+const toggleJobMenu = (id: number) => {
+    activeJobMenu.value = activeJobMenu.value === id ? null : id;
+};
+
+const deleteJob = (id: number) => {
+    jobToDelete.value = id;
+    showDeleteConfirm.value = true;
+    activeJobMenu.value = null;
+};
+
+const confirmDeleteJob = () => {
+    if (jobToDelete.value !== null) {
+        MockData.deleteJob(jobToDelete.value);
+        showDeleteConfirm.value = false;
+        jobToDelete.value = null;
+    }
+};
+
+const renameJob = (job: any) => {
+    jobToRename.value = job;
+    newJobTitle.value = job.title;
+    showRenameModal.value = true;
+    activeJobMenu.value = null;
+};
+
+const confirmRenameJob = () => {
+    if (jobToRename.value && newJobTitle.value.trim() !== '') {
+        MockData.updateJobTitle(jobToRename.value.id, newJobTitle.value.trim());
+        showRenameModal.value = false;
+        jobToRename.value = null;
+    }
+};
+
+// Close menus when clicking outside
+if (typeof window !== 'undefined') {
+    window.addEventListener('click', () => {
+        activeJobMenu.value = null;
+    });
+}
 
 const handleNavClick = (item: { name: string; icon: any }) => {
     activeNav.value = item.name;
@@ -424,8 +504,52 @@ const goToJobDetails = (id: number) => {
 };
 
 const toggleNotifications = () => {
-    hasNotifications.value = !hasNotifications.value;
+    showNotifications.value = !showNotifications.value;
+    if (showNotifications.value) hasNotifications.value = false;
 };
+
+const recentApplications = computed(() => {
+    return MockData.applications.slice(-5).reverse().map(app => ({
+        id: app.id,
+        candidateName: app.candidateName,
+        jobTitle: MockData.getJob(app.jobId)?.title || 'Poste inconnu',
+        time: 'À l\'instant'
+    }));
+});
+
+const chartPaths = computed(() => {
+    let points = [];
+    let labels = [];
+    
+    if (activePeriod.value === 'Last 7 days') {
+        points = [180, 150, 170, 140, 120, 110, 90];
+        labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+    } else if (activePeriod.value === 'Last 30 days') {
+        points = [160, 140, 150, 130, 110, 120, 100, 90, 110, 95, 80, 70, 85, 75, 90];
+        labels = ['1 fév', '5 fév', '10 fév', '15 fév', '20 fév', '25 fév', '30 fév'];
+    } else {
+        points = [180, 160, 170, 150, 140, 130, 120, 110, 100, 90, 80, 70];
+        labels = ['Nov', 'Déc', 'Jan'];
+    }
+
+    const width = 700;
+    const step = width / (points.length - 1);
+    
+    let linePath = `M0,${points[0]}`;
+    points.forEach((p, i) => {
+        if (i > 0) linePath += ` L${i * step},${p}`;
+    });
+    
+    const areaPath = `${linePath} L${width},200 L0,200 Z`;
+    
+    return {
+        line: linePath,
+        area: areaPath,
+        labels: labels,
+        lastX: (points.length - 1) * step,
+        lastY: points[points.length - 1]
+    };
+});
 
 // Navigation Data
 const navItems = [
@@ -438,15 +562,50 @@ const navItems = [
 
 // --- Data Connection & Filtering ---
 const allCandidates = computed(() => {
-    return MockData.applications.map(app => {
+    // Group applications by jobId to determine ranks
+    const appsByJob: Record<string, any[]> = {};
+    MockData.applications.forEach((app: any) => {
+        const jobIdStr = String(app.jobId);
+        if (!appsByJob[jobIdStr]) appsByJob[jobIdStr] = [];
+        appsByJob[jobIdStr].push(app);
+    });
+
+    // Sort each group by score
+    Object.keys(appsByJob).forEach(jobId => {
+        const apps = appsByJob[jobId];
+        if (apps) {
+            apps.sort((a, b) => (b.score || 0) - (a.score || 0));
+        }
+    });
+
+    return MockData.applications.map((app: any) => {
         const job = MockData.getJob(app.jobId);
+        const jobApps = appsByJob[String(app.jobId)] || [];
+        const rank = jobApps.findIndex((a: any) => a.id === app.id) + 1;
+        
+        let status = 'REJETÉ';
+        let statusClass = 'rejected';
+        
+        if (job) {
+            const threshold = (job as any).mcqPassScore || 70;
+            const appScore = app.score || 0;
+            if (rank <= 5 && appScore >= threshold) {
+                status = 'ENTRETIEN';
+                statusClass = 'interview';
+            } else if (appScore >= threshold) {
+                status = 'AU COURS';
+                statusClass = 'evaluated';
+            }
+        }
+
         return {
+            id: app.id,
             name: app.candidateName,
             time: app.date,
             role: job?.title || 'Unknown Position',
             score: app.score || 0,
-            status: app.status.toUpperCase(),
-            statusClass: app.status.toLowerCase(),
+            status: status,
+            statusClass: statusClass,
             avatar: `https://i.pravatar.cc/150?u=${app.candidateName.replace(/\s/g, '')}`
         };
     });
@@ -757,6 +916,142 @@ const displayJobs = computed(() => {
 .trend-badge.negative {
     background: #FEF2F2;
     color: #DC2626;
+}
+
+/* Wave Chart Styles */
+.chart-area-modern {
+    height: 220px;
+    position: relative;
+    padding: 1rem 0;
+}
+
+.wave-chart {
+    width: 100%;
+    height: 100%;
+}
+
+.chart-area-path {
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-line-path {
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-dot {
+    transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.chart-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem 0 0 0;
+    color: #9CA3AF;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Custom Modal Styles */
+.modal-dialog {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-icon-bg {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-icon-bg.danger { background-color: #FEF2F2; }
+.modal-icon-bg.info { background-color: #EFF6FF; }
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 0.75rem;
+}
+
+.modal-description {
+    font-size: 0.95rem;
+    color: #6B7280;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.modal-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-btn-cancel {
+    background: #F3F4F6;
+    color: #374151;
+    border: 1px solid #E5E7EB;
+}
+
+.modal-btn-cancel:hover { background: #E5E7EB; }
+
+.modal-btn-delete {
+    background: #EF4444;
+    color: white;
+    border: none;
+}
+
+.modal-btn-delete:hover { background: #DC2626; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+
+.modal-btn-confirm {
+    background: #2563EB;
+    color: white;
+    border: none;
+}
+
+.modal-btn-confirm:hover { background: #1D4ED8; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+
+.modal-body-input {
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.custom-modal-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+}
+
+.custom-modal-input:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
 /* Dashboard Main Grid */

@@ -20,8 +20,6 @@
                         <th>STATUS</th>
                         <th>INSCRITS</th>
                         <th>TEMPS RESTANT</th>
-                        <th>PROGRESSION</th>
-                        <th>QUALITÉ</th>
                         <th>ACTIONS</th>
                     </tr>
                 </thead>
@@ -31,14 +29,26 @@
                         <td><span class="status-tag" :class="job.status === 'ACTIVE' ? 'active' : 'draft'">{{ job.status }}</span></td>
                         <td>{{ job.applicants }}</td>
                         <td>Session dans {{ job.daysLeft }}j</td>
-                        <td style="width: 150px;">
-                            <div class="progress-bg"><div class="progress-val" :style="{width: job.progress + '%'}"></div></div>
-                        </td>
-                        <td><span class="mcq-quality">{{ job.quality }}</span></td>
                         <td>
-                            <button class="icon-btn">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
-                            </button>
+                            <div class="relative">
+                                <button class="icon-btn" @click.stop="toggleJobMenu(job.id)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                </button>
+
+                                <!-- Job Action Dropdown -->
+                                <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
+                                    <div v-if="activeJobMenu === job.id" class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
+                                        <button @click.stop="renameJob(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                            Renommer la poste
+                                        </button>
+                                        <button @click.stop="deleteJob(job.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                                            Supprimer
+                                        </button>
+                                    </div>
+                                </transition>
+                            </div>
                         </td>
                     </tr>
                 </tbody>
@@ -288,6 +298,48 @@
         </div>
       </div>
     </div>
+
+    <!-- Delete Job Confirmation Dialog -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click="showDeleteConfirm = false">
+        <div class="modal-dialog" @click.stop>
+            <div class="modal-icon-wrapper">
+                <div class="modal-icon-bg danger">
+                    <TrashIcon class="w-8 h-8 text-red-600" />
+                </div>
+            </div>
+            <h3 class="modal-title">Supprimer le poste ?</h3>
+            <p class="modal-description">Cette action est irréversible. Toutes les données associées à ce poste seront perdues.</p>
+            <div class="modal-actions-small">
+                <button class="modal-btn modal-btn-cancel" @click="showDeleteConfirm = false">Annuler</button>
+                <button class="modal-btn modal-btn-delete" @click="confirmDeleteJob">Supprimer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rename Job Modal -->
+    <div v-if="showRenameModal" class="modal-overlay" @click="showRenameModal = false">
+        <div class="modal-dialog" @click.stop>
+            <div class="modal-icon-wrapper">
+                <div class="modal-icon-bg info">
+                    <PencilSquareIcon class="w-8 h-8 text-blue-600" />
+                </div>
+            </div>
+            <h3 class="modal-title">Renommer le poste</h3>
+            <div class="modal-body-input">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Nouveau titre</label>
+                <input 
+                    type="text" 
+                    v-model="newJobTitle" 
+                    class="custom-modal-input"
+                    placeholder="Ex: Développeur Fullstack"
+                />
+            </div>
+            <div class="modal-actions-small">
+                <button class="modal-btn modal-btn-cancel" @click="showRenameModal = false">Annuler</button>
+                <button class="modal-btn modal-btn-confirm" @click="confirmRenameJob">Enregistrer</button>
+            </div>
+        </div>
+    </div>
   </div>
 </template>
 
@@ -295,6 +347,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { MockData } from '../services/MockData';
+import { TrashIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 
 const props = defineProps({
     searchQuery: {
@@ -311,8 +364,54 @@ const emit = defineEmits(['modal-opened']);
 
 const router = useRouter();
 
+const activeJobMenu = ref<number | null>(null);
+const toggleJobMenu = (id: number) => {
+    activeJobMenu.value = activeJobMenu.value === id ? null : id;
+};
+
+const deleteJob = (id: number) => {
+    jobToDelete.value = id;
+    showDeleteConfirm.value = true;
+    activeJobMenu.value = null;
+};
+
+const confirmDeleteJob = () => {
+    if (jobToDelete.value !== null) {
+        MockData.deleteJob(jobToDelete.value);
+        showDeleteConfirm.value = false;
+        jobToDelete.value = null;
+    }
+};
+
+const renameJob = (job: any) => {
+    jobToRename.value = job;
+    newJobTitle.value = job.title;
+    showRenameModal.value = true;
+    activeJobMenu.value = null;
+};
+
+const confirmRenameJob = () => {
+    if (jobToRename.value && newJobTitle.value.trim() !== '') {
+        MockData.updateJobTitle(jobToRename.value.id, newJobTitle.value.trim());
+        showRenameModal.value = false;
+        jobToRename.value = null;
+    }
+};
+
+// Close menus when clicking outside
+if (typeof window !== 'undefined') {
+    window.addEventListener('click', () => {
+        activeJobMenu.value = null;
+    });
+}
+
 // Modal state
 const showCreateModal = ref(false);
+const showDeleteConfirm = ref(false);
+const showRenameModal = ref(false);
+const jobToDelete = ref<number | null>(null);
+const jobToRename = ref<any>(null);
+const newJobTitle = ref('');
 const currentTab = ref('basic');
 const tabRefs = ref<HTMLElement[]>([]);
 const indicatorStyle = ref({ left: '4px', width: '0px' });
@@ -1131,6 +1230,119 @@ textarea {
     
     .modal-title-main {
         font-size: 1.25rem;
+    }
+}
+/* Custom Modal Styles (Small) */
+.modal-dialog {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 400px;
+    padding: 2rem;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    animation: slideUpFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.modal-icon-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.modal-icon-bg {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-icon-bg.danger { background-color: #FEF2F2; }
+.modal-icon-bg.info { background-color: #EFF6FF; }
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 0.75rem;
+}
+
+.modal-description {
+    font-size: 0.95rem;
+    color: #6B7280;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+}
+
+.modal-actions-small {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.modal-btn {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modal-btn-cancel {
+    background: #F3F4F6;
+    color: #374151;
+    border: 1px solid #E5E7EB;
+}
+
+.modal-btn-cancel:hover { background: #E5E7EB; }
+
+.modal-btn-delete {
+    background: #EF4444;
+    color: white;
+    border: none;
+}
+
+.modal-btn-delete:hover { background: #DC2626; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
+
+.modal-btn-confirm {
+    background: #2563EB;
+    color: white;
+    border: none;
+}
+
+.modal-btn-confirm:hover { background: #1D4ED8; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+
+.modal-body-input {
+    text-align: left;
+    margin-bottom: 2rem;
+}
+
+.custom-modal-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #E5E7EB;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
+}
+
+.custom-modal-input:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+@keyframes slideUpFade {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
 }
 </style>

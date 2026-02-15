@@ -2,14 +2,8 @@
     <div class="content-container animate-fade-in">
         <div class="page-header">
             <div>
-                <h1>Candidats</h1>
+                <h1>Candidats <span class="badge-total" style="font-size: 0.8rem; vertical-align: middle; margin-left: 8px;">{{ candidates.length }} TOTAL</span></h1>
                 <p class="subtitle">Gérez et évaluez les candidats pour tous vos postes.</p>
-            </div>
-            <div class="header-actions">
-                <button class="action-btn-secondary" @click="exportData">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                    Exporter CSV
-                </button>
             </div>
         </div>
 
@@ -33,8 +27,8 @@
                     <select v-model="selectedStatusFilter" class="filter-select-modern">
                         <option value="">Tous les statuts</option>
                         <option value="NOUVEAU">Nouveau</option>
-                        <option value="À INTERVIEWER">À Interviewer</option>
-                        <option value="SHORTLISTÉ">Shortlisté</option>
+                        <option value="ENTRETIEN">À Interviewer</option>
+                        <option value="AU COURS">Au cours</option>
                         <option value="REJETÉ">Rejeté</option>
                     </select>
                     <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -50,22 +44,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Bulk Actions Bar -->
-        <div v-if="selectedCandidates.length > 0" class="bulk-actions-bar">
-            <div class="bulk-info">
-                <div class="checkbox-wrapper checked">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                </div>
-                <span class="selected-text">{{ selectedCandidates.length }} candidat(s) sélectionné(s)</span>
-            </div>
-            <div class="bulk-btns">
-                <button class="bulk-btn primary" @click="bulkAction('shortlist')">Shortlist</button>
-                    <button class="bulk-btn secondary" @click="bulkAction('message')">Message</button>
-                <button class="bulk-btn danger" @click="bulkAction('reject')">Rejeter</button>
-            </div>
-        </div>
-
         <div class="card table-card">
             <div class="table-responsive">
                 <table class="modern-table">
@@ -79,12 +57,12 @@
                             <th @click="sortBy('name')" class="sortable">CANDIDAT</th>
                             <th @click="sortBy('role')" class="sortable">POSTE VISÉ</th>
                             <th @click="sortBy('score')" class="sortable">RÉSULTAT TEST</th>
-                           
+                           <th @click="sortBy('status')" class="sortable">STATUS</th>
                             <th style="text-align: right; padding-right: 1.5rem;">ACTIONS</th>
                         </tr>
                     </thead>
-                        <tbody>
-                        <tr v-for="candidate in filteredCandidates" :key="candidate.name" :class="{'row-selected': isSelected(candidate)}">
+                    <tbody>
+                        <tr v-for="candidate in paginatedCandidates" :key="candidate.id" :class="{'row-selected': isSelected(candidate)}">
                             <td style="text-align: center;">
                                     <div class="checkbox-wrapper" :class="{checked: isSelected(candidate)}" @click.stop="toggleSelection(candidate)">
                                     <svg v-if="isSelected(candidate)" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -128,27 +106,20 @@
                             </td>
                                 <td style="text-align: right; padding-right: 1.5rem;">
                                 <div class="action-buttons-lg">
-                                    
                                     <div class="divider-vertical"></div>
                                     <button class="btn-icon-modern danger" title="Rejeter" @click="openDeleteDialog(candidate)">
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polyline points="3 6 5 6 21 6"></polyline>
-                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                                        </svg>
+                                        <TrashIcon class="w-5 h-5" />
                                     </button>
                                 </div>
                             </td>
                         </tr>
-                        <tr v-if="filteredCandidates.length === 0">
+                        <tr v-if="paginatedCandidates.length === 0">
                             <td colspan="6" style="text-align: center; padding: 3rem;">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
                                     <div style="background: #F3F4F6; padding: 1rem; border-radius: 50%;">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
                                     </div>
-                                    <span style="color: #6B7280; font-weight: 500;">Aucun candidat trouvé pour cette recherche.</span>
-                                    <button @click="searchQuery = ''; selectedStatusFilter = '';" style="color: #2563EB; font-weight: 600; background: none; border: none; cursor: pointer;">Effacer les filtres</button>
+                                    <span style="color: #6B7280; font-weight: 500;">Aucun candidat trouvé.</span>
                                 </div>
                             </td>
                         </tr>
@@ -156,15 +127,21 @@
                 </table>
             </div>
             <div class="table-footer">
-                <span class="footer-info">Affichage de 1 à {{ filteredCandidates.length > 10 ? 10 : filteredCandidates.length }} sur {{ filteredCandidates.length }} candidats</span>
+                <span class="footer-info">Affichage de {{ (currentPage-1)*itemsPerPage + 1 }} à {{ Math.min(currentPage*itemsPerPage, filteredCandidates.length) }} sur {{ filteredCandidates.length }} candidats</span>
                 <div class="pagination-controls">
-                    <button class="page-btn disabled">
+                    <button class="page-btn" :class="{ disabled: currentPage === 1 }" @click="changePage(currentPage - 1)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
                     </button>
-                    <button class="page-btn active">1</button>
-                    <button class="page-btn" v-if="filteredCandidates.length > 10">2</button>
-                    <button class="page-btn" v-if="filteredCandidates.length > 20">3</button>
-                    <button class="page-btn">
+                    
+                    <button v-for="page in totalPages" 
+                            :key="page" 
+                            class="page-btn" 
+                            :class="{ active: currentPage === page }"
+                            @click="changePage(page)">
+                        {{ page }}
+                    </button>
+
+                    <button class="page-btn" :class="{ disabled: currentPage === totalPages }" @click="changePage(currentPage + 1)">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
                     </button>
                 </div>
@@ -206,7 +183,8 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
-import { useRouter } from 'vue-router';
+import { MockData } from '../services/MockData';
+import { TrashIcon } from '@heroicons/vue/24/outline';
 
 // Props
 const props = defineProps<{
@@ -221,10 +199,12 @@ const sortOrder = ref('desc');
 const selectedCandidates = ref<any[]>([]);
 const showDeleteDialog = ref(false);
 const candidateToDelete = ref<any>(null);
-const router = useRouter();
 
 
 // Computed
+const currentPage = ref(1);
+const itemsPerPage = 5;
+
 const filteredCandidates = computed(() => {
     let list = props.candidates;
     
@@ -250,6 +230,19 @@ const filteredCandidates = computed(() => {
         return 0;
     });
 });
+
+const totalPages = computed(() => Math.ceil(filteredCandidates.value.length / itemsPerPage));
+
+const paginatedCandidates = computed(() => {
+    const start = (currentPage.value - 1) * itemsPerPage;
+    return filteredCandidates.value.slice(start, start + itemsPerPage);
+});
+
+const changePage = (page: number) => {
+    if (page >= 1 && page <= totalPages.value) {
+        currentPage.value = page;
+    }
+};
 
 const isAllSelected = computed(() => {
     return filteredCandidates.value.length > 0 && selectedCandidates.value.length === filteredCandidates.value.length;
@@ -305,35 +298,6 @@ const toggleSelectAll = () => {
     }
 };
 
-const updateStatus = (candidate: any, newStatus: string) => {
-    // Direct mutation of prop object (since objects are passed by reference in Vue)
-    // In a stricter app, we'd emit an update event
-    candidate.status = newStatus;
-    candidate.statusClass = newStatus === 'SHORTLISTED' ? 'interview' : (newStatus === 'REJECTED' ? 'draft' : 'new');
-};
-
-const openMessage = (candidate: any) => {
-    router.push({ path: '/messages', query: { user: candidate.name } });
-};
-
-const bulkAction = (action: string) => {
-    if (selectedCandidates.value.length === 0) return;
-
-    if (action === 'shortlist') {
-        selectedCandidates.value.forEach(c => {
-            updateStatus(c, 'SHORTLISTÉ');
-        });
-    } else if (action === 'reject') {
-        selectedCandidates.value.forEach(c => {
-            updateStatus(c, 'REJETÉ');
-        });
-    } else if (action === 'message') {
-        const names = selectedCandidates.value.map(c => c.name).join(', ');
-        alert(`Message de groupe envoyé à : ${names}`);
-    }
-    selectedCandidates.value = [];
-};
-
 const openDeleteDialog = (candidate: any) => {
     showDeleteDialog.value = true;
     candidateToDelete.value = candidate;
@@ -346,35 +310,8 @@ const closeDeleteDialog = () => {
 
 const confirmReject = () => {
     if (candidateToDelete.value) {
-        updateStatus(candidateToDelete.value, 'REJETÉ');
+        MockData.deleteApplication(candidateToDelete.value.id);
         closeDeleteDialog();
-    }
-};
-
-const exportData = () => {
-    // Generate CSV Content
-    const headers = ['Nom', 'Poste', 'Score', 'Status', 'Date'];
-    const rows = filteredCandidates.value.map(c => [
-        `"${c.name}"`,
-        `"${c.role}"`,
-        `${c.score}%`,
-        `"${c.status}"`,
-        `"${c.time}"`
-    ]);
-    
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    
-    // Create Blob and Download
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    if (link.download !== undefined) { 
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'candidats_skillvia.csv');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
     }
 };
 </script>
@@ -819,6 +756,9 @@ const exportData = () => {
 
 .status-pill.shortlisted { background: #FEFCE8; color: #CA8A04; }
 .status-pill.shortlisted .status-dot { background: #EAB308; }
+
+.status-pill.evaluated { background: #F5F3FF; color: #7C3AED; }
+.status-pill.evaluated .status-dot { background: #8B5CF6; }
 
 .status-pill.rejected { background: #FEF2F2; color: #DC2626; }
 .status-pill.rejected .status-dot { background: #EF4444; }

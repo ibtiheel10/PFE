@@ -132,26 +132,26 @@ export const MockData = reactive({
 
     applications: [
         // Job 1
-        { id: 101, jobId: 1, candidateName: 'Jean Dupont', status: 'Pending', date: '12/02/2026' },
-        { id: 102, jobId: 1, candidateName: 'Marie Claire', status: 'Accepted', date: '11/02/2026' },
-        { id: 105, jobId: 1, candidateName: 'Luc Besson', status: 'Interview', date: '10/02/2026' },
-        { id: 106, jobId: 1, candidateName: 'Sarah Connor', status: 'Pending', date: '09/02/2026' },
-        { id: 107, jobId: 1, candidateName: 'John Doe', status: 'Rejected', date: '08/02/2026' },
+        { id: 101, jobId: 1, candidateName: 'Jean Dupont', status: 'Pending', date: '12/02/2026', score: 92 },
+        { id: 102, jobId: 1, candidateName: 'Marie Claire', status: 'Accepted', date: '11/02/2026', score: 88 },
+        { id: 105, jobId: 1, candidateName: 'Luc Besson', status: 'Interview', date: '10/02/2026', score: 85 },
+        { id: 106, jobId: 1, candidateName: 'Sarah Connor', status: 'Pending', date: '09/02/2026', score: 78 },
+        { id: 107, jobId: 1, candidateName: 'John Doe', status: 'Rejected', date: '08/02/2026', score: 45 },
         // Job 2
-        { id: 103, jobId: 2, candidateName: 'Ahmed Benali', status: 'Pending', date: '13/02/2026' },
-        { id: 104, jobId: 2, candidateName: 'Sophie Martin', status: 'Rejected', date: '10/02/2026' },
-        { id: 108, jobId: 2, candidateName: 'Thomas Muller', status: 'Accepted', date: '12/02/2026' },
+        { id: 103, jobId: 2, candidateName: 'Ahmed Benali', status: 'Pending', date: '13/02/2026', score: 95 },
+        { id: 104, jobId: 2, candidateName: 'Sophie Martin', status: 'Rejected', date: '10/02/2026', score: 55 },
+        { id: 108, jobId: 2, candidateName: 'Thomas Muller', status: 'Accepted', date: '12/02/2026', score: 91 },
         // Job 3
-        { id: 109, jobId: 3, candidateName: 'Emma Watson', status: 'Pending', date: '11/02/2026' },
-        { id: 110, jobId: 3, candidateName: 'Paul Pogba', status: 'Interview', date: '12/02/2026' },
-        { id: 111, jobId: 3, candidateName: 'Zinedine Zidane', status: 'Pending', date: '13/02/2026' },
-        { id: 112, jobId: 3, candidateName: 'Karim Benzema', status: 'Accepted', date: '10/02/2026' },
+        { id: 109, jobId: 3, candidateName: 'Emma Watson', status: 'Pending', date: '11/02/2026', score: 89 },
+        { id: 110, jobId: 3, candidateName: 'Paul Pogba', status: 'Interview', date: '12/02/2026', score: 82 },
+        { id: 111, jobId: 3, candidateName: 'Zinedine Zidane', status: 'Pending', date: '13/02/2026', score: 75 },
+        { id: 112, jobId: 3, candidateName: 'Karim Benzema', status: 'Accepted', date: '10/02/2026', score: 94 },
         // Job 4
-        { id: 113, jobId: 4, candidateName: 'Elon Musk', status: 'Pending', date: '12/02/2026' },
-        { id: 114, jobId: 4, candidateName: 'Jeff Bezos', status: 'Interview', date: '11/02/2026' },
-        { id: 115, jobId: 4, candidateName: 'Bill Gates', status: 'Accepted', date: '09/02/2026' },
-        { id: 116, jobId: 4, candidateName: 'Mark Zuckerberg', status: 'Rejected', date: '08/02/2026' },
-        { id: 117, jobId: 4, candidateName: 'Steve Jobs', status: 'Pending', date: '07/02/2026' }
+        { id: 113, jobId: 4, candidateName: 'Elon Musk', status: 'Pending', date: '12/02/2026', score: 96 },
+        { id: 114, jobId: 4, candidateName: 'Jeff Bezos', status: 'Interview', date: '11/02/2026', score: 90 },
+        { id: 115, jobId: 4, candidateName: 'Bill Gates', status: 'Accepted', date: '09/02/2026', score: 87 },
+        { id: 116, jobId: 4, candidateName: 'Mark Zuckerberg', status: 'Rejected', date: '08/02/2026', score: 62 },
+        { id: 117, jobId: 4, candidateName: 'Steve Jobs', status: 'Pending', date: '07/02/2026', score: 84 }
     ] as Application[],
 
     // Helper to add application
@@ -171,5 +171,21 @@ export const MockData = reactive({
 
     getApplicantsCount(jobId: number) {
         return this.applications.filter(a => a.jobId === jobId).length;
+    },
+
+    deleteJob(id: number) {
+        this.jobs = this.jobs.filter(j => j.id !== id);
+        this.applications = this.applications.filter(a => a.jobId !== id);
+    },
+
+    deleteApplication(id: number) {
+        this.applications = this.applications.filter(a => a.id !== id);
+    },
+
+    updateJobTitle(id: number, newTitle: string) {
+        const job = this.jobs.find(j => j.id === id);
+        if (job) {
+            job.title = newTitle;
+        }
     }
 });
