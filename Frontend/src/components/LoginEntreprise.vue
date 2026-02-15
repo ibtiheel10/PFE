@@ -1,22 +1,17 @@
 <template>
   <div class="page-wrapper">
 
-    <header class="header">
-  <div class="header-container">
-    <div class="logo">
-      <img src="../assets/logo-modern.png" alt="Skillvia" />
-    </div>
-
-    <div class="header-links">
-      <router-link to="/support">Besoin d'aide ?</router-link>
-      <router-link to="/contact" class="contact-btn">Contactez-nous</router-link>
-    </div>
-  </div>
-</header>
+    <Navbar :hideActions="true" />
 
 
     <!-- PAGE -->
     <div class="login-page">
+      
+      <!-- Animated Background Shapes -->
+      <div class="bg-shape shape-1"></div>
+      <div class="bg-shape shape-2"></div>
+      <div class="bg-shape shape-3"></div>
+
       <div class="login-card">
 
         <!-- LEFT PANEL -->
@@ -176,6 +171,7 @@
 import { ref,computed } from "vue";
 import { useRouter } from "vue-router";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
+import Navbar from './Navbar.vue';
 
 const router = useRouter();
 
@@ -234,9 +230,54 @@ const validateEmail = (): void => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: #f4f6fb;
+  background: #ffffff;
   padding-top: 70px;
   padding-bottom: 30px;
+}
+
+/* Background Animations */
+.bg-shape {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  z-index: 0;
+  animation: moveBackground 20s infinite alternate;
+}
+
+.shape-1 {
+  width: 600px;
+  height: 600px;
+  background: #1f5bff;
+  top: -100px;
+  left: -100px;
+  animation-duration: 25s;
+}
+
+.shape-2 {
+  width: 500px;
+  height: 500px;
+  background: #8b5cf6;
+  bottom: -50px;
+  right: -50px;
+  animation-duration: 30s;
+  animation-direction: alternate-reverse;
+}
+
+.shape-3 {
+  width: 300px;
+  height: 300px;
+  background: #10b981;
+  top: 40%;
+  left: 60%;
+  opacity: 0.2;
+  animation-duration: 35s;
+}
+
+@keyframes moveBackground {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, 50px) scale(1.1); }
+  100% { transform: translate(-30px, 20px) scale(0.9); }
 }
 
 
@@ -247,8 +288,11 @@ const validateEmail = (): void => {
   background: white;
   border-radius: 16px;
   overflow: visible;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.08); /* Softer shadow for light theme */
+  border: 1px solid #e2e8f0; /* Border for contrast on white bg */
   margin-top: 20px;
+  position: relative;
+  z-index: 1; /* Ensure card is above background */
 }
 
 
@@ -458,12 +502,23 @@ form label {
   color: #374151;
 }
 
-form input {
+form input.form-control {
   width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
+  height: 48px;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  font-size: 15px;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+form input.form-control:focus {
+  border-color: #1f5bff;
+  background: white;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(31, 91, 255, 0.1);
 }
 
 .options {
@@ -481,13 +536,31 @@ form input {
 
 .login-btn {
   width: 100%;
-  margin-top: 20px;
-  padding: 12px;
+  margin-top: 30px;
+  padding: 14px;
   background: #1f5bff;
   color: white;
   border: none;
-  border-radius: 6px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 16px;
   cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(31, 91, 255, 0.2);
+}
+
+.login-btn:hover {
+  background: #1e4ed8;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(31, 91, 255, 0.3);
+}
+
+.login-btn:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 .social {
@@ -498,15 +571,16 @@ form input {
 
 .social-btn {
   flex: 1;
-  height: 44px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  height: 48px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   background: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  font-weight: 500;
+  gap: 12px;
+  font-weight: 600;
+  color: #4b5563;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -520,68 +594,7 @@ form input {
   background: #f5f8ff;
 }
 
-.header {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 1px 15px rgba(0,0,0,0.04);
-  z-index: 100;
-  border-bottom: 1px solid rgba(0,0,0,0.03);
-  transition: all 0.3s ease;
-}
 
-.header-container {
-  max-width: 1200px;
-  margin: auto;
-  height: 80px;
-  padding: 0 24px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.logo img {
-  width: 140px;
-  display: block;
-}
-
-.header-links {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.header-links a {
-  font-size: 14px;
-  text-decoration: none;
-  color: #64748b;
-  font-weight: 500;
-  transition: all 0.2s;
-}
-
-.header-links a:hover {
-  color: #1f5bff;
-}
-
-.header-links .contact-btn {
-  color: white;
-  background: #1f5bff;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: 600;
-  box-shadow: 0 4px 6px -1px rgba(31, 91, 255, 0.2);
-  transition: all 0.2s ease;
-}
-
-.header-links .contact-btn:hover {
-  background: #1e4ed8;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 10px -1px rgba(31, 91, 255, 0.3);
-  color: white;
-}
 
 .features li {
   display: flex;
@@ -758,11 +771,14 @@ form input {
 
 form input.form-control {
   width: 100%;
+  height: 48px;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  font-size: 15px;
+  transition: all 0.2s ease;
   box-sizing: border-box;
-  height: 44px;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ddd;
 }
 
 .password-wrapper .form-control {

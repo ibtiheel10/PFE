@@ -646,19 +646,4 @@ const handleLogout = () => {
         stroke-dashoffset: 0;
     }
 }
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-    width: 6px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: #CBD5E1;
-    border-radius: 3px;
-}
-.dark ::-webkit-scrollbar-thumb {
-    background: #475569;
-}
 </style>

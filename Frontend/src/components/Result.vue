@@ -78,10 +78,7 @@
                             Voir d'autres offres
                              <i class="fa-solid fa-arrow-right"></i>
                         </button>
-                         <button class="btn btn-secondary">
-                            Télécharger le rapport
-                             <i class="fa-solid fa-download"></i>
-                        </button>
+
                     </div>
                 </div>
             </div>
@@ -169,7 +166,7 @@ const lineChartOptions = ref({
         }
     },
     xaxis: {
-        categories: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Jun'],
+        categories: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
         labels: { style: { colors: '#64748b', fontSize: '12px' } },
         axisBorder: { show: false },
         axisTicks: { show: false }

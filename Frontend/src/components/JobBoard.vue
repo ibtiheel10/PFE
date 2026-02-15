@@ -7,8 +7,8 @@
         <!-- Sidebar Filters -->
         <aside class="filters-sidebar">
           <div class="filters-header">
-            <h3>Filters</h3>
-            <button class="clear-all" @click="clearFilters">Clear All</button>
+            <h3>Filtres</h3>
+            <button class="clear-all" @click="clearFilters">Réinitialiser</button>
           </div>
 
           <!-- Theme Filters -->
@@ -44,7 +44,7 @@
             </div>
             <div class="company-search">
               <i class="fa-solid fa-magnifying-glass"></i>
-              <input type="text" placeholder="Find company..." v-model="companySearch" />
+              <input type="text" placeholder="Rechercher une entreprise..." v-model="companySearch" />
             </div>
             <div class="filter-options">
               <label v-for="company in filteredCompanyList" :key="company" class="checkbox-option">
@@ -52,34 +52,34 @@
                 <span class="checkmark"></span>
                 <span class="option-text">{{ company }}</span>
               </label>
-              <p v-if="filteredCompanyList.length === 0" class="no-results">No companies found</p>
+              <p v-if="filteredCompanyList.length === 0" class="no-results">Aucune entreprise trouvée</p>
             </div>
           </div>
 
-          <button class="apply-filters-btn">Apply Filters</button>
+          <button class="apply-filters-btn">Appliquer les filtres</button>
         </aside>
 
         <!-- Main Content Area -->
         <main class="jobs-content">
           <!-- Breadcrumb -->
           <div class="breadcrumb">
-            <router-link to="/candidat/dashboard">Home</router-link>
+            <router-link to="/candidat/dashboard">Accueil</router-link>
             <span class="separator">/</span>
-            <span class="current">Available Jobs</span>
+            <span class="current">Offres d'emploi</span>
           </div>
 
           <!-- Jobs Header -->
           <div class="jobs-header">
             <div class="jobs-info">
-              <h1>Available Jobs</h1>
-              <p>Found <strong>{{ filteredJobs.length }} job offers</strong> matching your profile</p>
+              <h1>Offres disponibles</h1>
+              <p>Nous avons trouvé <strong>{{ filteredJobs.length }} offres</strong> correspondant à votre profil</p>
             </div>
             <div class="sort-section">
-              <label>Sort by:</label>
+              <label>Trier par:</label>
               <select v-model="sortBy" class="sort-select">
-                <option value="recent">Most Recent</option>
-                <option value="salary">Highest Salary</option>
-                <option value="relevance">Most Relevant</option>
+                <option value="recent">Plus récent</option>
+                <option value="salary">Salaire le plus élevé</option>
+                <option value="relevance">Plus pertinent</option>
               </select>
             </div>
           </div>
@@ -127,7 +127,7 @@
                 <div class="job-footer">
                   <div class="mcq-badge">
                     <i class="fa-solid fa-list-check"></i>
-                    {{ job.mcqDuration }} min MCQ
+                    {{ job.mcqDuration }} min QCM
                   </div>
                   <button class="job-btn" @click="viewJob(job.id)">
                     <span>Consulter</span>
@@ -166,12 +166,12 @@
         <div class="footer-content">
           <div class="footer-left">
             <i class="fa-solid fa-shield-halved"></i>
-            © 2024 Skillvia Recruitment Platform
+            © 2026 Skillvia - Plateforme de Recrutement
           </div>
           <div class="footer-links">
-            <a href="#">Privacy Policy</a>
-            <a href="#">Terms of Service</a>
-            <a href="#">Contact Support</a>
+            <a href="#">Politique de confidentialité</a>
+            <a href="#">Conditions d'utilisation</a>
+            <a href="#">Support</a>
           </div>
         </div>
       </footer>

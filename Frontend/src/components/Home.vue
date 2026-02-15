@@ -1,5 +1,10 @@
 <template>
   <div class="home-page">
+    <!-- Animated Decoration Background -->
+    <div class="bg-shape shape-1"></div>
+    <div class="bg-shape shape-2"></div>
+    <div class="bg-shape shape-3"></div>
+
     <!-- Navigation Header -->
     <Navbar />
 
@@ -8,12 +13,12 @@
       <div class="hero-container">
         <div class="hero-content">
           <div class="badge">
-            <i class="fa-solid fa-sparkles"></i>
+            <i class="fa-solid fa-rocket"></i>
             <span>Plateforme de recrutement nouvelle génération</span>
           </div>
           <h1 class="hero-title">
             L'embauche objective<br />
-            <span class="gradient-text">par la compétence</span>
+            par la compétence
           </h1>
           <p class="hero-subtitle">
             Transformez votre processus de recrutement avec des évaluations scientifiquement validées. 
@@ -25,7 +30,6 @@
               <i class="fa-solid fa-arrow-right"></i>
             </router-link>
             <router-link to="/demo" class="btn-hero-secondary">
-              <i class="fa-solid fa-play"></i>
               <span>Voir la démo</span>
             </router-link>
           </div>
@@ -334,29 +338,65 @@ onMounted(() => {
 .home-page {
   width: 100%;
   overflow-x: hidden;
-  background: #ffffff;
+  background: #ffffff; /* Light background */
+  position: relative;
 }
 
 /* Navigation Styles removed as they are now in Navbar.vue */
 
 
+/* Background Animations */
+.bg-shape {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.4;
+  z-index: 0;
+  animation: moveBackground 20s infinite alternate;
+}
+
+.shape-1 {
+  width: 600px;
+  height: 600px;
+  background: #1f5bff;
+  top: -100px;
+  left: -100px;
+  animation-duration: 25s;
+}
+
+.shape-2 {
+  width: 500px;
+  height: 500px;
+  background: #4f46e5;
+  bottom: -50px;
+  right: -50px;
+  animation-duration: 30s;
+  animation-direction: alternate-reverse;
+}
+
+.shape-3 {
+  width: 300px;
+  height: 300px;
+  background: #2dd4bf;
+  top: 40%;
+  left: 60%;
+  opacity: 0.2;
+  animation-duration: 35s;
+}
+
+@keyframes moveBackground {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, 50px) scale(1.1); }
+  100% { transform: translate(-30px, 20px) scale(0.9); }
+}
+
 /* Hero Section */
 .hero {
   padding: 140px 2rem 80px;
-  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+  background: transparent;
   position: relative;
   overflow: hidden;
-}
-
-.hero::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 600px;
-  height: 600px;
-  background: radial-gradient(circle, rgba(31, 91, 255, 0.1) 0%, transparent 70%);
-  border-radius: 50%;
+  z-index: 1;
 }
 
 .hero-container {
@@ -377,40 +417,42 @@ onMounted(() => {
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem 1rem;
-  background: linear-gradient(135deg, rgba(31, 91, 255, 0.1) 0%, rgba(31, 91, 255, 0.05) 100%);
-  border: 1px solid rgba(31, 91, 255, 0.2);
+  background: #E0E7FF; /* Light indigo/blue background */
+  border: none;
   border-radius: 50px;
-  color: #1f5bff;
+  color: #4338ca; /* Darker indigo text */
+  font-family: 'Inter', sans-serif;
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 700;
   margin-bottom: 1.5rem;
+}
+
+.badge span, .badge i {
+  color: #4338ca;
 }
 
 .badge i {
-  font-size: 1rem;
+  font-size: 0.9rem;
 }
 
 .hero-title {
-  font-size: 3.5rem;
-  font-weight: 800;
-  line-height: 1.2;
-  color: #1a1a1a;
+  font-family: 'Inter', sans-serif;
+  font-size: 4rem; /* Increased size */
+  font-weight: 800; /* Extra bold */
+  line-height: 1.1;
+  color: #1e293b; /* Dark slate text for light background */
   margin-bottom: 1.5rem;
-}
-
-.gradient-text {
-  background: linear-gradient(135deg, #1f5bff 0%, #7c3aed 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  letter-spacing: -0.02em;
 }
 
 .hero-subtitle {
-  font-size: 1.2rem;
-  color: #666;
-  line-height: 1.8;
+  font-family: 'Inter', sans-serif;
+  font-size: 1.25rem;
+  color: #475569; /* Slate 600 for light background */
+  line-height: 1.6;
   margin-bottom: 2.5rem;
-  max-width: 540px;
+  max-width: 600px;
+  font-weight: 400;
 }
 
 .hero-actions {
@@ -423,40 +465,45 @@ onMounted(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 2rem;
-  background: linear-gradient(135deg, #1f5bff 0%, #0d47a1 100%);
+  padding: 0.875rem 2rem;
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); /* Blurple gradient */
   color: white;
   text-decoration: none;
-  border-radius: 12px;
+  border-radius: 8px; /* Slightly less rounded */
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
-  font-size: 1.05rem;
-  transition: all 0.3s ease;
-  box-shadow: 0 8px 25px rgba(31, 91, 255, 0.35);
+  font-size: 1rem;
+  border: none;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .btn-hero-primary:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 35px rgba(31, 91, 255, 0.45);
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
 .btn-hero-secondary {
   display: inline-flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 1rem 2rem;
+  padding: 0.875rem 2rem;
   background: white;
-  color: #1f5bff;
+  color: #1f2937; /* Dark gray text */
   text-decoration: none;
-  border-radius: 12px;
+  border-radius: 8px;
+  font-family: 'Inter', sans-serif;
   font-weight: 600;
-  font-size: 1.05rem;
-  border: 2px solid #e5e7eb;
-  transition: all 0.3s ease;
+  font-size: 1rem;
+  border: 1px solid #e5e7eb; /* Light gray border */
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 }
 
 .btn-hero-secondary:hover {
-  border-color: #1f5bff;
-  background: #f8f9ff;
+  background: #f9fafb;
+  border-color: #d1d5db;
 }
 
 .hero-stats {
@@ -477,7 +524,7 @@ onMounted(() => {
 
 .stat-label {
   font-size: 0.9rem;
-  color: #666;
+  color: #64748b; /* Slate 500 */
 }
 
 /* Hero Visual */
@@ -549,7 +596,9 @@ onMounted(() => {
 /* Features Section */
 .features {
   padding: 100px 2rem;
-  background: white;
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .section-container {
@@ -576,7 +625,7 @@ onMounted(() => {
 .section-title {
   font-size: 2.75rem;
   font-weight: 800;
-  color: #1a1a1a;
+  color: #1e293b; /* Dark slate */
   margin-bottom: 1rem;
   max-width: 700px;
   margin-left: auto;
@@ -585,7 +634,7 @@ onMounted(() => {
 
 .section-subtitle {
   font-size: 1.15rem;
-  color: #666;
+  color: #475569; /* Slate 600 */
   max-width: 600px;
   margin: 0 auto;
 }
@@ -598,12 +647,13 @@ onMounted(() => {
 
 .feature-card {
   padding: 2.5rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
-  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 16px;
   transition: all 0.4s ease;
   opacity: 0;
   transform: translateY(30px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 }
 
 .feature-card.visible {
@@ -615,6 +665,7 @@ onMounted(() => {
   transform: translateY(-8px);
   box-shadow: 0 20px 40px rgba(31, 91, 255, 0.15);
   border-color: rgba(31, 91, 255, 0.3);
+  background: #ffffff;
 }
 
 .feature-icon {
@@ -637,12 +688,12 @@ onMounted(() => {
 .feature-card h3 {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #1e293b;
   margin-bottom: 1rem;
 }
 
 .feature-card p {
-  color: #666;
+  color: #64748b;
   line-height: 1.7;
   font-size: 1rem;
 }
@@ -650,7 +701,9 @@ onMounted(() => {
 /* How It Works */
 .how-it-works {
   padding: 100px 2rem;
-  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .steps {
@@ -685,12 +738,12 @@ onMounted(() => {
 .step-content h3 {
   font-size: 1.5rem;
   font-weight: 700;
-  color: #1a1a1a;
+  color: #1e293b;
   margin-bottom: 1rem;
 }
 
 .step-content p {
-  color: #666;
+  color: #64748b;
   line-height: 1.7;
   font-size: 1rem;
 }
@@ -699,7 +752,9 @@ onMounted(() => {
 /* Dual Sections (Enterprise vs Candidate) */
 .dual-sections {
   padding: 100px 2rem;
-  background: white;
+  background: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .sections-grid {

@@ -39,9 +39,7 @@
               :class="isActive(item.path) ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'" 
             />
             <span v-if="!isSidebarCollapsed" class="font-medium text-sm transition-opacity duration-200">{{ item.name }}</span>
-            <div v-if="!isSidebarCollapsed && item.badge" class="ml-auto bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs font-bold">
-              {{ item.badge }}
-            </div>
+
           </router-link>
         </nav>
       </div>
@@ -68,17 +66,7 @@
 
         <!-- Right Side -->
         <div class="flex items-center gap-6">
-            <!-- Search -->
-            <div class="relative group hidden md:block">
-                <MagnifyingGlassIcon class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2 group-focus-within:text-blue-500 transition-colors" />
-                <input 
-                  type="text" 
-                  v-model="searchQuery" 
-                  placeholder="Rechercher..." 
-                  class="pl-10 pr-4 py-2 w-64 bg-gray-50 border border-gray-200 rounded-full text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
-                  @keyup.enter="handleSearch"
-                />
-            </div>
+
 
             <!-- Notifications -->
             <button @click="toggleNotifications" class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
@@ -136,7 +124,6 @@ import {
     BriefcaseIcon, 
     ClockIcon, 
     ChartBarIcon, 
-    MagnifyingGlassIcon, 
     BellIcon, 
     ChevronDownIcon,
 
@@ -148,21 +135,20 @@ const router = useRouter();
 const route = useRoute();
 
 // State
-const searchQuery = ref('');
 const hasNotifications = ref(true);
 const showProfileMenu = ref(false);
 const isSidebarCollapsed = ref(false);
 
 const navItems = [
-    { name: 'Dashboard', icon: Squares2X2Icon, path: '/candidat/dashboard' },
-    { name: 'Jobs', icon: BriefcaseIcon, badge: '3', path: '/candidat/jobs' },
-    { name: 'History', icon: ClockIcon, path: '/candidat/history' },
-    { name: 'Results', icon: ChartBarIcon, path: '/candidat/results' }
+    { name: 'Tableau de bord', icon: Squares2X2Icon, path: '/candidat/dashboard' },
+    { name: 'Offres', icon: BriefcaseIcon, path: '/candidat/jobs' },
+    { name: 'Historique', icon: ClockIcon, path: '/candidat/history' },
+    { name: 'Résultats', icon: ChartBarIcon, path: '/candidat/results' }
 ];
 
 const pageTitle = computed(() => {
     const current = navItems.find(item => route.path.includes(item.path));
-    return current ? current.name : 'Dashboard';
+    return current ? current.name : 'Tableau de bord';
 });
 
 const isActive = (path: string) => {
@@ -173,11 +159,6 @@ const toggleSidebar = () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value;
 };
 
-const handleSearch = () => {
-    if (searchQuery.value) {
-        console.log('Searching for:', searchQuery.value);
-    }
-};
 
 const toggleNotifications = () => {
     hasNotifications.value = !hasNotifications.value;
@@ -213,21 +194,5 @@ const handleLogout = () => {
 
 .animate-fade-in {
     animation: fadeInUp 0.3s ease-out forwards;
-}
-
-/* Hide scrollbar for cleaner look */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: #E5E7EB;
-    border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #D1D5DB;
 }
 </style>

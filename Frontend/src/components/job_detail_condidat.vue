@@ -79,7 +79,7 @@
         <div class="details-column">
            <!-- Description Section -->
            <section class="detail-card animate-card" style="--animation-order: 0">
-             <div class="section-title">
+              <div class="section-title">
                <span class="icon-emoji">📄</span>
                <h2>À propos de la mission</h2>
              </div>
@@ -187,8 +187,8 @@ const router = useRouter();
 const route = useRoute();
 
 // --- State ---
-const isSaved = ref(false);
-const searchQuery = ref('');
+// const isSaved = ref(false);
+// const searchQuery = ref('');
 const job = ref<Job | undefined>(undefined);
 
 // --- Fetch Data ---
@@ -200,12 +200,12 @@ onMounted(() => {
 
 // --- Actions ---
 
-const toggleSave = () => {
-  isSaved.value = !isSaved.value;
-  if (isSaved.value) {
-    alert('Offre sauvegardée !');
-  }
-};
+// const toggleSave = () => {
+//   isSaved.value = !isSaved.value;
+//   if (isSaved.value) {
+//     alert('Offre sauvegardée !');
+//   }
+// };
 
 const applyToJob = () => {
     if (job.value) {

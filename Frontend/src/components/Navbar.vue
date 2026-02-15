@@ -1,112 +1,331 @@
 <template>
-  <header class="navbar">
-    <div class="nav-container">
-      <div class="logo" @click="$router.push('/')" style="cursor: pointer;">
-        <img src="../assets/logo.png" alt="Skillvia" />
+  <div class="navbar-wrapper">
+    <header class="navbar" :class="{ 'navbar-transparent': transparent }">
+      <div class="nav-container">
+        <!-- Logo -->
+        <div class="logo" @click="$router.push('/')" style="cursor: pointer;">
+          <!-- Using text for now if logo image doesn't match dark theme, or ensure logo is white/transparent -->
+           <h2 class="logo-text">Skillvia</h2>
+        </div>
+
+        <!-- Links -->
+        <nav class="nav-links">
+          <router-link to="/" class="nav-link">Accueil</router-link>
+          
+          <div class="nav-item-dropdown">
+            <button 
+              class="nav-link dropdown-trigger" 
+              @click.stop="toggleDropdown('features')"
+              :class="{ active: activeDropdown === 'features' }"
+            >
+              Fonctionnalités <i class="fa-solid fa-chevron-down"></i>
+            </button>
+            
+            <div class="dropdown-menu mega-menu" v-show="activeDropdown === 'features'">
+              <div class="mega-menu-grid">
+                <a href="/#features" v-for="feature in features" :key="feature.title" class="mega-menu-item" @click="closeDropdown">
+                  <div class="item-title">{{ feature.title }}</div>
+                  <div class="item-description">{{ feature.description }}</div>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <a href="/#how-it-works" class="nav-link">Comment ça marche</a>
+          <router-link to="/securite" class="nav-link">Sécurité</router-link>
+          <router-link to="/contact" class="nav-link">Contact</router-link>
+        </nav>
+
+        <!-- Actions -->
+        <div class="nav-actions" v-if="!hideActions">
+          <router-link to="/login" class="btn-gradient">
+            Connexion
+          </router-link>
+        </div>
       </div>
-      <nav class="nav-links">
-        <router-link to="/">Accueil</router-link>
-        <a href="/#features">Fonctionnalités</a>
-        <a href="/#how-it-works">Comment ça marche</a>
-        <router-link to="/demo">Démo</router-link>
-        <router-link to="/securite">Sécurité</router-link>
-        <router-link to="/contact">Contact</router-link>
-      </nav>
-      <div class="nav-actions">
-        <router-link to="/login" class="btn-secondary">Connexion</router-link>
-        <router-link to="/inscription" class="btn-primary">Commencer</router-link>
-      </div>
-    </div>
-  </header>
+    </header>
+  </div>
 </template>
 
 <script setup lang="ts">
-// Basic navbar logic
+import { ref, onMounted, onUnmounted } from 'vue';
+
+const props = defineProps({
+  hideActions: {
+    type: Boolean,
+    default: false
+  },
+  transparent: {
+    type: Boolean,
+    default: false
+  }
+});
+
+const activeDropdown = ref<string | null>(null);
+
+const toggleDropdown = (name: string) => {
+  if (activeDropdown.value === name) {
+    activeDropdown.value = null;
+  } else {
+    activeDropdown.value = name;
+  }
+};
+
+const closeDropdown = () => {
+  activeDropdown.value = null;
+};
+
+// Close dropdown when clicking outside
+const handleClickOutside = (event: MouseEvent) => {
+  const target = event.target as HTMLElement;
+  if (!target.closest('.nav-item-dropdown')) {
+    activeDropdown.value = null;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
+
+const features = [
+  {
+    title: 'Évaluations scientifiques',
+    description: 'QCM validés par des experts pour mesurer objectivement les compétences.'
+  },
+  {
+    title: 'Réduction des biais',
+    description: 'Éliminez jusqu\'à 70% des biais cognitifs grâce à notre méthodologie.'
+  },
+  {
+    title: 'Gain de temps',
+    description: 'Automatisez vos évaluations et divisez par 2 le temps de recrutement.'
+  },
+  {
+    title: 'Analytics avancés',
+    description: 'Tableaux de bord détaillés pour suivre vos KPIs et optimiser votre stratégie.'
+  },
+  {
+    title: 'Collaboration d\'équipe',
+    description: 'Travaillez en équipe avec des workflows personnalisables.'
+  },
+  {
+    title: 'Sécurité & conformité',
+    description: 'Données chiffrées, conformité RGPD et hébergement sécurisé.'
+  }
+];
 </script>
 
 <style scoped>
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(31, 91, 255, 0.1);
+/* Wrapper to prevent layout shift if needed, but since it's fixed, mostly ensures float */
+.navbar-wrapper {
+  position: relative;
+  width: 100%;
   z-index: 1000;
-  padding: 1rem 0;
+  display: flex;
+  justify-content: center;
+  padding-top: 20px;
+  pointer-events: none; /* Let clicks pass through empty space */
+}
+
+.navbar {
+  pointer-events: auto; /* Re-enable clicks */
+  position: fixed;
+  top: 20px;
+  background: rgba(255, 255, 255, 0.9); /* White/Transparent */
+  backdrop-filter: blur(12px);
+  border: none; /* Removed white border */
+  border-radius: 100px; /* Pill shape */
+  padding: 0.75rem 2rem;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+  width: auto;
+  min-width: 600px;
+  max-width: 95%;
+  transition: all 0.3s ease;
+}
+
+/* Transparent variant for dark pages */
+.navbar-transparent {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.navbar-transparent .logo-text {
+  color: white !important;
+}
+
+.navbar-transparent .nav-link {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.navbar-transparent .nav-link:hover,
+.navbar-transparent .nav-link.active {
+  color: white !important;
 }
 
 .nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.logo img {
-  height: 40px;
-}
-
-.nav-links {
-  display: flex;
   gap: 2rem;
 }
 
-.nav-links a {
-  color: #333;
+.logo-text {
+  color: #0f172a; /* Dark text */
+  font-weight: 800;
+  font-size: 1.5rem;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+/* Links */
+.nav-links {
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+}
+
+.nav-link {
+  color: #475569; /* Dark grey */
   text-decoration: none;
   font-weight: 500;
   font-size: 0.95rem;
-  transition: color 0.3s ease;
+  transition: color 0.2s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: 'Inter', sans-serif;
 }
 
-.nav-links a:hover,
-.nav-links .router-link-active {
+.nav-link:hover, .nav-link.active, .nav-item-dropdown:hover .dropdown-trigger {
   color: #1f5bff;
 }
 
+.dropdown-trigger i {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.nav-link.active i, .nav-item-dropdown:hover .dropdown-trigger i {
+  transform: rotate(180deg);
+}
+
+.nav-item-dropdown {
+  position: relative;
+}
+
+/* Dropdown Menu */
+.dropdown-menu {
+  position: absolute;
+  top: 150%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  padding: 1rem;
+  min-width: 200px;
+  z-index: 1001;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+}
+
+.nav-item-dropdown:hover .dropdown-menu,
+.dropdown-menu[style*="display: block"] {
+  opacity: 1;
+  visibility: visible;
+  top: 120%; /* Slight slide up effect */
+}
+
+/* Mega Menu */
+.mega-menu {
+  width: 600px;
+  left: -200px; 
+}
+
+.mega-menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.mega-menu-item {
+  display: block;
+  padding: 1rem;
+  border-radius: 12px;
+  text-decoration: none;
+  transition: background-color 0.2s ease;
+}
+
+.mega-menu-item:hover {
+  background-color: #f8fafc;
+}
+
+.item-title {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.item-description {
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Actions */
 .nav-actions {
   display: flex;
+  align-items: center;
   gap: 1rem;
 }
 
-.btn-secondary {
+.btn-gradient {
+  background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 100%); /* Blue to Purple */
+  color: white; /* White text */
   padding: 0.6rem 1.5rem;
-  border: 2px solid #1f5bff;
-  color: #1f5bff;
-  text-decoration: none;
-  border-radius: 8px;
+  border-radius: 50px; /* Pill shape */
   font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.btn-secondary:hover {
-  background: #1f5bff;
-  color: white;
-}
-
-.btn-primary {
-  padding: 0.6rem 1.5rem;
-  background: linear-gradient(135deg, #1f5bff 0%, #0d47a1 100%);
-  color: white;
   text-decoration: none;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 15px rgba(31, 91, 255, 0.3);
+  font-size: 0.95rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 4px 10px rgba(59, 130, 246, 0.3);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(31, 91, 255, 0.4);
+.btn-gradient:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
+  filter: brightness(1.05);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .navbar {
+    width: 90%;
+    padding: 0.75rem 1.5rem;
+    border-radius: 20px; /* Less rounded on small screens if pill layout breaks */
+    flex-direction: column; /* Or hide elements */
+  }
   .nav-links {
-    display: none;
+    display: none; /* Mobile menu needed */
+  }
+  .nav-container {
+    justify-content: space-between;
+    width: 100%;
   }
 }
 </style>

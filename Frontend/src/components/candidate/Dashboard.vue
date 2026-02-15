@@ -8,14 +8,12 @@
             
             <div class="relative z-10 max-w-2xl">
                 <h2 class="text-3xl font-bold mb-2">Bon retour, Alexandre </h2>
-                <p class="text-blue-100 text-lg mb-6">Vous avez 2 entretiens à venir et 3 nouvelles offres correspondant à votre profil.</p>
+                <p class="text-blue-100 text-lg mb-6">Maximisez vos chances de réussite aujourd'hui. Consultez l'état de vos candidatures et préparez vos prochains défis.</p>
                 <div class="flex gap-4">
                     <button @click="goToJobs" class="bg-white text-blue-700 px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-50 transition shadow-sm">
                         Explorer les offres
                     </button>
-                    <button class="bg-blue-700/50 text-white border border-blue-400/30 px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-600/50 transition backdrop-blur-sm">
-                        Voir mon agenda
-                    </button>
+
                 </div>
             </div>
         </div>
@@ -80,90 +78,33 @@
                             <p class="chart-subtitle">Janvier - Juin 2024</p>
                         </div>
                         <div class="time-selector">
-                            <button class="time-btn active">6 Mois</button>
-                            <button class="time-btn">1 An</button>
+                            <button 
+                                @click="selectedRange = '6months'" 
+                                :class="['time-btn', { active: selectedRange === '6months' }]"
+                            >
+                                6 Mois
+                            </button>
+                            <button 
+                                @click="selectedRange = '1year'" 
+                                :class="['time-btn', { active: selectedRange === '1year' }]"
+                            >
+                                1 An
+                            </button>
                         </div>
                     </div>
                    
-                    <!-- Animated Bar Chart -->
                     <div class="bar-chart-container">
                         <div class="bars-wrapper">
-                            <!-- January -->
-                            <div class="bar-group">
+                            <div v-for="(data, index) in currentChartData" :key="index" class="bar-group">
                                 <div class="bars-pair">
-                                    <div class="bar bar-1" style="--bar-height: 65%; --animation-delay: 0s">
-                                        <div class="bar-tooltip">65%</div>
+                                    <div class="bar bar-1" :style="{ '--bar-height': data.score1 + '%', '--animation-delay': (index * 0.1) + 's' }">
+                                        <div class="bar-tooltip">{{ data.score1 }}%</div>
                                     </div>
-                                    <div class="bar bar-2" style="--bar-height: 55%; --animation-delay: 0.1s">
-                                        <div class="bar-tooltip">55%</div>
+                                    <div class="bar bar-2" :style="{ '--bar-height': data.score2 + '%', '--animation-delay': (index * 0.1 + 0.1) + 's' }">
+                                        <div class="bar-tooltip">{{ data.score2 }}%</div>
                                     </div>
                                 </div>
-                                <span class="month-label">Jan</span>
-                            </div>
-                            
-                            <!-- February -->
-                            <div class="bar-group">
-                                <div class="bars-pair">
-                                    <div class="bar bar-1" style="--bar-height: 85%; --animation-delay: 0.2s">
-                                        <div class="bar-tooltip">85%</div>
-                                    </div>
-                                    <div class="bar bar-2" style="--bar-height: 72%; --animation-delay: 0.3s">
-                                        <div class="bar-tooltip">72%</div>
-                                    </div>
-                                </div>
-                                <span class="month-label">Fév</span>
-                            </div>
-                            
-                            <!-- March -->
-                            <div class="bar-group">
-                                <div class="bars-pair">
-                                    <div class="bar bar-1" style="--bar-height: 78%; --animation-delay: 0.4s">
-                                        <div class="bar-tooltip">78%</div>
-                                    </div>
-                                    <div class="bar bar-2" style="--bar-height: 68%; --animation-delay: 0.5s">
-                                        <div class="bar-tooltip">68%</div>
-                                    </div>
-                                </div>
-                                <span class="month-label">Mar</span>
-                            </div>
-                            
-                            <!-- April -->
-                            <div class="bar-group">
-                                <div class="bars-pair">
-                                    <div class="bar bar-1" style="--bar-height: 50%; --animation-delay: 0.6s">
-                                        <div class="bar-tooltip">50%</div>
-                                    </div>
-                                    <div class="bar bar-2" style="--bar-height: 62%; --animation-delay: 0.7s">
-                                        <div class="bar-tooltip">62%</div>
-                                    </div>
-                                </div>
-                                <span class="month-label">Avr</span>
-                            </div>
-                            
-                            <!-- May -->
-                            <div class="bar-group">
-                                <div class="bars-pair">
-                                    <div class="bar bar-1" style="--bar-height: 75%; --animation-delay: 0.8s">
-                                        <div class="bar-tooltip">75%</div>
-                                    </div>
-                                    <div class="bar bar-2" style="--bar-height: 58%; --animation-delay: 0.9s">
-                                        <div class="bar-tooltip">58%</div>
-                                    </div>
-                                </div>
-                                <span class="month-label">Mai</span>
-                            </div>
-                            
-                            <!-- June -->
-                            <div class="bar-group">
-                                <div class="bars-pair">
-                                    <div class="bar bar-1" style="--bar-height: 82%; --animation-delay: 1s">
-                                        <div class="bar-tooltip">82%</div>
-                                    </div>
-                                    <div class="bar bar-2" style="--bar-height: 70%; --animation-delay: 1.1s">
-                                        <div class="bar-tooltip">70%</div>
-                                    </div>
-                                </div>
-                                <span class="month-label">Juin</span>
+                                <span class="month-label">{{ data.label }}</span>
                             </div>
                         </div>
                     </div>
@@ -172,9 +113,9 @@
                     <div class="chart-footer">
                         <div class="trend-indicator">
                             <i class="fa-solid fa-arrow-trend-up"></i>
-                            <span class="trend-text">Progression de <strong>5.2%</strong> ce mois</span>
+                            <span class="trend-text">Progression de <strong>{{ selectedRange === '6months' ? '5.2%' : '12.8%' }}</strong> cette période</span>
                         </div>
-                        <div class="date-range">Affichage des 6 derniers mois</div>
+                        <div class="date-range">Affichage des {{ selectedRange === '6months' ? '6 derniers mois' : '12 derniers mois' }}</div>
                     </div>
                 </section>
             </div>
@@ -191,8 +132,7 @@
                     <div class="divide-y divide-gray-50">
                         <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
                             <div class="flex justify-between items-start mb-1">
-                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Senior Frontend Dev</h4>
-                                <span class="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100">98% Match</span>
+                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Développeur Frontend Senior</h4>
                             </div>
                             <p class="text-xs text-gray-500 mb-3">NextGen Solutions • Paris</p>
                             <div class="flex items-center gap-2">
@@ -202,13 +142,12 @@
                         </div>
                         <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
                             <div class="flex justify-between items-start mb-1">
-                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">UX Architect</h4>
-                                <span class="text-[10px] font-bold text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-100">85% Match</span>
+                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Architecte UX</h4>
                             </div>
                             <p class="text-xs text-gray-500 mb-3">Global Design Studio • Lyon</p>
                             <div class="flex items-center gap-2">
                                 <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Figma</span>
-                                <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">User Research</span>
+                                <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Recherche Utilisateur</span>
                             </div>
                         </div>
                     </div>
@@ -252,10 +191,42 @@
 </template>
 
 <script setup lang="ts">
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { BoltIcon } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
+
+// Chart Logic
+const selectedRange = ref('6months');
+
+const chartData6Months = [
+    { label: 'Jan', score1: 65, score2: 55 },
+    { label: 'Fév', score1: 85, score2: 72 },
+    { label: 'Mar', score1: 78, score2: 68 },
+    { label: 'Avr', score1: 50, score2: 62 },
+    { label: 'Mai', score1: 75, score2: 58 },
+    { label: 'Juin', score1: 82, score2: 70 }
+];
+
+const chartData1Year = [
+    { label: 'J', score1: 45, score2: 40 },
+    { label: 'F', score1: 55, score2: 50 },
+    { label: 'M', score1: 60, score2: 55 },
+    { label: 'A', score1: 65, score2: 60 },
+    { label: 'M', score1: 70, score2: 65 },
+    { label: 'J', score1: 75, score2: 70 },
+    { label: 'J', score1: 80, score2: 75 },
+    { label: 'A', score1: 85, score2: 80 },
+    { label: 'S', score1: 82, score2: 78 },
+    { label: 'O', score1: 78, score2: 74 },
+    { label: 'N', score1: 84, score2: 80 },
+    { label: 'D', score1: 88, score2: 84 }
+];
+
+const currentChartData = computed(() => {
+    return selectedRange.value === '6months' ? chartData6Months : chartData1Year;
+});
 
 const results = [
     { name: 'JavaScript Advanced', date: '12 Oct 2023', score: 92 },

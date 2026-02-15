@@ -409,8 +409,6 @@ import {
     Squares2X2Icon, 
     BriefcaseIcon, 
     UsersIcon, 
-    PlusIcon,
-    MagnifyingGlassIcon, 
     BellIcon, 
     ChevronDownIcon,
     UserCircleIcon, 
@@ -487,17 +485,8 @@ if (typeof window !== 'undefined') {
     });
 }
 
-const handleNavClick = (item: { name: string; icon: any }) => {
-    activeNav.value = item.name;
-};
-
 // Actions
 const router = useRouter();
-
-const createNewPost = () => {
-    shouldOpenModal.value = true;
-    activeNav.value = 'Mes Postes';
-};
 
 const goToJobDetails = (id: number) => {
     router.push(`/job-details/${id}`);
@@ -684,20 +673,10 @@ const displayJobs = computed(() => {
     animation: fadeInUp 0.3s ease-out forwards;
 }
 
-/* Hide scrollbar for cleaner look */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: #E5E7EB;
-    border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #D1D5DB;
+@keyframes draw {
+    to {
+        stroke-dashoffset: 0;
+    }
 }
 
 .dropdown-item.logout {

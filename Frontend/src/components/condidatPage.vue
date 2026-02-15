@@ -244,8 +244,8 @@
                         <div class="divide-y divide-gray-50">
                             <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
                                 <div class="flex justify-between items-start mb-1">
-                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Senior Frontend Dev</h4>
-                                    <span class="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded border border-green-100">98% Match</span>
+                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Développeur Frontend Senior</h4>
+
                                 </div>
                                 <p class="text-xs text-gray-500 mb-3">NextGen Solutions • Paris</p>
                                 <div class="flex items-center gap-2">
@@ -255,13 +255,13 @@
                             </div>
                              <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
                                 <div class="flex justify-between items-start mb-1">
-                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">UX Architect</h4>
-                                    <span class="text-[10px] font-bold text-yellow-600 bg-yellow-50 px-1.5 py-0.5 rounded border border-yellow-100">85% Match</span>
+                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Architecte UX</h4>
+
                                 </div>
                                 <p class="text-xs text-gray-500 mb-3">Global Design Studio • Lyon</p>
                                 <div class="flex items-center gap-2">
                                      <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Figma</span>
-                                     <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">User Research</span>
+                                     <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Recherche Utilisateur</span>
                                 </div>
                             </div>
                         </div>
@@ -314,7 +314,7 @@
             <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ activeNav }}</h2>
             <p class="text-gray-500 max-w-md mx-auto mb-8">Cette section est en cours de développement. Revenez bientôt pour voir les nouvelles fonctionnalités !</p>
             <button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30" @click="activeNav = 'Dashboard'">
-                Retour au Dashboard
+                Retour au Tableau de bord
             </button>
         </div>
 
@@ -324,7 +324,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { 
     Squares2X2Icon, 
@@ -343,7 +343,7 @@ import { BoltIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/solid'; /
 const router = useRouter();
 
 // State
-const activeNav = ref('Dashboard');
+const activeNav = ref('Tableau de bord');
 const searchQuery = ref('');
 const hasNotifications = ref(true);
 const showProfileMenu = ref(false);
@@ -354,16 +354,16 @@ const toggleSidebar = () => {
 };
 
 const navItems = [
-    { name: 'Dashboard', icon: Squares2X2Icon },
-    { name: 'Jobs', icon: BriefcaseIcon, badge: '3' },
-    { name: 'History', icon: ClockIcon },
-    { name: 'Results', icon: ChartBarIcon }
+    { name: 'Tableau de bord', icon: Squares2X2Icon },
+    { name: 'Offres', icon: BriefcaseIcon, badge: '3' },
+    { name: 'Historique', icon: ClockIcon },
+    { name: 'Résultats', icon: ChartBarIcon }
 ];
 
 const handleNav = (itemName: string) => {
-    if (itemName === 'Jobs') {
+    if (itemName === 'Offres') {
         router.push('/jobs');
-    } else if (itemName === 'Results') {
+    } else if (itemName === 'Résultats') {
         router.push('/result');
     } else {
         activeNav.value = itemName;
@@ -697,21 +697,5 @@ const openDetails = () => {
 
 .application-card:hover .card-title {
   color: #3b82f6;
-}
-
-/* Hide scrollbar for cleaner look */
-::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-::-webkit-scrollbar-track {
-    background: transparent;
-}
-::-webkit-scrollbar-thumb {
-    background: #E5E7EB;
-    border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #D1D5DB;
 }
 </style>
