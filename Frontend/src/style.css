@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+/* Global page background - Navy Blue */
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #0c1222;
+    width: 100%;
+    min-height: 100vh;
+}
+
 /* Global Scrollbar Styling - Modern & Sleek */
 * {
     scrollbar-width: thin;
@@ -25,4 +35,312 @@
 ::-webkit-scrollbar-thumb:hover,
 ::-webkit-scrollbar-thumb:active {
     background-color: #d1d5db !important;
+}
+
+/* ============================================
+   GLOBAL DARK MODE
+   ============================================ */
+
+/* Smooth transition for theme switching */
+html {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+html.dark-mode {
+    background-color: #0f0f11;
+    color-scheme: dark;
+}
+
+html.dark-mode body {
+    background-color: #0f0f11;
+    color: #e2e8f0;
+}
+
+/* Scrollbar - dark mode */
+html.dark-mode * {
+    scrollbar-color: #374151 transparent;
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb {
+    background-color: #374151 !important;
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb:hover,
+html.dark-mode ::-webkit-scrollbar-thumb:active {
+    background-color: #4b5563 !important;
+}
+
+/* ---- Page Wrappers & Containers ---- */
+html.dark-mode .page-wrapper {
+    background-color: #0f0f11 !important;
+}
+
+html.dark-mode .page-container {
+    background-color: #0f0f11 !important;
+}
+
+html.dark-mode .security-container {
+    background-color: #0f0f11 !important;
+    color: #e2e8f0;
+}
+
+html.dark-mode .login-page {
+    background: #0f0f11 !important;
+}
+
+/* ---- Background Shapes ---- */
+html.dark-mode .bg-shape {
+    opacity: 0.12 !important;
+}
+
+/* ---- Cards ---- */
+html.dark-mode .login-card,
+html.dark-mode .contact-card,
+html.dark-mode .security-card,
+html.dark-mode .cert-badge {
+    background: #1a1a1f !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark-mode .security-card:hover {
+    background: #1e1e24 !important;
+    border-color: rgba(66, 153, 255, 0.3) !important;
+}
+
+html.dark-mode .cert-badge:hover {
+    background: #1e1e24 !important;
+}
+
+/* ---- Right Panel (Auth pages form areas) ---- */
+html.dark-mode .right-panel {
+    background: #1a1a1f !important;
+}
+
+/* ---- Tabs (Auth pages) ---- */
+html.dark-mode .tabs {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark-mode .tab {
+    color: #94a3b8 !important;
+}
+
+html.dark-mode .tab.active {
+    background: #2a2a32 !important;
+    color: #60a5fa !important;
+    box-shadow: 0 2px 6px rgba(31, 91, 255, 0.2) !important;
+}
+
+/* ---- Role buttons (Auth pages) ---- */
+html.dark-mode .role-btn {
+    background: #1e1e24 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #94a3b8 !important;
+}
+
+html.dark-mode .role-btn i {
+    color: #64748b !important;
+}
+
+html.dark-mode .role-btn.active {
+    border-color: #1f5bff !important;
+    color: #60a5fa !important;
+    background: rgba(31, 91, 255, 0.08) !important;
+}
+
+html.dark-mode .role-btn.active i {
+    color: #60a5fa !important;
+}
+
+/* ---- Form Elements ---- */
+html.dark-mode form label {
+    color: #94a3b8 !important;
+}
+
+html.dark-mode form input,
+html.dark-mode .form-control,
+html.dark-mode .form-group input,
+html.dark-mode .form-group select,
+html.dark-mode .form-group textarea {
+    background: rgba(255, 255, 255, 0.04) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark-mode form input::placeholder,
+html.dark-mode .form-group input::placeholder,
+html.dark-mode .form-group textarea::placeholder {
+    color: #475569 !important;
+}
+
+html.dark-mode form input:focus,
+html.dark-mode .form-group input:focus,
+html.dark-mode .form-group select:focus,
+html.dark-mode .form-group textarea:focus {
+    border-color: #1f5bff !important;
+    outline: none;
+}
+
+html.dark-mode .form-group select option {
+    background-color: #1a1a1f !important;
+    color: #e2e8f0 !important;
+}
+
+/* ---- File Upload ---- */
+html.dark-mode .file-upload {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #64748b !important;
+}
+
+html.dark-mode .file-upload:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* ---- Text Elements ---- */
+html.dark-mode h1,
+html.dark-mode h2,
+html.dark-mode h3,
+html.dark-mode h4 {
+    color: #f1f5f9 !important;
+}
+
+html.dark-mode .subtitle,
+html.dark-mode .hero-description,
+html.dark-mode .cert-subtitle {
+    color: #94a3b8 !important;
+}
+
+html.dark-mode .role-label {
+    color: #94a3b8 !important;
+}
+
+html.dark-mode .security-card p,
+html.dark-mode .security-list li {
+    color: #94a3b8 !important;
+}
+
+html.dark-mode .security-list li:hover {
+    color: #e2e8f0 !important;
+}
+
+html.dark-mode .cert-info span {
+    color: #64748b !important;
+}
+
+/* ---- Contact page specifics ---- */
+html.dark-mode .info-item p {
+    color: #94a3b8 !important;
+}
+
+html.dark-mode .sub-text {
+    color: #64748b !important;
+}
+
+html.dark-mode .left-panel h1 {
+    color: #f1f5f9 !important;
+}
+
+/* Auth Pages: Dark Blue Brand Sidebar */
+html.dark-mode .login-card .left-panel {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%) !important;
+    color: #e2e8f0 !important;
+}
+
+/* Contact Page: Neutral Dark Sidebar */
+html.dark-mode .contact-card .left-panel {
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.9), rgba(15, 23, 42, 0.9)) !important;
+    color: #e2e8f0 !important;
+}
+
+/* ---- Social Buttons ---- */
+html.dark-mode .social-btn {
+    background: #1e1e24 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark-mode .social-btn:hover {
+    border-color: #1f5bff !important;
+    background: rgba(31, 91, 255, 0.08) !important;
+}
+
+/* ---- Divider ---- */
+html.dark-mode .divider {
+    color: #64748b !important;
+}
+
+html.dark-mode .divider::before,
+html.dark-mode .divider::after {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ---- Checkbox ---- */
+html.dark-mode .remember {
+    color: #94a3b8 !important;
+}
+
+html.dark-mode .checkmark {
+    border-color: #4b5563 !important;
+}
+
+/* ---- Password Eye Icon ---- */
+html.dark-mode .eye {
+    color: #94a3b8 !important;
+}
+
+/* ---- Footer (Auth pages) ---- */
+html.dark-mode .footer a {
+    color: #64748b !important;
+}
+
+html.dark-mode .footer a:hover {
+    color: #60a5fa !important;
+}
+
+/* ---- CTA Contact Card ---- */
+html.dark-mode .security-contact .contact-card {
+    background: #1a1a1f !important;
+    border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark-mode .security-contact .contact-card:hover {
+    border-color: rgba(66, 153, 255, 0.3) !important;
+}
+
+/* ===== CANDIDATE LAYOUT DARK MODE - REMOVED ===== */
+
+/* ==== THEME TOGGLE BUTTON (used in all layouts) ==== */
+.theme-toggle-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #e5e7eb;
+    background: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    color: #475569;
+    transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+    background: #f1f5f9;
+    color: #1f5bff;
+    transform: rotate(20deg);
+}
+
+html.dark-mode .theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #fbbf24;
+}
+
+html.dark-mode .theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fcd34d;
 }

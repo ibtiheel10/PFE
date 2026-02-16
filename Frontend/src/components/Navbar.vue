@@ -1,6 +1,6 @@
 <template>
   <div class="navbar-wrapper">
-    <header class="navbar" :class="{ 'navbar-transparent': transparent }">
+    <header class="navbar navbar-dark" :class="{ 'navbar-transparent': transparent }">
       <div class="nav-container">
         <!-- Logo -->
         <div class="logo" @click="$router.push('/')" style="cursor: pointer;">
@@ -61,6 +61,12 @@ const props = defineProps({
   }
 });
 
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+
+
 const activeDropdown = ref<string | null>(null);
 
 const toggleDropdown = (name: string) => {
@@ -82,10 +88,6 @@ const handleClickOutside = (event: MouseEvent) => {
     activeDropdown.value = null;
   }
 };
-
-onMounted(() => {
-  document.addEventListener('click', handleClickOutside);
-});
 
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside);
@@ -164,7 +166,8 @@ const features = [
 }
 
 .navbar-transparent .nav-link:hover,
-.navbar-transparent .nav-link.active {
+.navbar-transparent .nav-link.active,
+.navbar-transparent .nav-link.router-link-exact-active {
   color: white !important;
 }
 
@@ -206,7 +209,10 @@ const features = [
   font-family: 'Inter', sans-serif;
 }
 
-.nav-link:hover, .nav-link.active, .nav-item-dropdown:hover .dropdown-trigger {
+.nav-link:hover, 
+.nav-link.active, 
+.nav-link.router-link-exact-active,
+.nav-item-dropdown:hover .dropdown-trigger {
   color: #1f5bff;
 }
 
@@ -215,7 +221,9 @@ const features = [
   transition: transform 0.2s ease;
 }
 
-.nav-link.active i, .nav-item-dropdown:hover .dropdown-trigger i {
+.nav-link.active i, 
+.nav-link.router-link-exact-active i,
+.nav-item-dropdown:hover .dropdown-trigger i {
   transform: rotate(180deg);
 }
 
@@ -311,6 +319,80 @@ const features = [
   transform: translateY(-1px);
   box-shadow: 0 6px 15px rgba(59, 130, 246, 0.4);
   filter: brightness(1.05);
+}
+
+/* Theme Toggle Button */
+.theme-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  color: #475569;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(8px);
+}
+
+.theme-toggle:hover {
+  background: #f1f5f9;
+  color: #1f5bff;
+  transform: rotate(20deg);
+  border-color: #c7d2fe;
+}
+
+/* Dark Navbar */
+.navbar-dark {
+  background: rgba(20, 20, 24, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+.navbar-dark .logo-text {
+  color: #f1f5f9 !important;
+}
+
+.navbar-dark .nav-link {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.navbar-dark .nav-link:hover,
+.navbar-dark .nav-link.active,
+.navbar-dark .nav-link.router-link-exact-active {
+  color: #60a5fa !important;
+}
+
+.navbar-dark .dropdown-menu {
+  background: #1a1a1f;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.navbar-dark .mega-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.navbar-dark .item-title {
+  color: #f1f5f9;
+}
+
+.navbar-dark .item-description {
+  color: #94a3b8;
+}
+
+.navbar-dark .theme-toggle {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #fbbf24;
+}
+
+.navbar-dark .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fcd34d;
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 @media (max-width: 900px) {

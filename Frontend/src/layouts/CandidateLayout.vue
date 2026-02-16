@@ -68,6 +68,7 @@
         <div class="flex items-center gap-6">
 
 
+
             <!-- Notifications -->
             <button @click="toggleNotifications" class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
                 <BellIcon class="w-6 h-6" />
@@ -92,8 +93,8 @@
                             <p class="text-sm font-bold text-gray-900">Alexandre Martin</p>
                             <p class="text-xs text-gray-500 truncate">alex.martin@example.com</p>
                         </div>
-                        <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                            <UserCircleIcon class="w-4 h-4" /> Mon Profil
+                        <a href="#" @click.prevent="openEditProfile" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                            <UserCircleIcon class="w-4 h-4" /> Edit Profil
                         </a>
                         <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
                             <Cog6ToothIcon class="w-4 h-4" /> Paramètres
@@ -113,11 +114,44 @@
         <router-view />
       </div>
     </main>
+
+    <!-- Edit Profile Dialog -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="showEditProfile" class="edit-profile-overlay" @click="showEditProfile = false">
+        <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+          <div v-if="showEditProfile" class="edit-profile-dialog" @click.stop>
+            <div class="edit-profile-header">
+              <div>
+                <h2 class="edit-profile-title">Edit profile</h2>
+                <p class="edit-profile-desc">Make changes to your profile here. Click save when you're done. Your profile will be updated immediately.</p>
+              </div>
+              <button @click="showEditProfile = false" class="edit-profile-close">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            <div class="edit-profile-body">
+              <div class="edit-profile-field">
+                <label class="edit-profile-label">Name</label>
+                <input type="text" v-model="editName" class="edit-profile-input" />
+              </div>
+              <div class="edit-profile-field">
+                <label class="edit-profile-label">Username</label>
+                <input type="text" v-model="editUsername" class="edit-profile-input" />
+              </div>
+            </div>
+            <div class="edit-profile-actions">
+              <button @click="showEditProfile = false" class="edit-profile-btn cancel">Cancel</button>
+              <button @click="saveProfile" class="edit-profile-btn save">Save changes</button>
+            </div>
+          </div>
+        </transition>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { 
     Squares2X2Icon, 
@@ -128,16 +162,25 @@ import {
     ChevronDownIcon,
 
     UserCircleIcon,
-    Cog6ToothIcon
+    Cog6ToothIcon,
+    ArrowRightOnRectangleIcon
 } from '@heroicons/vue/24/outline';
-
 const router = useRouter();
 const route = useRoute();
+
+// Force Light Mode for Candidate Section
+onMounted(() => {
+    document.documentElement.classList.remove('dark', 'dark-mode');
+    localStorage.setItem('theme', 'light');
+});
 
 // State
 const hasNotifications = ref(true);
 const showProfileMenu = ref(false);
 const isSidebarCollapsed = ref(false);
+const showEditProfile = ref(false);
+const editName = ref('Alexandre Martin');
+const editUsername = ref('@alexandre');
 
 const navItems = [
     { name: 'Tableau de bord', icon: Squares2X2Icon, path: '/candidat/dashboard' },
@@ -168,6 +211,16 @@ const toggleProfileMenu = () => {
     showProfileMenu.value = !showProfileMenu.value;
 };
 
+const openEditProfile = () => {
+    showProfileMenu.value = false;
+    showEditProfile.value = true;
+};
+
+const saveProfile = () => {
+    // Save logic here (API call, etc.)
+    showEditProfile.value = false;
+};
+
 const handleLogout = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userRole');
@@ -194,5 +247,137 @@ const handleLogout = () => {
 
 .animate-fade-in {
     animation: fadeInUp 0.3s ease-out forwards;
+}
+
+/* Edit Profile Dialog */
+.edit-profile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+}
+
+.edit-profile-dialog {
+    background: #1a1a1a;
+    border-radius: 16px;
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 440px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.edit-profile-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.edit-profile-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #ffffff;
+    margin: 0 0 8px 0;
+}
+
+.edit-profile-desc {
+    font-size: 0.85rem;
+    color: #a0a0a0;
+    margin: 0;
+    line-height: 1.5;
+    max-width: 340px;
+}
+
+.edit-profile-close {
+    background: none;
+    border: none;
+    color: #a0a0a0;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.edit-profile-close:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.edit-profile-body {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.edit-profile-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.edit-profile-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.edit-profile-input {
+    background: #2a2a2a;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    color: #ffffff;
+    outline: none;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.edit-profile-input:focus {
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+}
+
+.edit-profile-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.edit-profile-btn {
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+    font-family: inherit;
+}
+
+.edit-profile-btn.cancel {
+    background: transparent;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.edit-profile-btn.cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.edit-profile-btn.save {
+    background: #ffffff;
+    color: #000000;
+}
+
+.edit-profile-btn.save:hover {
+    background: #e5e5e5;
 }
 </style>
