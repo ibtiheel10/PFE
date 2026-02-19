@@ -90,7 +90,7 @@
 
         <!-- Modal Content -->
         <div class="modal-content">
-          <form @submit.prevent="submitPost">
+          <form id="create-post-form" @submit.prevent="submitPost">
             <!-- Tab 1: Informations de Base -->
             <div v-show="currentTab === 'basic'" class="tab-content">
               <div class="form-row">
@@ -277,24 +277,24 @@
                 </div>
               </div>
             </div>
-
-            <!-- Modal Actions -->
-            <div class="modal-actions">
-              <button type="button" class="btn-cancel" @click="closeCreateModal">
-                Annuler
-              </button>
-              <button type="button" class="btn-draft" @click="saveDraft">
-                Sauvegarder comme Brouillon
-              </button>
-              <button type="submit" class="btn-submit">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                Publier le Poste
-              </button>
-            </div>
           </form>
+        </div>
+
+        <!-- Modal Actions (sticky footer outside scroll area) -->
+        <div class="modal-actions">
+          <button type="button" class="btn-cancel" @click="closeCreateModal">
+            Annuler
+          </button>
+          <button type="button" class="btn-draft" @click="saveDraft">
+            Sauvegarder comme Brouillon
+          </button>
+          <button type="submit" form="create-post-form" class="btn-submit">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+            Publier le Poste
+          </button>
         </div>
       </div>
     </div>
@@ -340,6 +340,118 @@
             </div>
         </div>
     </div>
+
+    <!-- QCM Generator Dialog (side panel) -->
+    <transition name="qcm-slide">
+      <div v-if="showQCMDialog" class="qcm-overlay" @click.self="showQCMDialog = false">
+        <div class="qcm-panel">
+          <!-- Panel Header -->
+          <div class="qcm-panel-header">
+            <div>
+              <h2 class="qcm-panel-title">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:8px;color:#3B82F6">
+                  <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                </svg>
+                QCM généré par l'IA
+              </h2>
+              <p class="qcm-panel-subtitle">Basé sur la description de votre poste</p>
+            </div>
+            <button class="qcm-close-btn" @click="showQCMDialog = false">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+          </div>
+
+          <!-- Scrollable body -->
+          <div class="qcm-panel-body">
+            <!-- Post description preview -->
+            <div class="qcm-desc-box">
+              <p class="qcm-desc-label">Description du poste</p>
+              <p class="qcm-desc-text">{{ formData.description || 'Aucune description fournie.' }}</p>
+            </div>
+
+            <!-- Config row: timer + difficulty -->
+            <div class="qcm-config-row">
+              <div class="qcm-config-field">
+                <label for="qcm-timer">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                  Chronomètre (min)
+                </label>
+                <input id="qcm-timer" type="number" min="1" max="120" v-model="qcmConfig.timer" placeholder="Ex: 30" />
+              </div>
+              <div class="qcm-config-field">
+                <label for="qcm-difficulty">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:4px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                  Niveau de difficulté
+                </label>
+                <select id="qcm-difficulty" v-model="qcmConfig.difficulty">
+                  <option value="facile">Facile</option>
+                  <option value="moyen">Moyen</option>
+                  <option value="difficile">Difficile</option>
+                  <option value="expert">Expert</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Loading state -->
+            <div v-if="qcmLoading" class="qcm-loading">
+              <div class="qcm-spinner"></div>
+              <p>Génération des questions en cours…</p>
+            </div>
+
+            <!-- Questions list -->
+            <div v-else-if="generatedQuestions.length > 0" class="qcm-questions-list">
+              <div class="qcm-questions-header">
+                <span class="qcm-questions-count">{{ generatedQuestions.length }} questions générées</span>
+                <button type="button" class="btn-regenerate" @click="regenerateQCM">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                  Régénérer
+                </button>
+              </div>
+
+              <div v-for="(q, qi) in generatedQuestions" :key="qi" class="qcm-question-card">
+                <div class="qcm-question-num">Q{{ qi + 1 }}</div>
+                <div class="qcm-question-body">
+                  <input class="qcm-question-input" v-model="q.text" placeholder="Texte de la question" />
+                  <div class="qcm-options">
+                    <div v-for="(_opt, oi) in q.options" :key="oi" class="qcm-option-row">
+                      <input
+                        type="radio"
+                        :name="'correct-' + qi"
+                        :id="'opt-' + qi + '-' + oi"
+                        :value="oi"
+                        v-model="q.correct"
+                        class="qcm-radio"
+                      />
+                      <input class="qcm-option-input" v-model="q.options[oi]" :placeholder="'Option ' + (oi + 1)" />
+                      <label :for="'opt-' + qi + '-' + oi" class="qcm-correct-label" :class="{ active: q.correct === oi }">✓</label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Empty state -->
+            <div v-else class="qcm-empty">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+              <p>Configurez les paramètres et cliquez sur <strong>Régénérer</strong></p>
+              <button type="button" class="btn-regenerate" @click="regenerateQCM">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+                Générer les questions
+              </button>
+            </div>
+          </div>
+
+          <!-- Panel Footer -->
+          <div class="qcm-panel-footer">
+            <button type="button" class="qcm-btn-cancel" @click="showQCMDialog = false">Annuler</button>
+            <button type="button" class="qcm-btn-save" @click="saveQCM" :disabled="generatedQuestions.length === 0">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+              Valider le QCM
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -479,6 +591,7 @@ const displayJobs = computed(() => {
 const createNewPost = () => {
     showCreateModal.value = true;
     currentTab.value = 'basic';
+    nextTick(() => updateIndicator());
 };
 
 const closeCreateModal = () => {
@@ -517,12 +630,84 @@ const submitPost = () => {
     closeCreateModal();
 };
 
-const generateQCM = () => {
-    if (!formData.value.title || !formData.value.description) {
-      alert('⚠️ Veuillez remplir au minimum le titre et la description du poste pour générer un QCM.');
-      return;
+// ─── QCM Dialog state ────────────────────────────────────────────
+const showQCMDialog = ref(false);
+const qcmLoading = ref(false);
+const qcmConfig = ref({ timer: 30, difficulty: 'moyen' });
+
+interface QCMQuestion {
+  text: string;
+  options: string[];
+  correct: number;
+}
+const generatedQuestions = ref<QCMQuestion[]>([]);
+
+// Mock question templates per difficulty
+const mockQuestions = (title: string, difficulty: string): QCMQuestion[] => {
+  const base = [
+    {
+      text: `Quelle compétence est la plus importante pour un(e) ${title} ?`,
+      options: ['Communication', 'Expertise technique', 'Gestion du temps', 'Leadership'],
+      correct: 1
+    },
+    {
+      text: 'Comment gérez-vous les délais serrés dans un projet ?',
+      options: ['En ignorant certaines tâches', 'En priorisant les tâches critiques', 'En demandant une extension', 'En travaillant seul'],
+      correct: 1
+    },
+    {
+      text: `Dans le contexte du poste ${title}, quelle méthodologie préférez-vous ?`,
+      options: ['Agile / Scrum', 'Cascade (Waterfall)', 'Kanban', 'RAD'],
+      correct: 0
+    },
+    {
+      text: 'Comment assurez-vous la qualité de votre travail ?',
+      options: ['Revue par les pairs', 'Tests automatisés', 'Checklist personnelle', 'Les trois à la fois'],
+      correct: 3
+    },
+    {
+      text: 'Quelle est votre approche face à un problème complexe inconnu ?',
+      options: ['Demander immédiatement de l\'aide', 'Rechercher et analyser avant d\'agir', 'Ignorer jusqu\'à ce qu\'il devienne urgent', 'Appliquer une solution précédente sans analyse'],
+      correct: 1
     }
-    alert('✨ Génération d\'un QCM avec l\'IA... Cette fonctionnalité sera bientôt disponible !');
+  ];
+  const extraHard = [
+    {
+      text: 'Expliquez la différence entre scalabilité verticale et horizontale.',
+      options: ['Aucune différence', 'Verticale = + ressources sur un serveur ; Horizontale = + serveurs', 'Horizontale = + RAM ; Verticale = + serveurs', 'Ce sont des termes marketing'],
+      correct: 1
+    },
+    {
+      text: 'Quel pattern architectural sépare la lecture et l\'écriture des données ?',
+      options: ['MVC', 'CQRS', 'REST', 'SOLID'],
+      correct: 1
+    }
+  ];
+  return difficulty === 'difficile' || difficulty === 'expert' ? [...base, ...extraHard] : base;
+};
+
+const generateQCM = () => {
+  showQCMDialog.value = true;
+  generatedQuestions.value = [];
+  qcmLoading.value = true;
+  setTimeout(() => {
+    generatedQuestions.value = mockQuestions(formData.value.title || 'ce poste', qcmConfig.value.difficulty);
+    qcmLoading.value = false;
+  }, 1800);
+};
+
+const regenerateQCM = () => {
+  qcmLoading.value = true;
+  generatedQuestions.value = [];
+  setTimeout(() => {
+    generatedQuestions.value = mockQuestions(formData.value.title || 'ce poste', qcmConfig.value.difficulty);
+    qcmLoading.value = false;
+  }, 1400);
+};
+
+const saveQCM = () => {
+  formData.value.hasQCM = true;
+  showQCMDialog.value = false;
 };
 
 const goToJobDetails = (id: number) => {
@@ -1144,14 +1329,16 @@ textarea {
     box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35);
 }
 
-/* Modal Actions */
+/* Modal Actions - sticky footer outside scroll area */
 .modal-actions {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
-    margin-top: 2rem;
-    padding-top: 1.5rem;
+    padding: 1.25rem 2rem;
     border-top: 1px solid #E5E7EB;
+    background: white;
+    border-radius: 0 0 20px 20px;
+    flex-shrink: 0;
 }
 
 .btn-cancel,
@@ -1345,4 +1532,540 @@ textarea {
         transform: translateY(0) scale(1);
     }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   QCM GENERATOR — Premium 3D Animated Side Panel
+   ═══════════════════════════════════════════════════════════════════ */
+.qcm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    z-index: 10000;
+    display: flex;
+    justify-content: flex-end;
+    perspective: 1200px;
+}
+
+.qcm-panel {
+    width: 565px;
+    max-width: 96vw;
+    height: 100%;
+    background: linear-gradient(180deg, #ffffff 0%, #F8FAFF 100%);
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        -20px 0 60px rgba(37,99,235,0.12),
+        -4px  0 20px rgba(0,0,0,0.18),
+        inset 1px 0 0 rgba(255,255,255,0.9);
+    animation: qcm3dEnter 0.48s cubic-bezier(0.22,1,0.36,1) forwards;
+    transform-origin: right center;
+    border-left: 1px solid rgba(219,234,254,0.8);
+}
+
+@keyframes qcm3dEnter {
+    0%   { transform: translateX(100%) rotateY(-8deg) scale(0.96); opacity: 0; }
+    60%  { transform: translateX(-6px) rotateY(1deg) scale(1.005); opacity: 1; }
+    100% { transform: translateX(0) rotateY(0deg) scale(1); opacity: 1; }
+}
+
+.qcm-slide-enter-active { animation: qcm3dEnter 0.48s cubic-bezier(0.22,1,0.36,1) forwards; }
+.qcm-slide-leave-active  { animation: qcm3dLeave 0.28s cubic-bezier(0.4,0,1,1) forwards; }
+@keyframes qcm3dLeave {
+    to { transform: translateX(110%) scale(0.95); opacity: 0; }
+}
+
+/* Header */
+.qcm-panel-header {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 1.75rem 2rem 1.25rem;
+    background:
+        radial-gradient(ellipse 80% 60% at 0% 0%, rgba(59,130,246,0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 80% at 100% 100%, rgba(99,102,241,0.08) 0%, transparent 70%),
+        #ffffff;
+    border-bottom: 1px solid rgba(219,234,254,0.7);
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.qcm-panel-header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #6366F1, #3B82F6, #06B6D4, #8B5CF6, #6366F1);
+    background-size: 200% 100%;
+    animation: headerShimmer 3s linear infinite;
+}
+
+@keyframes headerShimmer {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: 200% 0%; }
+}
+
+.qcm-panel-header::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 140px; height: 140px;
+    background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    animation: orbFloat 4s ease-in-out infinite;
+}
+
+@keyframes orbFloat {
+    0%, 100% { transform: translate(0,0) scale(1); }
+    50%       { transform: translate(-8px, 8px) scale(1.05); }
+}
+
+.qcm-panel-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0 0 0.3rem 0;
+    letter-spacing: -0.03em;
+    position: relative;
+}
+
+.qcm-panel-subtitle {
+    font-size: 0.825rem;
+    color: #64748B;
+    margin: 0;
+    font-weight: 500;
+}
+
+.qcm-close-btn {
+    background: rgba(241,245,249,0.9);
+    border: 1px solid rgba(226,232,240,0.8);
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #64748B;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    flex-shrink: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.qcm-close-btn:hover {
+    background: #FEE2E2;
+    border-color: #FECACA;
+    color: #EF4444;
+    transform: rotate(90deg) scale(1.1);
+    box-shadow: 0 4px 12px rgba(239,68,68,0.15);
+}
+
+/* Body */
+.qcm-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+/* Description box */
+.qcm-desc-box {
+    background: #F8FAFF;
+    border: 1px solid #DBEAFE;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+}
+.qcm-desc-box::before {
+    display: none;
+}
+.qcm-desc-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #2563EB;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0 0 0.5rem 0;
+}
+.qcm-desc-text {
+    font-size: 0.875rem;
+    color: #374151;
+    line-height: 1.6;
+    margin: 0;
+    max-height: 90px;
+    overflow-y: auto;
+}
+
+/* Config row */
+.qcm-config-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.qcm-config-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+}
+.qcm-config-field label {
+    font-size: 0.775rem;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.02em;
+}
+.qcm-config-field input[type="number"],
+.qcm-config-field select {
+    padding: 0.7rem 1rem;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 12px;
+    font-size: 0.875rem;
+    color: #0F172A;
+    background: #FFFFFF;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+.qcm-config-field input[type="number"]:hover,
+.qcm-config-field select:hover {
+    border-color: #93C5FD;
+    background: #F8FAFF;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(59,130,246,0.1);
+}
+.qcm-config-field input[type="number"]:focus,
+.qcm-config-field select:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 4px rgba(59,130,246,0.18), 0 4px 12px rgba(59,130,246,0.12);
+    transform: translateY(-1px);
+}
+
+/* Loading — orbital spinner */
+.qcm-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    padding: 3rem 0;
+    color: #64748B;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+.qcm-loading p {
+    background: linear-gradient(135deg, #4F46E5, #3B82F6, #06B6D4);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: textFlow 2s ease infinite;
+    font-weight: 600;
+}
+@keyframes textFlow {
+    0%, 100% { background-position: 0% 50%; }
+    50%       { background-position: 100% 50%; }
+}
+.qcm-spinner {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+.qcm-spinner::before,
+.qcm-spinner::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+}
+.qcm-spinner::before {
+    inset: 0;
+    border: 3px solid transparent;
+    border-top-color: #6366F1;
+    border-right-color: #3B82F6;
+    animation: spinOuter 1.1s linear infinite;
+}
+.qcm-spinner::after {
+    inset: 10px;
+    border: 3px solid transparent;
+    border-bottom-color: #06B6D4;
+    border-left-color: #8B5CF6;
+    animation: spinInner 0.75s linear infinite reverse;
+}
+@keyframes spinOuter { to { transform: rotate(360deg); } }
+@keyframes spinInner { to { transform: rotate(360deg); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Empty state */
+.qcm-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 2.5rem 1rem;
+    color: #94A3B8;
+    font-size: 0.875rem;
+    text-align: center;
+}
+.qcm-empty svg {
+    filter: drop-shadow(0 4px 12px rgba(99,102,241,0.15));
+    animation: emptyFloat 3s ease-in-out infinite;
+}
+@keyframes emptyFloat {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-6px); }
+}
+.qcm-empty strong { color: #475569; }
+
+/* Questions list */
+.qcm-questions-list { display: flex; flex-direction: column; gap: 1rem; }
+.qcm-questions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+.qcm-questions-count {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #4F46E5;
+    background: #EEF2FF;
+    border: 1px solid #C7D2FE;
+    border-radius: 20px;
+    padding: 4px 12px;
+    letter-spacing: 0.03em;
+}
+
+/* Regenerate button */
+.btn-regenerate {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: linear-gradient(135deg, #EEF2FF, #E0F2FE);
+    border: 1.5px solid #A5B4FC;
+    color: #4F46E5;
+    padding: 0.5rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    letter-spacing: 0.01em;
+}
+.btn-regenerate svg { transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); }
+.btn-regenerate:hover {
+    background: linear-gradient(135deg, #6366F1, #3B82F6);
+    border-color: #6366F1;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(99,102,241,0.3);
+}
+.btn-regenerate:hover svg { transform: rotate(-180deg); }
+.btn-regenerate:active { transform: translateY(0); }
+
+/* Question card — 3D */
+.qcm-question-card {
+    display: flex;
+    gap: 1rem;
+    background: #FFFFFF;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 1.125rem 1.25rem;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    animation: cardEntrance 0.5s cubic-bezier(0.34,1.2,0.64,1) both;
+    position: relative;
+    overflow: hidden;
+}
+.qcm-question-card:nth-child(1) { animation-delay: 0.05s; }
+.qcm-question-card:nth-child(2) { animation-delay: 0.10s; }
+.qcm-question-card:nth-child(3) { animation-delay: 0.15s; }
+.qcm-question-card:nth-child(4) { animation-delay: 0.20s; }
+.qcm-question-card:nth-child(5) { animation-delay: 0.25s; }
+.qcm-question-card:nth-child(6) { animation-delay: 0.30s; }
+.qcm-question-card:nth-child(7) { animation-delay: 0.35s; }
+@keyframes cardEntrance {
+    from { opacity: 0; transform: translateY(20px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.qcm-question-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #6366F1, #3B82F6, #06B6D4);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+.qcm-question-card:hover {
+    border-color: #BFDBFE;
+    transform: translateY(-3px) scale(1.005);
+    box-shadow: 0 12px 32px rgba(37,99,235,0.10), 0 4px 12px rgba(0,0,0,0.06);
+}
+.qcm-question-card:hover::before { opacity: 1; }
+
+.qcm-question-num {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    background: linear-gradient(135deg, #6366F1 0%, #2563EB 100%);
+    color: white;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 2px;
+    box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+    transition: all 0.3s;
+}
+.qcm-question-card:hover .qcm-question-num {
+    box-shadow: 0 6px 18px rgba(99,102,241,0.5);
+    transform: scale(1.08) rotate(-3deg);
+}
+
+.qcm-question-body { flex: 1; display: flex; flex-direction: column; gap: 0.75rem; }
+
+.qcm-question-input {
+    width: 100%;
+    padding: 0.65rem 1rem;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 10px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #0F172A;
+    background: #F8FAFC;
+    font-family: 'Inter', sans-serif;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+    box-sizing: border-box;
+}
+.qcm-question-input:hover { border-color: #93C5FD; background: #F0F9FF; }
+.qcm-question-input:focus {
+    outline: none;
+    border-color: #6366F1;
+    background: white;
+    box-shadow: 0 0 0 4px rgba(99,102,241,0.12), 0 2px 8px rgba(99,102,241,0.1);
+}
+
+/* Options */
+.qcm-options { display: flex; flex-direction: column; gap: 0.45rem; }
+.qcm-option-row { display: flex; align-items: center; gap: 0.5rem; }
+.qcm-radio { display: none; }
+.qcm-option-input {
+    flex: 1;
+    padding: 0.5rem 0.875rem;
+    border: 1.5px solid #E2E8F0;
+    border-radius: 9px;
+    font-size: 0.82rem;
+    color: #475569;
+    background: #F8FAFC;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+    box-sizing: border-box;
+}
+.qcm-option-input:hover { border-color: #A5B4FC; background: #EEF2FF; }
+.qcm-option-input:focus {
+    outline: none;
+    border-color: #6366F1;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+.qcm-correct-label {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    border: 2px solid #CBD5E1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: transparent;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1);
+    background: #F8FAFC;
+}
+.qcm-correct-label:hover { border-color: #6366F1; background: #EEF2FF; transform: scale(1.1); }
+.qcm-correct-label.active {
+    background: linear-gradient(135deg, #22C55E, #16A34A);
+    border-color: #16A34A;
+    color: white;
+    font-weight: 800;
+    box-shadow: 0 4px 14px rgba(34,197,94,0.45);
+    transform: scale(1.12);
+    animation: checkPop 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes checkPop {
+    0%   { transform: scale(0.7) rotate(-10deg); }
+    60%  { transform: scale(1.25) rotate(5deg); }
+    100% { transform: scale(1.12) rotate(0deg); }
+}
+
+/* Footer — frosted glass */
+.qcm-panel-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1.25rem 2rem;
+    background: rgba(255,255,255,0.85);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid rgba(226,232,240,0.8);
+    flex-shrink: 0;
+    box-shadow: 0 -4px 16px rgba(0,0,0,0.04);
+}
+.qcm-btn-cancel {
+    padding: 0.7rem 1.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    background: #F1F5F9;
+    color: #475569;
+    border: 1.5px solid #E2E8F0;
+    transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+}
+.qcm-btn-cancel:hover {
+    background: #E2E8F0;
+    color: #1E293B;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+.qcm-btn-save {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 0.7rem 1.75rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 0.875rem;
+    cursor: pointer;
+    background: linear-gradient(135deg, #6366F1 0%, #3B82F6 60%, #0EA5E9 100%);
+    color: white;
+    border: none;
+    box-shadow: 0 4px 15px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.25);
+    transition: all 0.3s cubic-bezier(0.34,1.2,0.64,1);
+    position: relative;
+    overflow: hidden;
+}
+.qcm-btn-save::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; bottom: 0;
+    width: 60%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform: skewX(-20deg);
+}
+.qcm-btn-save:hover:not(:disabled)::before {
+    animation: btnShimmer 0.6s ease forwards;
+}
+@keyframes btnShimmer { to { left: 150%; } }
+.qcm-btn-save:hover:not(:disabled) {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 0 8px 25px rgba(99,102,241,0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+}
+.qcm-btn-save:active:not(:disabled) { transform: translateY(0) scale(0.98); }
+.qcm-btn-save:disabled { opacity: 0.4; cursor: not-allowed; filter: grayscale(30%); }
 </style>
