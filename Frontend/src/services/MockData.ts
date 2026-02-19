@@ -187,5 +187,79 @@ export const MockData = reactive({
         if (job) {
             job.title = newTitle;
         }
-    }
+    },
+
+    addJob(data: {
+        title: string;
+        company: string;
+        location: string;
+        category: string;
+        salary: string;
+        description: string;
+        requirements: string;
+        contractType: string;
+        remote: string;
+        experience: string;
+        deadline: string;
+        mcqDuration?: number;
+        mcqQuestionsCount?: number;
+        mcqPassScore?: number;
+    }) {
+        // Map form category → Job category type
+        const catMap: Record<string, 'IT' | 'MARKETING' | 'FINANCE' | 'HR'> = {
+            tech: 'IT',
+            marketing: 'MARKETING',
+            finance: 'FINANCE',
+            rh: 'HR',
+            design: 'IT',
+            ventes: 'MARKETING',
+        };
+        const iconMap: Record<string, { icon: string; color: string }> = {
+            IT: { icon: 'fa-solid fa-code', color: '#3b82f6' },
+            MARKETING: { icon: 'fa-solid fa-bullhorn', color: '#8b5cf6' },
+            FINANCE: { icon: 'fa-solid fa-chart-line', color: '#10b981' },
+            HR: { icon: 'fa-solid fa-users', color: '#f59e0b' },
+        };
+
+        const mappedCat = catMap[data.category] ?? 'IT';
+        const iconInfo = iconMap[mappedCat] ?? { icon: 'fa-solid fa-briefcase', color: '#64748b' };
+
+        const remoteTag: Record<string, string> = {
+            remote: 'TÉLÉTRAVAIL',
+            hybrid: 'HYBRIDE',
+            onsite: 'SUR SITE',
+        };
+
+        const newJob: Job = {
+            id: Date.now(),
+            title: data.title,
+            company: data.company || 'Mon Entreprise',
+            location: data.location + (data.remote === 'remote' ? ' (Télétravail)' : ''),
+            category: mappedCat,
+            salary: data.salary || 'Non précisé',
+            description: {
+                intro: data.description,
+                mission: data.description,
+                responsibilities: data.requirements
+                    ? data.requirements.split('\n').filter(Boolean)
+                    : [],
+            },
+            skills: data.requirements
+                ? data.requirements.split('\n').filter(Boolean).slice(0, 6)
+                : [],
+            icon: iconInfo.icon,
+            iconColor: iconInfo.color,
+            postedTime: "À l'instant",
+            tags: [remoteTag[data.remote] ?? 'SUR SITE', data.contractType.toUpperCase()],
+            daysLeft: data.deadline
+                ? Math.max(0, Math.ceil((new Date(data.deadline).getTime() - Date.now()) / 86400000))
+                : 30,
+            mcqDuration: data.mcqDuration ?? 20,
+            mcqQuestionsCount: data.mcqQuestionsCount ?? 15,
+            mcqPassScore: data.mcqPassScore ?? 70,
+        };
+
+        this.jobs.unshift(newJob);  // Add at the top of the list
+        return newJob;
+    },
 });
