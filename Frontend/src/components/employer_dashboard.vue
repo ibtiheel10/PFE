@@ -278,7 +278,7 @@
                         <div class="card jobs-card">
                            <div class="card-header">
                                 <h3>Mes Postes Actifs</h3>
-                                <span class="badge-total">12 TOTAL</span>
+                                <span class="badge-total">{{ MockData.jobs.length }} TOTAL</span>
                            </div>
                            
                            <div class="jobs-list">

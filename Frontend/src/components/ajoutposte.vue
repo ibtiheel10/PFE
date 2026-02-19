@@ -1,51 +1,67 @@
 <template>
-  <div class="ajoutposte-container">
-    <!-- Header -->
-    <div class="header">
-      <button class="back-btn" @click="goBack">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="19" y1="12" x2="5" y2="12"></line>
-          <polyline points="12 19 5 12 12 5"></polyline>
-        </svg>
-        Retour
-      </button>
-      <div class="header-content">
-        <h1>Créer un Nouveau Poste</h1>
-        <p class="subtitle">Remplissez les informations ci-dessous pour publier votre offre d'emploi</p>
+  <div class="page-bg">
+
+    <!-- ── Toast ── -->
+    <transition name="toast-slide">
+      <div v-if="toastVisible" class="toast-success">
+        <i class="fa-solid fa-circle-check"></i>
+        Poste publié avec succès ! Redirection…
       </div>
-    </div>
+    </transition>
 
-    <!-- Form Container -->
-    <div class="form-wrapper">
-      <form @submit.prevent="submitPost" class="post-form">
-        <!-- Section: Informations de base -->
-        <div class="form-section">
-          <h2 class="section-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
-              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
-            </svg>
-            Informations de Base
-          </h2>
+    <!-- ── Header ── -->
+    <header class="ap-header">
+      <div class="ap-header-inner">
+        <button class="back-btn" @click="router.back()">
+          <i class="fa-solid fa-arrow-left"></i> Retour
+        </button>
 
-          <div class="form-row">
-            <div class="form-group full">
-              <label for="title">Titre du Poste <span class="required">*</span></label>
-              <input 
-                type="text" 
-                id="title" 
-                v-model="formData.title" 
-                placeholder="Ex: Développeur Full Stack Senior"
-                required
-              >
-            </div>
+        <div class="ap-title-block">
+          <div class="ap-icon-badge"><i class="fa-solid fa-briefcase"></i></div>
+          <div>
+            <h1>Créer un nouveau poste</h1>
+            <p class="ap-subtitle">Remplissez les informations pour publier votre offre</p>
+          </div>
+        </div>
+
+        <!-- Steps indicator -->
+        <div class="ap-steps">
+          <div class="step" :class="{ active: step >= 1, done: step > 1 }">
+            <span class="step-dot"><i v-if="step > 1" class="fa-solid fa-check"></i><span v-else>1</span></span>
+            <span class="step-label">Informations</span>
+          </div>
+          <div class="step-line" :class="{ active: step > 1 }"></div>
+          <div class="step" :class="{ active: step >= 2, done: step > 2 }">
+            <span class="step-dot"><i v-if="step > 2" class="fa-solid fa-check"></i><span v-else>2</span></span>
+            <span class="step-label">Description</span>
+          </div>
+          <div class="step-line" :class="{ active: step > 2 }"></div>
+          <div class="step" :class="{ active: step >= 3 }">
+            <span class="step-dot"><span>3</span></span>
+            <span class="step-label">Recrutement</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── Form ── -->
+    <div class="ap-body">
+      <form @submit.prevent="submitPost" class="ap-form">
+
+        <!-- ──────────── STEP 1 : Informations de base ──────────── -->
+        <section class="form-card" v-show="step === 1">
+          <div class="card-label"><i class="fa-solid fa-circle-info"></i> Informations de Base</div>
+
+          <div class="field">
+            <label>Titre du Poste <span class="req">*</span></label>
+            <input v-model="form.title" type="text" placeholder="Ex : Développeur Full Stack Senior" required />
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="category">Catégorie <span class="required">*</span></label>
-              <select id="category" v-model="formData.category" required>
-                <option value="">Sélectionner une catégorie</option>
+          <div class="field-row">
+            <div class="field">
+              <label>Catégorie <span class="req">*</span></label>
+              <select v-model="form.category" required>
+                <option value="">Sélectionner</option>
                 <option value="tech">Technologie</option>
                 <option value="marketing">Marketing</option>
                 <option value="design">Design</option>
@@ -54,34 +70,27 @@
                 <option value="ventes">Ventes</option>
               </select>
             </div>
-
-            <div class="form-group">
-              <label for="contractType">Type de Contrat <span class="required">*</span></label>
-              <select id="contractType" v-model="formData.contractType" required>
-                <option value="">Sélectionner un type</option>
-                <option value="cdi">CDI</option>
-                <option value="cdd">CDD</option>
-                <option value="stage">Stage</option>
-                <option value="freelance">Freelance</option>
+            <div class="field">
+              <label>Type de Contrat <span class="req">*</span></label>
+              <select v-model="form.contractType" required>
+                <option value="">Sélectionner</option>
+                <option value="CDI">CDI</option>
+                <option value="CDD">CDD</option>
+                <option value="Stage">Stage</option>
+                <option value="Freelance">Freelance</option>
+                <option value="Alternance">Alternance</option>
               </select>
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="location">Localisation <span class="required">*</span></label>
-              <input 
-                type="text" 
-                id="location" 
-                v-model="formData.location" 
-                placeholder="Ex: Paris, France"
-                required
-              >
+          <div class="field-row">
+            <div class="field">
+              <label>Localisation <span class="req">*</span></label>
+              <input v-model="form.location" type="text" placeholder="Ex : Alger, Algérie" required />
             </div>
-
-            <div class="form-group">
-              <label for="remote">Mode de Travail</label>
-              <select id="remote" v-model="formData.remote">
+            <div class="field">
+              <label>Mode de Travail</label>
+              <select v-model="form.remote">
                 <option value="onsite">Sur site</option>
                 <option value="hybrid">Hybride</option>
                 <option value="remote">Télétravail</option>
@@ -89,154 +98,131 @@
             </div>
           </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="experience">Expérience Requise <span class="required">*</span></label>
-              <select id="experience" v-model="formData.experience" required>
-                <option value="">Sélectionner un niveau</option>
-                <option value="junior">Junior (0-2 ans)</option>
-                <option value="intermediate">Intermédiaire (2-5 ans)</option>
+          <div class="field-row">
+            <div class="field">
+              <label>Entreprise <span class="req">*</span></label>
+              <input v-model="form.company" type="text" placeholder="Ex : TechCorp" required />
+            </div>
+            <div class="field">
+              <label>Salaire (optionnel)</label>
+              <input v-model="form.salary" type="text" placeholder="Ex : 60 000 – 80 000 DA" />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label>Expérience Requise <span class="req">*</span></label>
+              <select v-model="form.experience" required>
+                <option value="">Sélectionner</option>
+                <option value="junior">Junior (0–2 ans)</option>
+                <option value="intermediate">Intermédiaire (2–5 ans)</option>
                 <option value="senior">Senior (5+ ans)</option>
               </select>
             </div>
-
-            <div class="form-group">
-              <label for="salary">Salaire Annuel (€)</label>
-              <input 
-                type="text" 
-                id="salary" 
-                v-model="formData.salary" 
-                placeholder="Ex: 45000 - 60000"
-              >
+            <div class="field">
+              <label>Nombre de Postes</label>
+              <input v-model.number="form.positions" type="number" min="1" placeholder="1" />
             </div>
           </div>
-        </div>
 
-        <!-- Section: Description -->
-        <div class="form-section">
-          <h2 class="section-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
-            </svg>
-            Description du Poste
-          </h2>
-
-          <div class="form-group full">
-            <label for="description">Description Complète <span class="required">*</span></label>
-            <textarea 
-              id="description" 
-              v-model="formData.description" 
-              rows="6"
-              placeholder="Décrivez les responsabilités, missions et objectifs du poste..."
-              required
-            ></textarea>
-          </div>
-
-          <div class="form-group full">
-            <label for="requirements">Compétences Requises <span class="required">*</span></label>
-            <textarea 
-              id="requirements" 
-              v-model="formData.requirements" 
-              rows="4"
-              placeholder="Listez les compétences techniques et soft skills nécessaires (une par ligne)..."
-              required
-            ></textarea>
-          </div>
-
-          <div class="form-group full">
-            <label for="benefits">Avantages</label>
-            <textarea 
-              id="benefits" 
-              v-model="formData.benefits" 
-              rows="3"
-              placeholder="Décrivez les avantages offerts (télétravail, formations, tickets restaurant, etc.)..."
-            ></textarea>
-          </div>
-        </div>
-
-        <!-- Section: Paramètres du Recrutement -->
-        <div class="form-section">
-          <h2 class="section-title">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="12" cy="12" r="3"></circle>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-            </svg>
-            Paramètres du Recrutement
-          </h2>
-
-          <!-- AI QCM Generator - Always visible -->
-          <div class="qcm-generator-section">
-            <div class="qcm-generator-header">
-              <h3>Évaluation des candidats</h3>
-              <p class="help-text">Générez automatiquement un QCM basé sur les informations de votre poste</p>
-            </div>
-            <button type="button" class="btn-generate-qcm" @click="generateQCM">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-              </svg>
-              Générer un QCM avec l'IA
+          <div class="step-nav">
+            <span></span>
+            <button type="button" class="btn-next" @click="nextStep(1)">
+              Suivant <i class="fa-solid fa-arrow-right"></i>
             </button>
           </div>
+        </section>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label for="deadline">Date Limite de Candidature</label>
-              <input 
-                type="date" 
-                id="deadline" 
-                v-model="formData.deadline"
-              >
+        <!-- ──────────── STEP 2 : Description ──────────── -->
+        <section class="form-card" v-show="step === 2">
+          <div class="card-label"><i class="fa-solid fa-file-lines"></i> Description du Poste</div>
+
+          <div class="field">
+            <label>Description Complète <span class="req">*</span></label>
+            <textarea v-model="form.description" rows="5"
+              placeholder="Décrivez les responsabilités, la mission et les objectifs du poste…" required></textarea>
+          </div>
+
+          <div class="field">
+            <label>Compétences Requises <span class="req">*</span></label>
+            <textarea v-model="form.requirements" rows="4"
+              placeholder="Une compétence par ligne : Vue.js, TypeScript, SQL…" required></textarea>
+            <span class="field-hint">Une compétence par ligne → génère automatiquement les tags sur les cartes</span>
+          </div>
+
+          <div class="field">
+            <label>Avantages (optionnel)</label>
+            <textarea v-model="form.benefits" rows="3"
+              placeholder="Télétravail, tickets repas, formation continue…"></textarea>
+          </div>
+
+          <div class="step-nav">
+            <button type="button" class="btn-back-step" @click="step = 1">
+              <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+            <button type="button" class="btn-next" @click="nextStep(2)">
+              Suivant <i class="fa-solid fa-arrow-right"></i>
+            </button>
+          </div>
+        </section>
+
+        <!-- ──────────── STEP 3 : Recrutement ──────────── -->
+        <section class="form-card" v-show="step === 3">
+          <div class="card-label"><i class="fa-solid fa-gear"></i> Paramètres du Recrutement</div>
+
+          <!-- QCM box -->
+          <div class="qcm-box">
+            <div class="qcm-box-header">
+              <div>
+                <h3>Évaluation des candidats</h3>
+                <p class="field-hint" style="margin:0">Paramétrez le test de présélection automatique</p>
+              </div>
+              <button type="button" class="btn-generate-qcm" @click="generateQCM">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Générer QCM avec l'IA
+              </button>
             </div>
 
-            <div class="form-group">
-              <label for="positions">Nombre de Postes</label>
-              <input 
-                type="number" 
-                id="positions" 
-                v-model="formData.positions" 
-                min="1"
-                placeholder="1"
-              >
+            <div class="field-row" style="margin-top:16px">
+              <div class="field">
+                <label>Durée du QCM (min)</label>
+                <input v-model.number="form.mcqDuration" type="number" min="5" max="120" placeholder="20" />
+              </div>
+              <div class="field">
+                <label>Nombre de questions</label>
+                <input v-model.number="form.mcqQuestionsCount" type="number" min="5" max="100" placeholder="15" />
+              </div>
+              <div class="field">
+                <label>Score de passage (%)</label>
+                <input v-model.number="form.mcqPassScore" type="number" min="0" max="100" placeholder="70" />
+              </div>
             </div>
           </div>
 
-          <div class="form-group full">
-            <label class="checkbox-label">
-              <input type="checkbox" v-model="formData.hasQCM">
-              <span>Ajouter un QCM de présélection</span>
-            </label>
-            <p class="help-text">Les candidats devront passer un test avant d'être évalués</p>
+          <div class="field-row" style="margin-top:16px">
+            <div class="field">
+              <label>Date Limite de Candidature</label>
+              <input v-model="form.deadline" type="date" />
+            </div>
+            <div class="field" style="justify-content:flex-end">
+            </div>
           </div>
 
-          <div class="form-group full" v-if="formData.hasQCM">
-            <label for="qcmId">Sélectionner un QCM existant</label>
-            <select id="qcmId" v-model="formData.qcmId">
-              <option value="">Choisir un QCM</option>
-              <option value="1">QCM Développeur JavaScript</option>
-              <option value="2">QCM Marketing Digital</option>
-              <option value="3">QCM Design UX/UI</option>
-            </select>
+          <div class="step-nav">
+            <button type="button" class="btn-back-step" @click="step = 2">
+              <i class="fa-solid fa-arrow-left"></i> Retour
+            </button>
+            <div class="final-actions">
+              <button type="button" class="btn-draft" @click="saveDraft">
+                <i class="fa-solid fa-floppy-disk"></i> Brouillon
+              </button>
+              <button type="submit" class="btn-publish" :disabled="publishing">
+                <span v-if="!publishing"><i class="fa-solid fa-rocket"></i> Publier le Poste</span>
+                <span v-else><i class="fa-solid fa-spinner fa-spin"></i> Publication…</span>
+              </button>
+            </div>
           </div>
+        </section>
 
-        </div>
-
-        <!-- Action Buttons -->
-        <div class="form-actions">
-          <button type="button" class="btn-secondary" @click="saveDraft">
-            Sauvegarder comme Brouillon
-          </button>
-          <button type="submit" class="btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-              <polyline points="22 4 12 14.01 9 11.01"></polyline>
-            </svg>
-            Publier le Poste
-          </button>
-        </div>
       </form>
     </div>
   </div>
@@ -245,399 +231,442 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { MockData } from '../services/MockData';
 
 const router = useRouter();
 
-interface PostFormData {
-  title: string;
-  category: string;
-  contractType: string;
-  location: string;
-  remote: string;
-  experience: string;
-  salary: string;
-  description: string;
-  requirements: string;
-  benefits: string;
-  deadline: string;
-  positions: number;
-  hasQCM: boolean;
-  qcmId: string;
-}
+const step       = ref(1);
+const publishing = ref(false);
+const toastVisible = ref(false);
 
-const formData = ref<PostFormData>({
-  title: '',
-  category: '',
-  contractType: '',
-  location: '',
-  remote: 'onsite',
-  experience: '',
-  salary: '',
-  description: '',
-  requirements: '',
-  benefits: '',
-  deadline: '',
-  positions: 1,
-  hasQCM: false,
-  qcmId: ''
+const form = ref({
+  title:             '',
+  category:          '',
+  contractType:      '',
+  location:          '',
+  remote:            'onsite',
+  company:           '',
+  experience:        '',
+  salary:            '',
+  description:       '',
+  requirements:      '',
+  benefits:          '',
+  deadline:          '',
+  positions:         1,
+  mcqDuration:       20,
+  mcqQuestionsCount: 15,
+  mcqPassScore:      70,
 });
 
-const goBack = () => {
-  router.back();
+// ── Validation per step ──
+function nextStep(current: number) {
+  if (current === 1) {
+    if (!form.value.title || !form.value.category || !form.value.contractType ||
+        !form.value.location || !form.value.company || !form.value.experience) {
+      alert('Veuillez remplir tous les champs obligatoires (*) avant de continuer.');
+      return;
+    }
+  }
+  if (current === 2) {
+    if (!form.value.description || !form.value.requirements) {
+      alert('Veuillez remplir la description et les compétences requises.');
+      return;
+    }
+  }
+  step.value = current + 1;
+}
+
+// ── Submit ──
+const submitPost = () => {
+  publishing.value = true;
+
+  MockData.addJob({
+    title:             form.value.title,
+    company:           form.value.company,
+    location:          form.value.location,
+    category:          form.value.category,
+    salary:            form.value.salary,
+    description:       form.value.description,
+    requirements:      form.value.requirements,
+    contractType:      form.value.contractType,
+    remote:            form.value.remote,
+    experience:        form.value.experience,
+    deadline:          form.value.deadline,
+    mcqDuration:       form.value.mcqDuration,
+    mcqQuestionsCount: form.value.mcqQuestionsCount,
+    mcqPassScore:      form.value.mcqPassScore,
+  });
+
+  toastVisible.value = true;
+  setTimeout(() => {
+    toastVisible.value = false;
+    publishing.value   = false;
+    router.push('/employer-dashboard');
+  }, 1800);
 };
 
 const saveDraft = () => {
-  console.log('Saving draft:', formData.value);
-  alert('Brouillon sauvegardé avec succès !');
-};
-
-const submitPost = () => {
-  console.log('Submitting post:', formData.value);
-  alert('Poste publié avec succès !');
-  router.push('/employer-dashboard');
-};
-
-const createNewQCM = () => {
-  alert('Redirection vers la création manuelle de QCM...');
+  alert('Brouillon sauvegardé localement.');
 };
 
 const generateQCM = () => {
-  // Vérifier que les informations de base sont remplies
-  if (!formData.value.title || !formData.value.description) {
-    alert('⚠️ Veuillez remplir au minimum le titre et la description du poste pour générer un QCM.');
+  if (!form.value.title || !form.value.description) {
+    alert('Remplissez d\'abord le titre et la description pour générer un QCM.');
     return;
   }
-
-  // Simuler la génération d'un QCM basé sur les données du poste
-  const jobInfo = `
-Titre: ${formData.value.title}
-Catégorie: ${formData.value.category}
-Description: ${formData.value.description.substring(0, 100)}...
-Compétences: ${formData.value.requirements.substring(0, 100)}...`;
-
-  alert(`Génération d'un QCM avec l'IA basé sur votre poste :\n${jobInfo}\n\n✨ Cette fonctionnalité sera bientôt disponible !`);
+  alert(`✨ QCM IA en cours de génération pour "${form.value.title}"…\nFonctionnalité disponible bientôt !`);
 };
-
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-* {
-  box-sizing: border-box;
-}
+*, *::before, *::after { box-sizing: border-box; }
 
-.ajoutposte-container {
+/* ── Page ── */
+.page-bg {
   min-height: 100vh;
-  background: linear-gradient(135deg, #F8F9FB 0%, #EEF2F6 100%);
+  background: linear-gradient(135deg, #f0f5ff 0%, #e8f0fe 50%, #f0f5ff 100%);
   font-family: 'Inter', sans-serif;
-  padding: 2rem;
 }
 
-/* Header */
-.header {
-  max-width: 900px;
-  margin: 0 auto 2rem;
+/* ── Toast ── */
+.toast-success {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 100px;
+  font-size: 14px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 8px 30px rgba(16,185,129,0.4);
+}
+.toast-slide-enter-active, .toast-slide-leave-active { transition: all .35s ease; }
+.toast-slide-enter-from, .toast-slide-leave-to { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+
+/* ── Header ── */
+.ap-header {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1d4ed8 100%);
+  padding: 32px 40px 0;
+  position: relative;
+  overflow: hidden;
+}
+.ap-header::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23fff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+.ap-header-inner {
+  max-width: 860px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .back-btn {
-  background: #FFFFFF;
-  border: 1px solid #E5E7EB;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.85);
   border-radius: 8px;
-  padding: 0.5rem 1rem;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  font-weight: 600;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-bottom: 1.5rem;
-  font-size: 0.9rem;
+  gap: 8px;
+  transition: all .2s;
+  margin-bottom: 24px;
 }
+.back-btn:hover { background: rgba(255,255,255,0.2); }
 
-.back-btn:hover {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
-  transform: translateX(-2px);
+.ap-title-block {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 32px;
 }
-
-.header-content h1 {
-  font-size: 2rem;
+.ap-icon-badge {
+  width: 52px;
+  height: 52px;
+  background: rgba(255,255,255,0.15);
+  border: 1.5px solid rgba(255,255,255,0.25);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: #fff;
+  flex-shrink: 0;
+}
+.ap-title-block h1 {
+  font-size: 24px;
   font-weight: 800;
-  color: #111827;
-  margin: 0 0 0.5rem 0;
-  letter-spacing: -0.02em;
+  color: #fff;
+  margin: 0 0 4px;
 }
-
-.subtitle {
-  color: #6B7280;
-  font-size: 1rem;
+.ap-subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.65);
   margin: 0;
 }
 
-/* Form Wrapper */
-.form-wrapper {
-  max-width: 900px;
-  margin: 0 auto;
-}
-
-.post-form {
-  background: #FFFFFF;
-  border-radius: 16px;
-  padding: 2rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-}
-
-/* Form Sections */
-.form-section {
-  margin-bottom: 2.5rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid #F3F4F6;
-}
-
-.form-section:last-of-type {
-  border-bottom: none;
-  margin-bottom: 2rem;
-}
-
-.section-title {
+/* Steps */
+.ap-steps {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  font-size: 1.25rem;
+  gap: 0;
+  padding-bottom: 0;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.step-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.15);
+  border: 2px solid rgba(255,255,255,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
   font-weight: 700;
-  color: #111827;
-  margin: 0 0 1.5rem 0;
+  color: rgba(255,255,255,0.6);
+  transition: all .3s;
+}
+.step.active .step-dot {
+  background: #fff;
+  border-color: #fff;
+  color: #1d4ed8;
+}
+.step.done .step-dot {
+  background: #10b981;
+  border-color: #10b981;
+  color: #fff;
+}
+.step-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  transition: color .3s;
+}
+.step.active .step-label { color: #fff; }
+.step.done .step-label { color: rgba(255,255,255,0.7); }
+.step-line {
+  flex: 1;
+  min-width: 48px;
+  height: 2px;
+  background: rgba(255,255,255,0.15);
+  margin: 0 10px;
+  border-radius: 2px;
+  transition: background .3s;
+}
+.step-line.active { background: #10b981; }
+
+/* ── Body ── */
+.ap-body {
+  max-width: 900px;
+  margin: -12px auto 0;
+  padding: 0 24px 60px;
 }
 
-.section-title svg {
-  color: #2563EB;
+.ap-form { position: relative; }
+
+.form-card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 32px 36px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+  border: 1px solid rgba(226,232,240,0.8);
+  margin-top: 0;
 }
 
-/* Form Rows & Groups */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.25rem;
-  margin-bottom: 1.25rem;
+.card-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1.5px solid #f1f5f9;
 }
+.card-label i { color: #1d4ed8; }
 
-.form-group {
+/* Fields */
+.field {
   display: flex;
   flex-direction: column;
+  margin-bottom: 18px;
 }
-
-.form-group.full {
-  grid-column: 1 / -1;
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
 }
-
 label {
+  font-size: 13px;
   font-weight: 600;
   color: #374151;
-  margin-bottom: 0.5rem;
-  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+.req { color: #ef4444; }
+.field-hint {
+  font-size: 11px;
+  color: #94a3b8;
+  margin-top: 4px;
 }
 
-.required {
-  color: #EF4444;
-}
-
-/* Input Styles */
 input[type="text"],
 input[type="date"],
 input[type="number"],
 select,
 textarea {
   width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1.5px solid #E5E7EB;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  color: #111827;
-  background: #FFFFFF;
-  transition: all 0.2s;
+  padding: 11px 14px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #1e293b;
+  background: #f8fafc;
   font-family: 'Inter', sans-serif;
-}
-
-input[type="text"]:focus,
-input[type="date"]:focus,
-input[type="number"]:focus,
-select:focus,
-textarea:focus {
+  transition: all .2s;
   outline: none;
-  border-color: #2563EB;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
-
-textarea {
-  resize: vertical;
-  min-height: 100px;
-  line-height: 1.6;
+input:focus, select:focus, textarea:focus {
+  border-color: #1d4ed8;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(29,78,216,0.1);
 }
+textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 
-/* Checkbox */
-.checkbox-label {
+/* QCM box */
+.qcm-box {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 1px solid #bfdbfe;
+  border-radius: 14px;
+  padding: 20px 24px;
+}
+.qcm-box-header {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  cursor: pointer;
-  margin-bottom: 0.5rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
 }
-
-.checkbox-label input[type="checkbox"] {
-  width: 18px;
-  height: 18px;
-  cursor: pointer;
-  accent-color: #2563EB;
-}
-
-.checkbox-label span {
-  font-weight: 600;
-  color: #111827;
-}
-
-.help-text {
-  font-size: 0.85rem;
-  color: #6B7280;
-  margin: 0.25rem 0 0 0;
-}
-
-.link-btn {
-  background: none;
-  border: none;
-  color: #2563EB;
-  font-weight: 600;
-  cursor: pointer;
-  padding: 0.5rem 0;
-  font-size: 0.9rem;
-  text-align: left;
-  transition: color 0.2s;
-}
-
-.link-btn:hover {
-  color: #1D4ED8;
-  text-decoration: underline;
-}
-
-/* QCM Actions */
-.qcm-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-top: 1rem;
-  flex-wrap: wrap;
-}
-
+.qcm-box-header h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: #1e3a8a; }
 .btn-generate-qcm {
-  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-  color: white;
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #fff;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
-}
-
-.btn-generate-qcm:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 12px -1px rgba(37, 99, 235, 0.4);
-}
-
-.or-text {
-  color: #9CA3AF;
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-/* QCM Generator Section */
-.qcm-generator-section {
-  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
-  border: 1px solid #BFDBFE;
-  border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.qcm-generator-header h3 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.1rem;
+  border-radius: 10px;
+  padding: 8px 18px;
+  font-size: 13px;
   font-weight: 700;
-  color: #1F2937;
-}
-
-.qcm-generator-header .help-text {
-  margin: 0 0 1rem 0;
-}
-
-/* Action Buttons */
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 2rem;
-  padding-top: 2rem;
-  border-top: 1px solid #F3F4F6;
-}
-
-.btn-secondary,
-.btn-primary {
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
   cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 7px;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(29,78,216,0.3);
+  transition: all .2s;
+  flex-shrink: 0;
 }
+.btn-generate-qcm:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(29,78,216,0.4); }
 
-.btn-secondary {
-  background: #FFFFFF;
-  color: #374151;
-  border: 1.5px solid #E5E7EB;
+/* Step navigation */
+.step-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1.5px solid #f1f5f9;
 }
+.btn-next {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 11px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(29,78,216,0.3);
+  transition: all .2s;
+}
+.btn-next:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(29,78,216,0.4); }
+.btn-back-step {
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
+  border-radius: 12px;
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .2s;
+}
+.btn-back-step:hover { background: #f1f5f9; border-color: #cbd5e1; }
 
-.btn-secondary:hover {
-  background: #F9FAFB;
-  border-color: #D1D5DB;
+.final-actions { display: flex; gap: 12px; }
+.btn-draft {
+  background: #fff;
+  border: 1.5px solid #e2e8f0;
+  color: #64748b;
+  border-radius: 12px;
+  padding: 11px 22px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .2s;
 }
-
-.btn-primary {
-  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
-  color: #FFFFFF;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
+.btn-draft:hover { background: #f8fafc; }
+.btn-publish {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 11px 32px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(16,185,129,0.35);
+  transition: all .2s;
 }
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 12px -1px rgba(37, 99, 235, 0.4);
-}
+.btn-publish:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(16,185,129,0.45); }
+.btn-publish:disabled { opacity: 0.7; cursor: not-allowed; }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .form-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .ajoutposte-container {
-    padding: 1rem;
-  }
-  
-  .post-form {
-    padding: 1.5rem;
-  }
-  
-  .header-content h1 {
-    font-size: 1.5rem;
-  }
+@media (max-width: 640px) {
+  .ap-header { padding: 24px 20px 0; }
+  .ap-body { padding: 0 12px 48px; }
+  .form-card { padding: 22px 18px; }
+  .field-row { grid-template-columns: 1fr; }
+  .ap-steps { gap: 0; }
+  .step-label { display: none; }
 }
 </style>
