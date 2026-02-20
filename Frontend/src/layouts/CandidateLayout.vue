@@ -38,7 +38,7 @@
               class="w-5 h-5 transition-colors flex-shrink-0"
               :class="isActive(item.path) ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'" 
             />
-            <span v-if="!isSidebarCollapsed" class="font-medium text-sm transition-opacity duration-200">{{ item.name }}</span>
+            <span v-if="!isSidebarCollapsed" class="font-medium transition-opacity duration-200" :class="item.name === 'Historique des Candidatures' ? 'text-xs' : 'text-sm'">{{ item.name }}</span>
 
           </router-link>
         </nav>
@@ -185,7 +185,7 @@ const editUsername = ref('@alexandre');
 const navItems = [
     { name: 'Tableau de bord', icon: Squares2X2Icon, path: '/candidat/dashboard' },
     { name: 'Offres', icon: BriefcaseIcon, path: '/candidat/jobs' },
-    { name: 'Historique', icon: ClockIcon, path: '/candidat/history' },
+    { name: 'Historique des Candidatures', icon: ClockIcon, path: '/candidat/history' },
     { name: 'Résultats', icon: ChartBarIcon, path: '/candidat/results' }
 ];
 

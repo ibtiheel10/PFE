@@ -848,8 +848,7 @@ onMounted(() => {
 }
 
 .full-table tbody tr {
-    animation: fadeInRow 0.4s ease-out backwards;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* No animation or transition */
 }
 
 .full-table tbody tr:nth-child(1) { animation-delay: 0.05s; }
@@ -860,8 +859,6 @@ onMounted(() => {
 
 .full-table tbody tr:hover {
     background: #F9FAFB;
-    transform: scale(1.01);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .full-table td {

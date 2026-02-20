@@ -308,7 +308,7 @@
             <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
                 <!-- Icon based on activeNav -->
                  <BriefcaseIcon v-if="activeNav === 'Jobs'" class="w-10 h-10 text-gray-400" />
-                 <ClockIcon v-else-if="activeNav === 'History'" class="w-10 h-10 text-gray-400" />
+                 <ClockIcon v-else-if="activeNav === 'Historique des Candidatures'" class="w-10 h-10 text-gray-400" />
                  <ChartBarIcon v-else class="w-10 h-10 text-gray-400" />
             </div>
             <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ activeNav }}</h2>
@@ -356,7 +356,7 @@ const toggleSidebar = () => {
 const navItems = [
     { name: 'Tableau de bord', icon: Squares2X2Icon },
     { name: 'Offres', icon: BriefcaseIcon, badge: '3' },
-    { name: 'Historique', icon: ClockIcon },
+    { name: 'Historique des Candidatures', icon: ClockIcon },
     { name: 'Résultats', icon: ChartBarIcon }
 ];
 

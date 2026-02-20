@@ -1101,6 +1101,13 @@ const displayJobs = computed(() => {
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
+.jobs-card {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+}
+
 .card-header {
     display: flex;
     justify-content: space-between;
@@ -1288,9 +1295,8 @@ const displayJobs = computed(() => {
 }
 
 .job-item:hover {
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
     border-color: rgba(37, 99, 235, 0.2);
-    transform: translateY(-2px);
 }
 
 .job-header {
