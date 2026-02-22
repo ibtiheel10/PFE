@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using System.Text;
 
@@ -21,9 +22,6 @@ namespace Backend.Controllers
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
-
-        // Stockage OTP en mémoire : Email -> (Code, Expiration)
-        private static readonly ConcurrentDictionary<string, (string Code, DateTime Expiry)> _otpStore = new();
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
@@ -125,12 +123,26 @@ namespace Backend.Controllers
             if (!isPasswordValid)
                 return Unauthorized(new { message = "Email ou mot de passe incorrect." });
 
-            // Générer un code OTP à 6 chiffres
+            // Enregistrer le nouveau code dans la DB
+            var emailKey = dto.Email.ToLower();
             var otpCode = GenerateOtpCode();
 
-            // Stocker le code OTP avec expiration de 5 minutes
-            var emailKey = dto.Email.ToLower();
-            _otpStore[emailKey] = (otpCode, DateTime.UtcNow.AddMinutes(5));
+            // Supprimer tout ancien code OTP pour cet email s'il existe
+            var existingOtp = await _context.OtpCodes.FirstOrDefaultAsync(o => o.Email == emailKey);
+            if (existingOtp != null)
+            {
+                _context.OtpCodes.Remove(existingOtp);
+            }
+
+            // Stocker le code OTP avec expiration de 5 minutes dans la DB
+            var newOtp = new OtpCode
+            {
+                Email = emailKey,
+                Code = otpCode,
+                Expiry = DateTime.UtcNow.AddMinutes(5)
+            };
+            _context.OtpCodes.Add(newOtp);
+            await _context.SaveChangesAsync();
 
             // Envoyer le code OTP par email
             try
@@ -162,14 +174,16 @@ namespace Backend.Controllers
         {
             var emailKey = dto.Email.ToLower();
 
-            // Vérifier si un OTP existe pour cet email
-            if (!_otpStore.TryGetValue(emailKey, out var otpEntry))
+            // Vérifier si un OTP existe pour cet email dans la DB
+            var otpEntry = await _context.OtpCodes.FirstOrDefaultAsync(o => o.Email == emailKey);
+            if (otpEntry == null)
                 return Unauthorized(new { message = "Aucun code de vérification trouvé. Veuillez vous reconnecter." });
 
             // Vérifier si le code a expiré
             if (DateTime.UtcNow > otpEntry.Expiry)
             {
-                _otpStore.TryRemove(emailKey, out _);
+                _context.OtpCodes.Remove(otpEntry);
+                await _context.SaveChangesAsync();
                 return Unauthorized(new { message = "Le code de vérification a expiré. Veuillez en demander un nouveau." });
             }
 
@@ -177,8 +191,9 @@ namespace Backend.Controllers
             if (otpEntry.Code != dto.OtpCode)
                 return Unauthorized(new { message = "Code de vérification incorrect." });
 
-            // Supprimer le code OTP utilisé
-            _otpStore.TryRemove(emailKey, out _);
+            // Supprimer le code OTP utilisé de la DB
+            _context.OtpCodes.Remove(otpEntry);
+            await _context.SaveChangesAsync();
 
             // Récupérer l'utilisateur
             var user = await _userManager.FindByEmailAsync(dto.Email);
@@ -215,7 +230,23 @@ namespace Backend.Controllers
             // Générer un nouveau code OTP
             var otpCode = GenerateOtpCode();
             var emailKey = dto.Email.ToLower();
-            _otpStore[emailKey] = (otpCode, DateTime.UtcNow.AddMinutes(5));
+
+            // Supprimer l'ancien code s'il existe
+            var existingOtp = await _context.OtpCodes.FirstOrDefaultAsync(o => o.Email == emailKey);
+            if (existingOtp != null)
+            {
+                _context.OtpCodes.Remove(existingOtp);
+            }
+
+            // Enregistrer le nouveau code dans la DB
+            var newOtp = new OtpCode
+            {
+                Email = emailKey,
+                Code = otpCode,
+                Expiry = DateTime.UtcNow.AddMinutes(5)
+            };
+            _context.OtpCodes.Add(newOtp);
+            await _context.SaveChangesAsync();
 
             // Envoyer le nouveau code par email
             try
