@@ -1,30 +1,18 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Backend.Models;
-
 
 namespace Backend.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
-        protected readonly IConfiguration _configuration;
-
-        // Constructeur pour EF Core migrations (design time)
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
         }
 
-        // Constructeur utilisé dans l'application
-        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IConfiguration configuration)
-            : base(options)
-        {
-            _configuration = configuration;
-        }
-
-        public DbSet<Utilisateur> Utilisateurs { get; set; } = null!;
-        public DbSet<Entreprise> Entreprises { get; set; } = null!;
         public DbSet<Candidat> Candidats { get; set; } = null!;
+        public DbSet<Entreprise> Entreprises { get; set; } = null!;
         public DbSet<Admin> Admins { get; set; } = null!;
         public DbSet<OffreEmploi> OffresEmploi { get; set; } = null!;
         public DbSet<Candidature> Candidatures { get; set; } = null!;
@@ -34,10 +22,26 @@ namespace Backend.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configuration TPH (Table Per Hierarchy) - Par défaut avec EF Core
-            modelBuilder.Entity<Utilisateur>().ToTable("Utilisateurs");
-            // Les sous-classes Candidat, Entreprise et Admin seront stockées dans la table Utilisateurs
-            // avec une colonne "Discriminator" pour les distinguer.
+            // Candidat → ApplicationUser (1:1)
+            modelBuilder.Entity<Candidat>()
+                .HasOne(c => c.ApplicationUser)
+                .WithMany()
+                .HasForeignKey(c => c.ApplicationUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Entreprise → ApplicationUser (1:1)
+            modelBuilder.Entity<Entreprise>()
+                .HasOne(e => e.ApplicationUser)
+                .WithMany()
+                .HasForeignKey(e => e.ApplicationUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Admin → ApplicationUser (1:1)
+            modelBuilder.Entity<Admin>()
+                .HasOne(a => a.ApplicationUser)
+                .WithMany()
+                .HasForeignKey(a => a.ApplicationUserId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

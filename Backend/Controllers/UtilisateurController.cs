@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Backend.Data;
+using Microsoft.AspNetCore.Identity;
 using Backend.Models;
 
 namespace Backend.Controllers
@@ -9,70 +8,39 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     public class UtilisateurController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
 
-        public UtilisateurController(ApplicationDbContext context)
+        public UtilisateurController(UserManager<ApplicationUser> userManager)
         {
-            _context = context;
+            _userManager = userManager;
         }
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Utilisateur>>> GetUtilisateurs()
+        public IActionResult GetUtilisateurs()
         {
-            return await _context.Utilisateurs.ToListAsync();
+            var users = _userManager.Users.ToList();
+            return Ok(users);
         }
 
         [HttpGet("{id}")]
-        public async Task<ActionResult<Utilisateur>> GetUtilisateur(int id)
+        public async Task<IActionResult> GetUtilisateur(string id)
         {
-            var utilisateur = await _context.Utilisateurs.FindAsync(id);
-            if (utilisateur == null)
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
                 return NotFound();
-
-            return utilisateur;
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<Utilisateur>> CreateUtilisateur(Utilisateur utilisateur)
-        {
-            _context.Utilisateurs.Add(utilisateur);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetUtilisateur), new { id = utilisateur.Id }, utilisateur);
-        }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUtilisateur(int id, Utilisateur utilisateur)
-        {
-            if (id != utilisateur.Id)
-                return BadRequest();
-
-            _context.Entry(utilisateur).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!_context.Utilisateurs.Any(e => e.Id == id))
-                    return NotFound();
-                else
-                    throw;
-            }
-
-            return NoContent();
+            return Ok(user);
         }
 
         [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUtilisateur(int id)
+        public async Task<IActionResult> DeleteUtilisateur(string id)
         {
-            var utilisateur = await _context.Utilisateurs.FindAsync(id);
-            if (utilisateur == null)
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
                 return NotFound();
 
-            _context.Utilisateurs.Remove(utilisateur);
-            await _context.SaveChangesAsync();
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+                return BadRequest(result.Errors);
 
             return NoContent();
         }
