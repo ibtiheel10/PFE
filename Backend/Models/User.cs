@@ -1,6 +1,2 @@
-using Microsoft.AspNetCore.Identity;
-
-public class ApplicationUser : IdentityUser
-{
-    public string RoleName { get; set; }  // Candidate / Entreprise / Admin
-}
+// This file is intentionally left empty.
+// The ApplicationUser class is defined in ApplicationUser.cs
