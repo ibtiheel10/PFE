@@ -1,5 +1,6 @@
 using Backend.Data;
 using Backend.Models;
+using Backend.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -16,6 +17,9 @@ var builder = WebApplication.CreateBuilder(args);
 // -----------------------------
 
 builder.Services.AddControllers();
+
+// Email service
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Swagger pour documentation API
 builder.Services.AddEndpointsApiExplorer();
@@ -92,18 +96,15 @@ using (var scope = app.Services.CreateScope())
 // 3️⃣ Middleware
 // -----------------------------
 
-// Swagger accessible même en prod pour test (optionnel)
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// ⚡ Pour le dev, tu peux garder HTTPS ou le commenter pour éviter le warning
-// app.UseHttpsRedirection();
+// app.UseHttpsRedirection(); // optionnel
 
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map des Controllers
 app.MapControllers();
 
 // -----------------------------

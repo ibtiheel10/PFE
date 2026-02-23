@@ -17,6 +17,7 @@ namespace Backend.Data
         public DbSet<OffreEmploi> OffresEmploi { get; set; } = null!;
         public DbSet<Candidature> Candidatures { get; set; } = null!;
         public DbSet<Questions> Questions { get; set; } = null!;
+        public DbSet<OtpCode> OtpCodes { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
