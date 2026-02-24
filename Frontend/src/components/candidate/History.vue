@@ -6,7 +6,6 @@
                 <h1 class="text-2xl font-bold text-gray-900">Historique des Candidatures</h1>
                 <p class="text-gray-500 mt-1">Suivez l'état d'avancement de toutes vos demandes.</p>
             </div>
-
         </div>
 
         <!-- Filters & Stats -->
@@ -42,53 +41,65 @@
                     v-for="app in filteredApplications" 
                     :key="app.id" 
                     class="application-card"
-                    @click="viewDetails(app)"
                 >
                     <!-- Status Indicator Line -->
-                    <div class="status-line" :class="getStatusColor(app.status)"></div>
+                    <div class="status-line" :class="getStatusLineColor(app.status)"></div>
 
                     <div class="card-content">
                         <!-- Company Logo -->
                         <div class="company-logo">
-                            <img :src="app.logo" :alt="app.company" />
+                            <div class="logo-icon" :style="{ background: getJobIconColor(app.jobId) }">
+                                <i :class="getJobIcon(app.jobId)" style="color: white; font-size: 20px;"></i>
+                            </div>
                         </div>
 
                         <!-- Main Info -->
                         <div class="info-section">
                             <div class="flex justify-between items-start mb-1">
-                                <h3 class="job-title">{{ app.position }}</h3>
+                                <h3 class="job-title">{{ getJobTitle(app.jobId) }}</h3>
                                 <span class="mobile-status" :class="getStatusBadgeClass(app.status)">
-                                    {{ app.statusLabel }}
+                                    {{ app.status }}
                                 </span>
                             </div>
                             <p class="company-name">
-                                <i class="fa-regular fa-building"></i> {{ app.company }}
-                                <span class="mx-2">•</span>
-                                <i class="fa-solid fa-location-dot"></i> {{ app.location }}
+                                <i class="fa-regular fa-building"></i> {{ getJobCompany(app.jobId) }}
                             </p>
-                            <div class="meta-tags">
-                                <span class="tag">{{ app.type }}</span>
-                                <span class="tag">{{ app.salary }}</span>
+                            <div class="meta-tags mt-2">
+                                <span class="tag">Postulé le {{ app.dateDisplay }}</span>
                             </div>
                         </div>
 
-                        <!-- Status & Actions (Desktop) -->
+                        <!-- Status & date (Desktop) -->
                         <div class="status-section">
                             <span class="status-badge" :class="getStatusBadgeClass(app.status)">
                                 <i :class="getStatusIcon(app.status)"></i>
-                                {{ app.statusLabel }}
+                                {{ app.status }}
                             </span>
-                            <div class="date-info">
-                                <span class="text-xs text-gray-400">Postulé le</span>
-                                <span class="text-sm font-medium text-gray-700">{{ app.date }}</span>
-                            </div>
                         </div>
 
                         <!-- Action Button -->
                         <div class="action-section">
-                            <button class="btn-details">
-                                Détails <i class="fa-solid fa-chevron-right"></i>
+                            <!-- Cancel button only for 'En cours' -->
+                            <button
+                                v-if="app.status === 'En cours'"
+                                @click.stop="handleCancel(app.id)"
+                                class="btn-cancel"
+                                title="Annuler la candidature"
+                            >
+                                <i class="fa-solid fa-xmark"></i>
+                                <span>Annuler</span>
                             </button>
+                            <span v-else class="text-xs text-gray-400 italic">
+                                {{
+                                  app.status === 'Entretiens'
+                                    ? 'Entretien programmé'
+                                    : app.status === 'Acceptée'
+                                      ? 'Candidature acceptée'
+                                      : app.status === 'Annulée'
+                                        ? 'Candidature annulée'
+                                        : 'Candidature refusée'
+                                }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -100,171 +111,110 @@
                     <i class="fa-solid fa-folder-open"></i>
                 </div>
                 <h3>Aucune candidature trouvée</h3>
-                <p>Essayez de modifier vos filtres ou effectuez une nouvelle recherche.</p>
-                <button @click="clearFilters" class="btn-reset">Effacer les filtres</button>
+                <p v-if="activeTab !== 'all'">Aucune candidature dans cette catégorie.</p>
+                <p v-else>Vous n'avez encore postulé à aucune offre.</p>
+                <button @click="activeTab = 'all'" class="btn-reset" v-if="activeTab !== 'all'">Voir toutes les candidatures</button>
+                <button @click="router.push('/candidat/jobs')" class="btn-reset" v-else>Explorer les offres</button>
             </div>
         </div>
+
+        <!-- Cancel confirmation toast -->
+        <Transition name="toast">
+            <div v-if="toastMessage" class="toast-notification">
+                <i class="fa-solid fa-circle-check text-green-500"></i>
+                {{ toastMessage }}
+            </div>
+        </Transition>
     </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { MockData } from '../../services/MockData';
 
-// --- Types ---
-interface Application {
-    id: number;
-    company: string;
-    logo: string;
-    position: string;
-    location: string;
-    type: string;
-    salary: string;
-    date: string;
-    status: 'applied' | 'review' | 'interview' | 'rejected' | 'offer';
-    statusLabel: string;
-}
+const router = useRouter();
 
 // --- State ---
-
 const activeTab = ref('all');
 const sortBy = ref('newest');
+const toastMessage = ref('');
 
 const tabs = [
     { id: 'all', label: 'Tout' },
-    { id: 'review', label: 'En cours' },
-    { id: 'interview', label: 'Entretiens' },
-    { id: 'rejected', label: 'Refusés' }
+    { id: 'En cours', label: 'En cours' },
+    { id: 'Entretiens', label: 'Entretiens' },
+    { id: 'Acceptée', label: 'Acceptées' },
+    { id: 'Refusés', label: 'Refusés' },
+    { id: 'Annulée', label: 'Annulées' },
 ];
 
-// --- Mock Data ---
-const applications = ref<Application[]>([
-    {
-        id: 1,
-        company: 'Tech Solutions',
-        logo: 'https://ui-avatars.com/api/?name=Tech+Solutions&background=0D8ABC&color=fff',
-        position: 'Senior Frontend Developer',
-        location: 'Paris, France',
-        type: 'CDI',
-        salary: '45k - 55k €',
-        date: '12 Fév 2024',
-        status: 'interview',
-        statusLabel: 'Entretien prévu'
-    },
-    {
-        id: 2,
-        company: 'Innovate Corp',
-        logo: 'https://ui-avatars.com/api/?name=Innovate+Corp&background=6366f1&color=fff',
-        position: 'Product Designer',
-        location: 'Lyon, Remote',
-        type: 'Freelance',
-        salary: '500€ / jour',
-        date: '10 Fév 2024',
-        status: 'review',
-        statusLabel: 'En analyse'
-    },
-    {
-        id: 3,
-        company: 'DataSystems',
-        logo: 'https://ui-avatars.com/api/?name=Data+Systems&background=10b981&color=fff',
-        position: 'Data Analyst',
-        location: 'Bordeaux',
-        type: 'CDI',
-        salary: '38k - 45k €',
-        date: '05 Fév 2024',
-        status: 'applied',
-        statusLabel: 'Candidature envoyée'
-    },
-    {
-        id: 4,
-        company: 'Creative Studio',
-        logo: 'https://ui-avatars.com/api/?name=Creative+Studio&background=f43f5e&color=fff',
-        position: 'UX Researcher',
-        location: 'Paris',
-        type: 'CDD',
-        salary: '35k - 40k €',
-        date: '28 Jan 2024',
-        status: 'rejected',
-        statusLabel: 'Non retenu'
-    },
-    {
-        id: 5,
-        company: 'CloudNine',
-        logo: 'https://ui-avatars.com/api/?name=Cloud+Nine&background=8b5cf6&color=fff',
-        position: 'DevOps Engineer',
-        location: 'Remote',
-        type: 'CDI',
-        salary: '55k - 65k €',
-        date: '15 Jan 2024',
-        status: 'offer',
-        statusLabel: 'Offre reçue'
-    }
-]);
+// --- Computed (live from MockData) ---
+const allMyApplications = computed(() => MockData.getMyApplications());
 
-// --- Computed ---
 const filteredApplications = computed(() => {
-    let result = applications.value;
-
-    // Filter by Tab
+    let result = allMyApplications.value;
     if (activeTab.value !== 'all') {
-        if (activeTab.value === 'review') {
-            result = result.filter(app => ['applied', 'review'].includes(app.status));
-        } else {
-            result = result.filter(app => app.status === activeTab.value);
-        }
+        result = result.filter(app => app.status === activeTab.value);
     }
-
-
-
-    // Sort
-    return result.sort((a, b) => {
-        // Simple date string sort for demo (in real app parse Date objects)
-        return sortBy.value === 'newest' 
-            ? b.date.localeCompare(a.date) 
-            : a.date.localeCompare(b.date);
+    return [...result].sort((a, b) => {
+        return sortBy.value === 'newest'
+            ? new Date(b.date).getTime() - new Date(a.date).getTime()
+            : new Date(a.date).getTime() - new Date(b.date).getTime();
     });
 });
 
 // --- Methods ---
 const getCount = (tabId: string) => {
-    if (tabId === 'all') return applications.value.length;
-    if (tabId === 'review') return applications.value.filter(app => ['applied', 'review'].includes(app.status)).length;
-    return applications.value.filter(app => app.status === tabId).length;
+    if (tabId === 'all') return allMyApplications.value.length;
+    return allMyApplications.value.filter(app => app.status === tabId).length;
 };
 
-const getStatusColor = (status: string) => {
+const getJobTitle = (jobId: number) => MockData.getJob(jobId)?.title ?? 'Offre inconnue';
+const getJobCompany = (jobId: number) => MockData.getJob(jobId)?.company ?? '';
+const getJobIcon = (jobId: number) => MockData.getJob(jobId)?.icon ?? 'fa-solid fa-briefcase';
+const getJobIconColor = (jobId: number) => MockData.getJob(jobId)?.iconColor ?? '#3b82f6';
+
+const getStatusLineColor = (status: string) => {
     switch (status) {
-        case 'interview': return 'bg-orange-500';
-        case 'offer': return 'bg-green-500';
-        case 'rejected': return 'bg-red-500';
+        case 'Entretiens': return 'bg-orange-500';
+        case 'Acceptée': return 'bg-green-500';
+        case 'Refusés': return 'bg-red-500';
+        case 'Annulée': return 'bg-gray-400';
         default: return 'bg-blue-500';
     }
 };
 
 const getStatusBadgeClass = (status: string) => {
     switch (status) {
-        case 'interview': return 'status-interview';
-        case 'offer': return 'status-offer';
-        case 'rejected': return 'status-rejected';
+        case 'Entretiens': return 'status-interview';
+        case 'Acceptée': return 'status-accepted';
+        case 'Refusés': return 'status-rejected';
+        case 'Annulée': return 'status-cancelled';
         default: return 'status-review';
     }
 };
 
 const getStatusIcon = (status: string) => {
     switch (status) {
-        case 'interview': return 'fa-solid fa-calendar-check';
-        case 'offer': return 'fa-solid fa-trophy';
-        case 'rejected': return 'fa-solid fa-circle-xmark';
+        case 'Entretiens': return 'fa-solid fa-calendar-check';
+        case 'Acceptée': return 'fa-solid fa-circle-check';
+        case 'Refusés': return 'fa-solid fa-circle-xmark';
+        case 'Annulée': return 'fa-solid fa-ban';
         default: return 'fa-solid fa-clock';
     }
 };
 
-const viewDetails = (app: Application) => {
-    alert(`Détails pour ${app.position} chez ${app.company}`);
+const showToast = (msg: string) => {
+    toastMessage.value = msg;
+    setTimeout(() => { toastMessage.value = ''; }, 3000);
 };
 
-const clearFilters = () => {
-
-    activeTab.value = 'all';
+const handleCancel = (appId: number) => {
+    const success = MockData.cancelApplication(appId);
+    if (success) {
+        showToast('Candidature annulée avec succès.');
+    }
 };
 </script>
 
@@ -274,6 +224,7 @@ const clearFilters = () => {
     margin: 0 auto;
     padding: 32px 24px;
     font-family: 'Inter', sans-serif;
+    position: relative;
 }
 
 /* Header */
@@ -285,8 +236,6 @@ const clearFilters = () => {
     flex-wrap: wrap;
     gap: 16px;
 }
-
-
 
 /* Filters Bar */
 .filters-bar {
@@ -364,7 +313,6 @@ const clearFilters = () => {
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
     border: 1px solid #f1f5f9;
     transition: all 0.2s ease;
-    cursor: pointer;
 }
 
 .application-card:hover {
@@ -385,23 +333,20 @@ const clearFilters = () => {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 24px;
+    gap: 20px;
 }
 
 .company-logo {
-    width: 64px;
-    height: 64px;
-    border-radius: 12px;
-    overflow: hidden;
-    background: #f8fafc;
-    border: 1px solid #f1f5f9;
     flex-shrink: 0;
 }
 
-.company-logo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+.logo-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .info-section {
@@ -409,7 +354,7 @@ const clearFilters = () => {
 }
 
 .job-title {
-    font-size: 18px;
+    font-size: 17px;
     font-weight: 700;
     color: #1e293b;
     margin-bottom: 4px;
@@ -420,7 +365,8 @@ const clearFilters = () => {
     color: #64748b;
     display: flex;
     align-items: center;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 4px;
 }
 
 .meta-tags {
@@ -458,43 +404,49 @@ const clearFilters = () => {
 
 .status-review { background: #eff6ff; color: #3b82f6; }
 .status-interview { background: #fff7ed; color: #f97316; }
+.status-accepted { background: #ecfdf5; color: #10b981; }
 .status-rejected { background: #fef2f2; color: #ef4444; }
-.status-offer { background: #ecfdf5; color: #10b981; }
+.status-cancelled { background: #f1f5f9; color: #64748b; }
 
 .action-section {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    padding-left: 24px;
+    padding-left: 20px;
     border-left: 1px solid #f1f5f9;
+    min-width: 120px;
 }
 
-.btn-details {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: #f8fafc;
-    color: #64748b;
-    border: none;
+.btn-cancel {
     display: flex;
     align-items: center;
-    justify-content: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fecaca;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
     transition: all 0.2s;
-    font-size: 0px; /* Hide text, show icon only */
 }
 
-.btn-details i {
-    font-size: 14px;
-}
-
-.application-card:hover .btn-details {
-    background: #3b82f6;
-    color: white;
+.btn-cancel:hover {
+    background: #fee2e2;
+    border-color: #f87171;
+    transform: scale(1.02);
 }
 
 /* Responsive */
 .mobile-status {
     display: none;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+    font-weight: 600;
+    vertical-align: middle;
 }
 
 @media (max-width: 768px) {
@@ -505,21 +457,17 @@ const clearFilters = () => {
     }
 
     .status-section {
-        display: none; /* Hide standard status on mobile, show mobile generic one */
+        display: none;
     }
 
     .action-section {
-        display: none; /* Make card clickable instead */
+        border-left: none;
+        padding-left: 0;
+        min-width: auto;
     }
 
     .mobile-status {
         display: inline-block;
-        font-size: 11px;
-        padding: 2px 8px;
-        border-radius: 4px;
-        margin-left: 8px;
-        font-weight: 600;
-        vertical-align: middle;
     }
 
     .company-logo {
@@ -557,5 +505,60 @@ const clearFilters = () => {
     font-size: 48px;
     color: #e2e8f0;
     margin-bottom: 20px;
+}
+.empty-state h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+.empty-state p {
+    color: #64748b;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+.btn-reset {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.btn-reset:hover { background: #2563eb; }
+
+/* Toast Notification */
+.toast-notification {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 14px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 9999;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+    transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+    opacity: 0;
+    transform: translateY(20px);
 }
 </style>

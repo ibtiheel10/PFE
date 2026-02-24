@@ -371,7 +371,7 @@ const handleNav = (itemName: string) => {
 };
 
 const goToJobs = () => {
-    router.push('/jobs');
+    router.push('/history');
 };
 
 const chartData = [

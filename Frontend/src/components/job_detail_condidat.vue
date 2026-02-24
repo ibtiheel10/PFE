@@ -1,1076 +1,890 @@
 <template>
-  <div class="job-page-container">
-    <!-- Navigation / Top Bar -->
-    <header class="top-nav">
-      <div class="nav-content">
-        <!-- Back Button -->
-        <button @click="goBack" class="back-btn">
-          <i class="fa-solid fa-arrow-left"></i>
-          <span>Retour</span>
-        </button>
-
-        <div class="logo-section">
-          <div class="logo-box">
-            <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="32" height="32" rx="6" fill="#2563EB"/>
-                <path d="M10 22V14M16 22V10M22 22V17" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <div class="job-page">
+    <!-- ── Top Bar ─────────────────────────────────────────────── -->
+    <header class="job-topbar">
+      <div class="job-topbar-inner">
+        <!-- Brand -->
+        <div class="brand">
+          <div class="brand-logo">
+            <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+              <rect width="32" height="32" rx="7" fill="#2563EB"/>
+              <path d="M10 22V14M16 22V10M22 22V17" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </div>
-          <span class="brand-text">Skillvia</span>
-        </div>
-        
-        <div class="search-wrap">
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-          <input type="text" placeholder="Rechercher un job..." />
+          <span class="brand-name">Skillvia</span>
         </div>
 
-       
-        <div class="user-area">
-          <button class="icon-btn">
-             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-          </button>
-          <img src="https://i.pravatar.cc/150?u=user" alt="User" class="nav-avatar">
+        <!-- Breadcrumb -->
+        <nav class="breadcrumb">
+          <router-link to="/candidat/jobs" class="bc-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+            Offres
+          </router-link>
+          <span class="bc-sep">›</span>
+          <span class="bc-current" v-if="job">{{ job.title }}</span>
+        </nav>
+
+        <!-- Right actions -->
+        <div class="topbar-actions">
+          <router-link to="/candidat/dashboard" class="topbar-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </router-link>
         </div>
       </div>
     </header>
 
-    <!-- Breadcrumb -->
-    
+    <!-- ── Main Content ─────────────────────────────────────────── -->
+    <div class="job-body" v-if="job">
 
-    <main class="main-body container">
-      <!-- Header Card -->
-      <section class="job-header-card animate-slide-up" v-if="job">
-        <div class="job-header-content">
-           <div class="company-logo">
-             <div class="logo-placeholder animated-logo">TECHFLOW</div>
-           </div>
-           <div class="job-main-info">
-             <h1 class="job-title-main">{{ job.title }}</h1>
-             <div class="job-meta-row">
-                <span class="company-name">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                  {{ job.company }}
-                </span>
-                <span class="dot">•</span>
-                <span class="job-location">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
-                  {{ job.location }}
-                </span>
-             </div>
-             <div class="tags-row">
-               <span class="tag green" v-for="tag in job.tags" :key="tag">{{ tag }}</span>
-               <span class="salary">{{ job.salary }}</span>
-               <span class="dot">•</span>
-               <span class="posted-time">{{ job.postedTime }}</span>
-             </div>
-           </div>
+      <!-- Hero Card -->
+      <section class="hero-card">
+        <div class="hero-left">
+          <!-- Icon -->
+          <div class="hero-icon" :style="{ background: job.iconColor + '18' }">
+            <i :class="job.icon" :style="{ color: job.iconColor, fontSize: '2rem' }"></i>
+          </div>
+          <!-- Info -->
+          <div class="hero-info">
+            <div class="hero-badges">
+              <span class="badge badge-category">{{ job.category }}</span>
+              <span v-for="tag in job.tags" :key="tag" class="badge badge-tag">{{ tag }}</span>
+              <span v-if="job.daysLeft !== undefined" class="badge" :class="job.daysLeft <= 3 ? 'badge-urgent' : 'badge-time'">
+                <i class="fa-regular fa-clock"></i> {{ job.daysLeft }} j restants
+              </span>
+            </div>
+            <h1 class="hero-title">{{ job.title }}</h1>
+            <div class="hero-meta">
+              <span class="meta-item">
+                <i class="fa-regular fa-building"></i> {{ job.company }}
+              </span>
+              <span class="meta-sep">·</span>
+              <span class="meta-item">
+                <i class="fa-solid fa-location-dot"></i> {{ job.location }}
+              </span>
+              <span class="meta-sep">·</span>
+              <span class="meta-item">
+                <i class="fa-solid fa-money-bill-wave"></i> {{ job.salary }}
+              </span>
+              <span class="meta-sep">·</span>
+              <span class="meta-item text-gray-400">
+                <i class="fa-regular fa-clock"></i> {{ job.postedTime }}
+              </span>
+            </div>
+          </div>
         </div>
-        <div class="header-actions">
-           <button class="btn-apply" @click="applyToJob">
-             <i class="fa-solid fa-paper-plane"></i>
-             <span>Postuler</span>
-             <i class="fa-solid fa-arrow-right btn-arrow"></i>
-           </button>
+
+        <!-- Apply Section -->
+        <div class="hero-apply">
+          <!-- Not applied yet -->
+          <button v-if="!alreadyApplied" @click="applyToJob" class="btn-apply">
+            <i class="fa-solid fa-paper-plane"></i>
+            Postuler maintenant
+            <i class="fa-solid fa-arrow-right apply-arrow"></i>
+          </button>
+
+          <!-- Already applied -->
+          <div v-else class="applied-state">
+            <div class="applied-badge">
+              <i class="fa-solid fa-circle-check"></i>
+              Candidature envoyée
+            </div>
+            <!-- Status badge -->
+            <div v-if="myApplication" class="application-status-row">
+              <span class="status-label">Statut :</span>
+              <span class="status-chip" :class="getStatusClass(myApplication.status)">
+                <i :class="getStatusIcon(myApplication.status)"></i>
+                {{ myApplication.status }}
+              </span>
+            </div>
+            <!-- Cancel (only En cours) -->
+            <button
+              v-if="myApplication && myApplication.status === 'En cours'"
+              @click="confirmCancel = true"
+              class="btn-cancel"
+            >
+              <i class="fa-solid fa-xmark"></i>
+              Annuler la postulation
+            </button>
+          </div>
+
+          <!-- Stats -->
+          <div class="hero-stats">
+            <div class="stat">
+              <span class="stat-value">{{ applicantsCount }}</span>
+              <span class="stat-label">Candidats</span>
+            </div>
+            <div class="stat-div"></div>
+            <div class="stat">
+              <span class="stat-value">{{ job.mcqQuestionsCount }}</span>
+              <span class="stat-label">Questions QCM</span>
+            </div>
+            <div class="stat-div"></div>
+            <div class="stat">
+              <span class="stat-value">{{ job.mcqDuration }}'</span>
+              <span class="stat-label">Durée test</span>
+            </div>
+          </div>
         </div>
       </section>
 
-      <div class="content-grid" v-if="job">
-        <!-- Left Column: Details with Animations -->
-        <div class="details-column">
-           <!-- Description Section -->
-           <section class="detail-card animate-card" style="--animation-order: 0">
-              <div class="section-title">
-               <span class="icon-emoji">📄</span>
-               <h2>À propos de la mission</h2>
-             </div>
-             <div class="text-content">
-               <p v-html="job.description.intro"></p>
-               <p>{{ job.description.mission }}</p>
-               
-               <h3>Vos responsabilités :</h3>
-               <ul>
-                 <li v-for="(resp, index) in job.description.responsibilities" :key="index">{{ resp }}</li>
-               </ul>
-             </div>
-           </section>
+      <!-- ── Content Grid ──────────────────────────────────────── -->
+      <div class="content-grid">
+        <!-- Left Column -->
+        <div class="left-col">
 
-           <!-- Skills Section -->
-           <section class="detail-card animate-card" style="--animation-order: 1">
-              <div class="section-title">
-                 <i class="fa-solid fa-star section-icon"></i>
-                 <h2>Compétences requises</h2>
-              </div>
-              <div class="skills-list">
-                <span class="skill-badge skill-animated" v-for="(skill, index) in job.skills" :key="skill" :style="{ '--skill-index': index }">{{ skill }}</span>
-              </div>
-           </section>
-
-           <!-- Process Section -->
-           <section class="detail-card animate-card" style="--animation-order: 2">
-             <div class="section-title">
-               <i class="fa-solid fa-route section-icon"></i>
-               <h2>Processus de recrutement</h2>
-             </div>
-             <div class="process-steps">
-               <div class="step-item step-animated" style="--step-index: 0">
-                 <div class="step-circle">1</div>
-                 <div class="step-info">
-                   <div class="step-title">Dépôt du dossier</div>
-                   <div class="step-desc">Examen de votre CV et de vos projets passés.</div>
-                 </div>
-               </div>
-               <div class="step-line step-line-animated" style="--step-index: 0"></div>
-               <div class="step-item step-animated" style="--step-index: 1">
-                 <div class="step-circle">2</div>
-                 <div class="step-info">
-                   <div class="step-title">Test Skillvia (QCM)</div>
-                   <div class="step-desc">Évaluation objective de vos compétences techniques.</div>
-                 </div>
-               </div>
-               <div class="step-line step-line-animated" style="--step-index: 1"></div>
-               <div class="step-item step-last step-animated" style="--step-index: 2">
-                 <div class="step-circle step-gray">3</div>
-                 <div class="step-info">
-                   <div class="step-title">Entretien technique</div>
-                   <div class="step-desc">Échange approfondi avec l'équipe engineering.</div>
-                 </div>
-               </div>
-             </div>
-           </section>
-        </div>
-
-        <!-- Right Column: Info Cards with Animations -->
-        <div class="side-column">
-          <!-- Info Card -->
-          <div class="info-card animate-slide-left">
-            <div class="info-header">
-              <i class="fa-solid fa-lightbulb"></i>
-              <h3>Conseils</h3>
+          <!-- Description -->
+          <div class="card">
+            <div class="card-title">
+              <span class="card-icon">📄</span>
+              À propos de la mission
             </div>
-            <div class="info-content">
-              <div class="info-item">
-                <i class="fa-solid fa-check"></i>
-                <span>Personnalisez votre candidature</span>
-              </div>
-              <div class="info-item">
-                <i class="fa-solid fa-check"></i>
-                <span>Préparez-vous au test technique</span>
-              </div>
-              <div class="info-item">
-                <i class="fa-solid fa-check"></i>
-                <span>Mettez en avant vos projets</span>
-              </div>
+            <div class="card-text">
+              <p>{{ job.description.intro }}</p>
+              <p class="mt-3">{{ job.description.mission }}</p>
+              <h4 class="mt-4 mb-2 font-semibold text-gray-800">Vos responsabilités :</h4>
+              <ul class="resp-list">
+                <li v-for="(resp, i) in job.description.responsibilities" :key="i">
+                  <i class="fa-solid fa-check"></i>
+                  {{ resp }}
+                </li>
+              </ul>
             </div>
           </div>
 
-          <!-- Help Card -->
-          <div class="help-card animate-slide-left" style="animation-delay: 0.2s">
-            <div class="help-icon">?</div>
-            <div class="help-content">
-              <strong>Besoin d'aide ?</strong>
-              <p>Consultez notre guide de préparation ou contactez notre support technique.</p>
-              <router-link to="/support">Voir la FAQ</router-link>
+          <!-- Skills -->
+          <div class="card">
+            <div class="card-title">
+              <span class="card-icon">⚡</span>
+              Compétences requises
             </div>
+            <div class="skills-grid">
+              <span class="skill-chip" v-for="skill in job.skills" :key="skill">{{ skill }}</span>
+            </div>
+          </div>
+
+          <!-- Recruitment Process -->
+          <div class="card">
+            <div class="card-title">
+              <span class="card-icon">🛤️</span>
+              Processus de recrutement
+            </div>
+            <div class="process-timeline">
+              <div
+                v-for="(step, i) in recruitmentSteps"
+                :key="i"
+                class="process-step"
+              >
+                <!-- Line -->
+                <div class="step-track">
+                  <div class="step-dot" :class="step.color">
+                    <i :class="step.icon"></i>
+                  </div>
+                  <div v-if="i < recruitmentSteps.length - 1" class="step-connector"></div>
+                </div>
+                <!-- Content -->
+                <div class="step-content">
+                  <div class="step-header">
+                    <span class="step-num">Étape {{ i + 1 }}</span>
+                    <span class="step-name">{{ step.title }}</span>
+                  </div>
+                  <p class="step-desc">{{ step.desc }}</p>
+                  <div v-if="step.extra" class="step-extra">
+                    <i class="fa-solid fa-circle-info"></i>
+                    {{ step.extra }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="right-col">
+
+          <!-- Test Info Card -->
+          <div class="card test-card">
+            <div class="test-card-header">
+              <div class="test-icon-box">
+                <i class="fa-solid fa-brain"></i>
+              </div>
+              <div>
+                <div class="test-label">Évaluation Skillvia</div>
+                <div class="test-title">Test QCM requis</div>
+              </div>
+            </div>
+            <div class="test-stats">
+              <div class="test-stat">
+                <i class="fa-regular fa-clock"></i>
+                <span><strong>{{ job.mcqDuration }} min</strong> de durée</span>
+              </div>
+              <div class="test-stat">
+                <i class="fa-solid fa-list-check"></i>
+                <span><strong>{{ job.mcqQuestionsCount }}</strong> questions</span>
+              </div>
+              <div class="test-stat">
+                <i class="fa-solid fa-chart-bar"></i>
+                <span>Score minimum : <strong>{{ job.mcqPassScore }}%</strong></span>
+              </div>
+              <div v-if="job.testDate" class="test-stat">
+                <i class="fa-regular fa-calendar"></i>
+                <span>{{ job.testDate }} à {{ job.testTime }}</span>
+              </div>
+            </div>
+            <div class="test-tip">
+              <i class="fa-solid fa-lightbulb text-yellow-500"></i>
+              Préparez-vous bien : le score QCM détermine votre accès à l'entretien.
+            </div>
+          </div>
+
+          <!-- Tips Card -->
+          <div class="card tips-card">
+            <div class="card-title">
+              <span class="card-icon">💡</span>
+              Conseils pour réussir
+            </div>
+            <ul class="tips-list">
+              <li><i class="fa-solid fa-check"></i> Personnalisez votre candidature</li>
+              <li><i class="fa-solid fa-check"></i> Relisez la description du poste</li>
+              <li><i class="fa-solid fa-check"></i> Préparez des exemples concrets</li>
+              <li><i class="fa-solid fa-check"></i> Vérifiez vos compétences requises</li>
+            </ul>
+          </div>
+
+          <!-- Apply CTA (repeated) -->
+          <div class="card cta-card" v-if="!alreadyApplied">
+            <p class="cta-text">Prêt à rejoindre <strong>{{ job.company }}</strong> ?</p>
+            <button @click="applyToJob" class="btn-apply w-full">
+              <i class="fa-solid fa-paper-plane"></i>
+              Postuler maintenant
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div v-else class="flex items-center justify-center h-64">
+      <div class="text-center">
+        <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-500 mb-3"></i>
+        <p class="text-gray-500">Chargement de l'offre...</p>
+      </div>
+    </div>
+
+    <!-- ── Cancel Confirmation Modal ──────────────────────────── -->
+    <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+      <div v-if="confirmCancel" class="fixed inset-0 z-50 flex items-center justify-center p-4" style="background:rgba(15,23,42,0.7);backdrop-filter:blur(4px);" @click.self="confirmCancel = false">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+          <div class="w-14 h-14 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fa-solid fa-triangle-exclamation text-red-500 text-xl"></i>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 mb-2">Annuler la candidature ?</h3>
+          <p class="text-sm text-gray-500 mb-6">Cette action est irréversible. Votre candidature sera supprimée et vous pourrez postuler de nouveau.</p>
+          <div class="flex gap-3 justify-center">
+            <button @click="confirmCancel = false" class="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm hover:bg-gray-50 transition">
+              Garder
+            </button>
+            <button @click="doCancel" class="px-5 py-2.5 rounded-xl bg-red-600 text-white font-bold text-sm hover:bg-red-700 transition">
+              Oui, annuler
+            </button>
           </div>
         </div>
       </div>
-    </main>
+    </transition>
+
+    <!-- Toast -->
+    <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 translate-y-4" enter-to-class="opacity-100 translate-y-0" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100 translate-y-0" leave-to-class="opacity-0 translate-y-4">
+      <div v-if="toastMsg" class="fixed bottom-6 right-6 z-50 flex items-center gap-3 bg-white border border-gray-100 shadow-2xl rounded-2xl px-5 py-3.5">
+        <span class="text-xl">{{ toastEmoji }}</span>
+        <span class="text-sm font-semibold text-gray-800">{{ toastMsg }}</span>
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import { MockData, type Job } from '../services/MockData';
+import { MockData, CURRENT_CANDIDATE, type Job } from '../services/MockData';
 
 const router = useRouter();
-const route = useRoute();
+const route  = useRoute();
 
-// --- State ---
-// const isSaved = ref(false);
-// const searchQuery = ref('');
-const job = ref<Job | undefined>(undefined);
+// ── State ─────────────────────────────────────────────────────────
+const job           = ref<Job | undefined>(undefined);
+const confirmCancel = ref(false);
+const toastMsg      = ref('');
+const toastEmoji    = ref('');
 
-// --- Fetch Data ---
 onMounted(() => {
   const id = Number(route.params.id);
-  // Default to first job if ID not found or invalid
   job.value = MockData.getJob(id) || MockData.jobs[0];
 });
 
-// --- Actions ---
+// ── Computed ───────────────────────────────────────────────────────
+const alreadyApplied = computed(() =>
+  job.value ? MockData.hasApplied(job.value.id) : false
+);
+const myApplication = computed(() =>
+  job.value ? MockData.getMyApplication(job.value.id) : undefined
+);
+const applicantsCount = computed(() =>
+  job.value ? MockData.getApplicantsCount(job.value.id) : 0
+);
 
-// const toggleSave = () => {
-//   isSaved.value = !isSaved.value;
-//   if (isSaved.value) {
-//     alert('Offre sauvegardée !');
-//   }
-// };
+// ── Recruitment Steps ──────────────────────────────────────────────
+const recruitmentSteps = computed(() => [
+  {
+    title: 'Dépôt de candidature',
+    desc: 'Soumettez votre candidature. Notre équipe examine votre profil sous 48h.',
+    extra: '',
+    icon: 'fa-solid fa-file-arrow-up',
+    color: 'dot-blue',
+  },
+  {
+    title: 'Test QCM Skillvia',
+    desc: 'Évaluation objective de vos compétences techniques via notre plateforme.',
+    extra: job.value ? `${job.value.mcqQuestionsCount} questions · ${job.value.mcqDuration} min · Score min. ${job.value.mcqPassScore}%` : '',
+    icon: 'fa-solid fa-brain',
+    color: 'dot-purple',
+  },
+  {
+    title: 'Entretien technique',
+    desc: 'Échange approfondi avec l\'équipe recrutement et les managers techniques.',
+    extra: '',
+    icon: 'fa-solid fa-video',
+    color: 'dot-orange',
+  },
+  {
+    title: 'Décision finale',
+    desc: 'Retour de l\'entreprise sous 5 jours ouvrés après l\'entretien.',
+    extra: '',
+    icon: 'fa-solid fa-flag-checkered',
+    color: 'dot-green',
+  },
+]);
 
+// ── Apply ─────────────────────────────────────────────────────────
 const applyToJob = () => {
-    if (job.value) {
-        MockData.apply(job.value.id, 'CurrentUser');
-        alert('Candidature envoyée avec succès ! Vous pouvez suivre son statut dans "Mes Candidatures".');
-    }
+  if (!job.value) return;
+  const success = MockData.apply(job.value.id, CURRENT_CANDIDATE);
+  if (success) showToast('✅', 'Candidature envoyée avec succès !');
 };
 
-
-
-
-const goBack = () => {
-    router.back();
+// ── Cancel ────────────────────────────────────────────────────────
+const doCancel = () => {
+  if (myApplication.value) {
+    MockData.cancelApplication(myApplication.value.id);
+    confirmCancel.value = false;
+    showToast('❌', 'Candidature annulée.');
+  }
 };
 
+// ── Status helpers ────────────────────────────────────────────────
+const getStatusClass = (status: string) => {
+  if (status === 'Entretiens') return 'status-orange';
+  if (status === 'Refusés')   return 'status-red';
+  return 'status-blue';
+};
+const getStatusIcon = (status: string) => {
+  if (status === 'Entretiens') return 'fa-solid fa-calendar-check';
+  if (status === 'Refusés')   return 'fa-solid fa-circle-xmark';
+  return 'fa-solid fa-clock';
+};
+
+// ── Toast ─────────────────────────────────────────────────────────
+const showToast = (emoji: string, msg: string) => {
+  toastEmoji.value = emoji;
+  toastMsg.value   = msg;
+  setTimeout(() => { toastMsg.value = ''; }, 3000);
+};
+
+const goBack = () => router.back();
 </script>
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-.job-page-container {
-  font-family: 'Inter', sans-serif;
-  background-color: #F8F9FC;
+* { box-sizing: border-box; }
+
+.job-page {
   min-height: 100vh;
-  color: #1F2937;
+  background: #F8FAFC;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Header */
-.top-nav {
+/* ── Top Bar ──────────────────────────────────────────── */
+.job-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
   background: white;
-  border-bottom: 1px solid #E5E7EB;
-  padding: 0.75rem 0;
+  border-bottom: 1px solid #E2E8F0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
-
-.nav-content {
-  max-width: 1200px;
+.job-topbar-inner {
+  max-width: 1100px;
   margin: 0 auto;
+  padding: 0 24px;
+  height: 60px;
   display: flex;
   align-items: center;
-  padding: 0 1.5rem;
-  gap: 2rem;
+  gap: 24px;
 }
-
-.logo-section {
+.brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 9px;
+  flex-shrink: 0;
 }
-.brand-text {
+.brand-logo {
+  width: 32px;
+  height: 32px;
+  background: #2563EB;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.brand-name {
   font-weight: 800;
-  color: #111827;
-  font-size: 1.1rem;
+  font-size: 1rem;
+  color: #0F172A;
+  letter-spacing: -0.5px;
 }
-
-.search-wrap {
-  background: #F3F4F6;
-  border-radius: 6px;
-  padding: 0.5rem 1rem;
+.breadcrumb {
   display: flex;
   align-items: center;
   gap: 8px;
   flex: 1;
+}
+.bc-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #3B82F6;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.bc-link:hover { color: #1D4ED8; }
+.bc-sep { color: #CBD5E1; font-size: 14px; }
+.bc-current {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   max-width: 300px;
 }
-.search-wrap input {
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 0.9rem;
-  width: 100%;
-}
-
-.main-nav {
-  display: flex;
-  gap: 2rem;
-}
-.nav-link {
-  text-decoration: none;
-  color: #6B7280;
-  font-weight: 500;
-  font-size: 0.95rem;
-}
-.nav-link.active {
-  color: #1F2937;
+.topbar-actions { margin-left: auto; }
+.topbar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 14px;
+  border-radius: 9px;
+  background: #F1F5F9;
+  color: #475569;
+  font-size: 13px;
   font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s;
+  border: 1px solid #E2E8F0;
 }
+.topbar-btn:hover { background: #E2E8F0; color: #1e293b; }
 
-.user-area {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-}
-.nav-avatar {
-  width: 36px; height: 36px;
-  border-radius: 50%;
-  border: 1px solid #E5E7EB;
-}
-
-/* Base Layout */
-.container {
-  max-width: 1200px;
+/* ── Body ──────────────────────────────────────────────── */
+.job-body {
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 0 1.5rem;
+  padding: 32px 24px 60px;
 }
 
-.breadcrumb {
-  padding: 1.5rem 0;
-  font-size: 0.85rem;
-}
-.breadcrumb .text-gray { color: #6B7280; }
-.breadcrumb .separator { margin: 0 0.5rem; color: #9CA3AF; }
-.breadcrumb .current { font-weight: 600; color: #111827; }
-
-/* Job Header Card */
-.job-header-card {
+/* ── Hero Card ─────────────────────────────────────────── */
+.hero-card {
   background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
+  border-radius: 20px;
+  padding: 28px 32px;
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  margin-bottom: 2rem;
-  border: 1px solid #E5E7EB;
+  gap: 32px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+  border: 1px solid #E2E8F0;
+  margin-bottom: 28px;
 }
-
-.job-header-content {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.logo-placeholder {
-  width: 80px; height: 80px;
-  background: #0F172A;
-  color: #22D3EE;
+.hero-left { display: flex; gap: 20px; flex: 1; }
+.hero-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 800;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
-
-.job-main-info h1 {
-  margin: 0 0 0.5rem 0;
-  font-size: 1.5rem;
+.hero-badges {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.badge {
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 700;
-  color: #111827;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
 }
-
-.job-meta-row {
+.badge-category { background: #EFF6FF; color: #2563EB; }
+.badge-tag      { background: #F8FAFC; color: #64748B; border: 1px solid #E2E8F0; }
+.badge-urgent   { background: #FEF2F2; color: #EF4444; }
+.badge-time     { background: #FFFBEB; color: #D97706; }
+.hero-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0F172A;
+  margin: 0 0 10px;
+  letter-spacing: -0.5px;
+}
+.hero-meta {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  color: #6B7280;
-  font-size: 0.9rem;
-  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 13px;
+  color: #64748B;
 }
-.job-meta-row svg {
-  vertical-align: text-bottom;
-  position: relative;
-  top: -1px;
-  margin-right: 4px;
-}
+.meta-item { display: flex; align-items: center; gap: 5px; }
+.meta-item i { color: #94A3B8; }
+.meta-sep { color: #CBD5E1; }
 
-.tags-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.85rem;
-}
-
-.tag.green {
-  background: #DCFCE7;
-  color: #15803D;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-  font-size: 0.75rem;
-}
-.salary { font-weight: 600; color: #374151; }
-.posted-time { color: #6B7280; }
-
-.header-actions {
-  display: flex;
-  gap: 1rem;
-}
-.btn-secondary {
-  background: #F3F4F6;
-  color: #374151;
-  border: none;
-  padding: 0.6rem 1.25rem;
-  border-radius: 6px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-.btn-primary {
-  background: #2563EB;
-  color: white;
-  border: none;
-  padding: 0.6rem 1.5rem;
-  border-radius: 6px;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Grid Layout */
-.content-grid {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
-  padding-bottom: 4rem;
-}
-
-.details-column {
+/* ── Apply Section ─────────────────────────────────────── */
+.hero-apply {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  align-items: flex-end;
+  gap: 14px;
+  flex-shrink: 0;
+  min-width: 210px;
 }
-
-.detail-card {
-  background: white;
+.btn-apply {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #2563EB, #3B82F6);
+  color: white;
+  border: none;
+  padding: 13px 22px;
   border-radius: 12px;
-  padding: 2rem;
-  border: 1px solid #E5E7EB;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  white-space: nowrap;
+  width: 100%;
+  justify-content: center;
 }
+.btn-apply:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.45);
+}
+.apply-arrow { transition: transform 0.3s; }
+.btn-apply:hover .apply-arrow { transform: translateX(4px); }
 
-.section-title {
+.applied-state {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.applied-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #D1FAE5;
+  color: #065F46;
+  border: 1px solid #A7F3D0;
+  padding: 11px 18px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+.application-status-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.status-label { color: #64748B; font-weight: 500; }
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.status-blue   { background: #EFF6FF; color: #2563EB; }
+.status-orange { background: #FFF7ED; color: #EA580C; }
+.status-red    { background: #FEF2F2; color: #DC2626; }
+
+.btn-cancel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: #FEF2F2;
+  color: #DC2626;
+  border: 1px solid #FECACA;
+  padding: 9px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+.btn-cancel:hover { background: #FEE2E2; border-color: #F87171; }
+
+.hero-stats {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 1.5rem;
+  width: 100%;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  justify-content: space-around;
 }
-.section-title h2 {
-  font-size: 1.25rem;
-  font-weight: 700;
-  margin: 0;
-  color: #111827;
+.stat { text-align: center; }
+.stat-value { display: block; font-size: 1rem; font-weight: 800; color: #0F172A; }
+.stat-label { font-size: 10px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.04em; }
+.stat-div { width: 1px; height: 28px; background: #E2E8F0; }
+
+/* ── Content Grid ──────────────────────────────────────── */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+}
+@media (max-width: 900px) {
+  .content-grid { grid-template-columns: 1fr; }
+  .hero-card { flex-direction: column; }
+  .hero-apply { width: 100%; min-width: auto; align-items: stretch; }
 }
 
-/* Text Content */
-.text-content p {
-  line-height: 1.6;
-  color: #4B5563;
-  margin-bottom: 1rem;
+/* ── Cards ─────────────────────────────────────────────── */
+.card {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  margin-bottom: 20px;
+  transition: box-shadow 0.2s;
 }
-.text-content h3 {
+.card:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.07); }
+.card-title {
   font-size: 1rem;
   font-weight: 700;
-  margin: 1.5rem 0 0.75rem 0;
-  color: #111827;
+  color: #0F172A;
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
-.text-content ul {
-  padding-left: 1.25rem;
-  color: #4B5563;
-  line-height: 1.6;
+.card-icon { font-size: 1.1rem; }
+.card-text { color: #475569; font-size: 0.9rem; line-height: 1.7; }
+.card-text p { margin: 0; }
+.resp-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
-.text-content li {
-  margin-bottom: 0.5rem;
+.resp-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.875rem;
+  color: #475569;
 }
+.resp-list li i { color: #3B82F6; margin-top: 3px; flex-shrink: 0; }
 
 /* Skills */
-.skills-list {
+.skills-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 8px;
 }
-.skill-badge {
+.skill-chip {
+  padding: 6px 14px;
   background: #EFF6FF;
-  color: #2563EB;
+  color: #1D4ED8;
+  border-radius: 8px;
+  font-size: 13px;
   font-weight: 600;
-  padding: 0.4rem 1rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
+  border: 1px solid #BFDBFE;
+  transition: all 0.2s;
 }
+.skill-chip:hover { background: #DBEAFE; transform: translateY(-1px); }
 
-/* Process */
-.process-steps {
+/* ── Process Timeline ──────────────────────────────────── */
+.process-timeline {
   display: flex;
   flex-direction: column;
 }
-.step-item {
+.process-step {
   display: flex;
-  gap: 1rem;
-  position: relative;
+  gap: 16px;
 }
-.step-circle {
-  width: 32px; height: 32px;
-  background: #2563EB;
-  color: white;
-  border-radius: 50%;
+.step-track {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+.step-dot {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  font-size: 14px;
+  color: white;
   flex-shrink: 0;
-  z-index: 1;
 }
-.step-circle.step-gray {
-  background: #E5E7EB;
-  color: #6B7280;
-}
-.step-item.step-last .step-info {
-    padding-bottom: 0;
-}
-.step-line {
+.dot-blue    { background: linear-gradient(135deg, #2563EB, #3B82F6); }
+.dot-purple  { background: linear-gradient(135deg, #7C3AED, #A78BFA); }
+.dot-orange  { background: linear-gradient(135deg, #EA580C, #FB923C); }
+.dot-green   { background: linear-gradient(135deg, #059669, #34D399); }
+
+.step-connector {
   width: 2px;
-  height: 30px; /* Connects steps */
-  background: #E5E7EB;
-  margin-left: 15px; /* Center with circle */
-  margin-top: -5px;
-  margin-bottom: -5px;
+  flex: 1;
+  min-height: 20px;
+  background: linear-gradient(#CBD5E1, #E2E8F0);
+  margin: 4px 0;
 }
-.step-info {
-    padding-bottom: 1.5rem;
+.step-content {
+  padding-bottom: 20px;
+  flex: 1;
 }
-.step-title {
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.step-num {
+  font-size: 10px;
   font-weight: 700;
-  color: #111827;
-  margin-bottom: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #94A3B8;
+}
+.step-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0F172A;
 }
 .step-desc {
-  font-size: 0.85rem;
-  color: #6B7280;
+  font-size: 0.825rem;
+  color: #64748B;
+  line-height: 1.6;
+  margin: 0;
+}
+.step-extra {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #3B82F6;
+  background: #EFF6FF;
+  padding: 4px 10px;
+  border-radius: 6px;
 }
 
-/* Side Column: Test Info */
-.side-column {
+/* ── Test Card ─────────────────────────────────────────── */
+.test-card { border-top: 3px solid #2563EB; }
+.test-card-header {
   display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
 }
-
-.test-card {
-  background: white;
+.test-icon-box {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, #2563EB, #4F46E5);
   border-radius: 12px;
-  padding: 1.5rem;
-  border: 2px solid #BFDBFE; /* Light blue border */
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 18px;
 }
-
-.test-header {
+.test-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #94A3B8; margin-bottom: 2px; }
+.test-title { font-size: 0.95rem; font-weight: 800; color: #0F172A; }
+.test-stats { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.test-stat {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 1rem;
+  font-size: 13px;
+  color: #475569;
 }
-
-.check-icon {
-  width: 32px; height: 32px;
-  background: #2563EB;
-  border-radius: 50%; /* circle? Icon likely checked circle */
-  background: none; 
-  /* Using SVG directly for better control */
-  color: #2563EB;
+.test-stat i { color: #3B82F6; width: 14px; }
+.test-tip {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  border-radius: 10px;
+  padding: 10px 13px;
+  font-size: 12px;
+  color: #92400E;
   display: flex;
-  align-items: center;
-}
-/* Re-implementing the check icon based on image blue circle with white check */
-.check-icon {
-    width: 28px; height: 28px;
-    background: #EFF6FF;
-    color: #2563EB;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.check-icon svg {
-    stroke: #2563EB;
-    width: 18px; height: 18px;
-}
-
-.test-header h3 {
-  font-size: 1.1rem;
-  font-weight: 700;
-  margin: 0;
-}
-
-.test-desc {
-  font-size: 0.85rem;
-  color: #6B7280;
-  margin-bottom: 1.5rem;
+  align-items: flex-start;
+  gap: 8px;
   line-height: 1.5;
 }
 
-.test-details {
-  background: #F8FAFC;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1.5rem;
-}
-
-.detail-row {
+/* ── Tips Card ─────────────────────────────────────────── */
+.tips-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.75rem 0;
-  border-bottom: 1px solid #E5E7EB;
-  font-size: 0.9rem;
+  flex-direction: column;
+  gap: 10px;
 }
-.detail-row.last { border-bottom: none; }
-
-.d-label {
+.tips-list li {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  font-size: 0.875rem;
   color: #374151;
   font-weight: 500;
 }
-.d-val {
-  font-weight: 700;
-  color: #111827;
-}
+.tips-list li i { color: #10B981; }
 
-.start-test-btn {
-  width: 100%;
-  background: #2563EB;
-  color: white;
-  border: none;
-  padding: 0.85rem;
-  border-radius: 8px;
-  font-weight: 700;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  margin-bottom: 0.75rem;
-  box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
-  transition: background 0.2s;
-}
-.start-test-btn:hover { background: #1D4ED8; }
-
-.test-meta {
-  text-align: center;
-  font-size: 0.65rem;
-  color: #9CA3AF;
-  font-weight: 700;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  margin: 0;
-}
-
-/* Help Card */
-.help-card {
-  background: #F3F4F6;
-  border-radius: 12px;
-  padding: 1.25rem;
-  display: flex;
-  gap: 1rem;
-  border: 1px solid #E5E7EB;
-}
-.help-icon {
-  width: 24px; height: 24px;
-  background: #6B7280;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-.help-content strong {
-  display: block;
-  font-size: 0.9rem;
-  margin-bottom: 0.25rem;
-  color: #1F2937;
-}
-.help-content p {
-  font-size: 0.8rem;
-  color: #6B7280;
-  margin: 0 0 0.5rem 0;
-  line-height: 1.4;
-}
-.help-content a {
-  font-size: 0.8rem;
-  color: #2563EB;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-/* Back Button */
-.back-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: transparent;
-  border: 1px solid #E5E7EB;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  color: #374151;
-  font-weight: 600;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.back-btn:hover {
-  background: #F3F4F6;
-  border-color: #2563EB;
-  color: #2563EB;
-  transform: translateX(-4px);
-}
-
-.back-btn i {
-  transition: transform 0.3s;
-}
-
-.back-btn:hover i {
-  transform: translateX(-2px);
-}
-
-/* Modern Icon Button */
-.icon-btn {
-  background: transparent;
-  border: none;
-  padding: 0.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.3s;
-  color: #6B7280;
-}
-
-.icon-btn:hover {
-  background: #F3F4F6;
-  color: #2563EB;
-}
-
-/* Header Card Animations */
-.job-header-card {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.job-header-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(37, 99, 235, 0.05), transparent);
-  transition: left 0.6s;
-}
-
-.job-header-card:hover::before {
-  left: 100%;
-}
-
-.job-header-card:hover {
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.15);
-  border-color: rgba(37, 99, 235, 0.2);
-}
-
-/* Animated Logo */
-.animated-logo {
-  transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-.job-header-card:hover .animated-logo {
-  transform: rotate(5deg) scale(1.05);
-}
-
-/* Job Title Animation */
-.job-title-main {
-  transition: color 0.3s;
-}
-
-.job-header-card:hover .job-title-main {
-  color: #2563EB;
-}
-
-/* Apply Button */
-.btn-apply {
-  background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 10px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-  position: relative;
-  overflow: hidden;
-}
-
-.btn-apply::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.3);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.btn-apply:hover::before {
-  width: 300px;
-  height: 300px;
-}
-
-.btn-apply:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
-}
-
-.btn-arrow {
-  transition: transform 0.3s;
-}
-
-.btn-apply:hover .btn-arrow {
-  transform: translateX(4px);
-}
-
-/* Card Animations */
-.animate-slide-up {
-  animation: slideUp 0.6s ease-out;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-card {
-  animation: cardFadeIn 0.6s ease-out backwards;
-  animation-delay: calc(var(--animation-order) * 0.15s);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-@keyframes cardFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px) scale(0.95);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.animate-card:hover {
-  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.12);
-  transform: translateY(-4px);
-  border-color: rgba(37, 99, 235, 0.2);
-}
-
-.animate-slide-left {
-  animation: slideLeft 0.6s ease-out;
-}
-
-@keyframes slideLeft {
-  from {
-    opacity: 0;
-    transform: translateX(30px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-/* Section Icon */
-.section-icon {
-  color: #2563EB;
-  font-size: 1.25rem;
-  animation: iconPulse 2s ease-in-out infinite;
-}
-
-@keyframes iconPulse {
-  0%, 100% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-}
-
-.icon-emoji {
-  font-size: 1.5rem;
-  animation: iconPulse 2s ease-in-out infinite;
-}
-
-/* Skill Badge Animations */
-.skill-animated {
-  animation: skillPop 0.5s ease-out backwards;
-  animation-delay: calc(var(--skill-index) * 0.05s);
-  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-}
-
-@keyframes skillPop {
-  0% {
-    opacity: 0;
-    transform: scale(0);
-  }
-  50% {
-    transform: scale(1.1);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.skill-badge:hover {
-  transform: translateY(-2px) scale(1.05);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-  background: #2563EB;
-  color: white;
-}
-
-/* Step Animations */
-.step-animated {
-  animation: stepFadeIn 0.6s ease-out backwards;
-  animation-delay: calc(var(--step-index) * 0.2s);
-}
-
-@keyframes stepFadeIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.step-line-animated {
-  animation: lineGrow 0.5s ease-out backwards;
-  animation-delay: calc(var(--step-index) * 0.2s + 0.3s);
-  transform-origin: top;
-}
-
-@keyframes lineGrow {
-  from {
-    transform: scaleY(0);
-  }
-  to {
-    transform: scaleY(1);
-  }
-}
-
-.step-circle {
-  transition: all 0.3s;
-}
-
-.step-item:hover .step-circle {
-  transform: scale(1.1);
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
-}
-
-/* Info Card */
-.info-card {
-  background: white;
-  border-radius: 12px;
-  padding: 1.5rem;
-  border: 1px solid #E5E7EB;
-  margin-bottom: 1.5rem;
-  transition: all 0.3s;
-}
-
-.info-card:hover {
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
-  border-color: rgba(37, 99, 235, 0.2);
-}
-
-.info-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
-.info-header i {
-  color: #F59E0B;
-  font-size: 1.25rem;
-}
-
-.info-header h3 {
-  font-size: 1rem;
-  font-weight: 700;
-  margin: 0;
-  color: #111827;
-}
-
-.info-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  font-size: 0.875rem;
-  color: #4B5563;
-  transition: all 0.3s;
-  padding: 0.5rem;
-  border-radius: 6px;
-}
-
-.info-item:hover {
-  background: #F3F4F6;
-  transform: translateX(4px);
-}
-
-.info-item i {
-  color: #10B981;
-  font-size: 0.875rem;
-}
-
-/* Help Card Enhancement */
-.help-card {
-  transition: all 0.3s;
-}
-
-.help-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
-}
-
-/* Tag Enhancements */
-.tag.green {
-  transition: all 0.3s;
-}
-
-.tag.green:hover {
-  transform: scale(1.05);
-  box-shadow: 0 2px 8px rgba(21, 128, 61, 0.3);
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
+/* ── CTA Card ──────────────────────────────────────────── */
+.cta-card { text-align: center; background: linear-gradient(135deg, #EFF6FF, #F5F3FF); border: 1px solid #C7D2FE; }
+.cta-text { font-size: 0.875rem; color: #4338CA; margin-bottom: 14px; }
+.w-full { width: 100%; }
 </style>
