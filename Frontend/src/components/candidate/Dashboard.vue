@@ -7,13 +7,12 @@
             <div class="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full -ml-10 -mb-10 pointer-events-none"></div>
             
             <div class="relative z-10 max-w-2xl">
-                <h2 class="text-3xl font-bold mb-2">Bon retour, Alexandre </h2>
+                <h2 class="text-3xl font-bold mb-2">Bon retour, {{ firstName }} 👋</h2>
                 <p class="text-blue-100 text-lg mb-6">Maximisez vos chances de réussite aujourd'hui. Consultez l'état de vos candidatures et préparez vos prochains défis.</p>
                 <div class="flex gap-4">
                     <button @click="goToJobs" class="bg-white text-blue-700 px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-50 transition shadow-sm">
                         Explorer les offres
                     </button>
-
                 </div>
             </div>
         </div>
@@ -24,53 +23,59 @@
             <!-- Left Column (2/3) -->
             <div class="lg:col-span-2 space-y-8">
                 
-                <!-- Applications en cours -->
+                <!-- Candidatures récentes -->
                 <section>
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-bold text-gray-800">Candidatures récentes</h3>
-                        <button @click="goToJobs" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">Voir tout</button>
+                        <button @click="goToHistory" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">Voir tout</button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                            <!-- Card 1 -->
-                        <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer group" @click="openApplication('Product Designer')">
-                            <div class="flex justify-between items-start mb-4">
-                                <div class="w-12 h-12 rounded-lg bg-teal-50 flex items-center justify-center text-teal-600">
-                                    <!-- Logo Placeholder -->
-                                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" /></svg>
-                                </div>
-                                <span class="bg-orange-50 text-orange-700 px-2.5 py-1 rounded-md text-xs font-bold border border-orange-100">Test Technique</span>
-                            </div>
-                            <div>
-                                <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Product Designer</h4>
-                                <p class="text-sm text-gray-500 mb-4">Tech Solutions SA • Paris</p>
-                                <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                                    <span class="text-xs text-gray-400 font-medium">Mis à jour il y a 2j</span>
-                                    <button @click.stop="startTest" class="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">Continuer</button>
-                                </div>
-                            </div>
-                        </div>
 
-                        <!-- Card 2 -->
-                        <div class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer group" @click="openApplication('Fullstack Developer')">
+                    <!-- Empty state -->
+                    <div v-if="recentApplications.length === 0" class="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
+                        <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-folder-open text-2xl text-blue-400"></i>
+                        </div>
+                        <h4 class="font-bold text-gray-700 mb-1">Aucune candidature</h4>
+                        <p class="text-sm text-gray-500 mb-4">Vous n'avez encore postulé à aucune offre.</p>
+                        <button @click="goToJobs" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition">
+                            Explorer les offres
+                        </button>
+                    </div>
+
+                    <!-- Applications cards -->
+                    <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div
+                            v-for="app in recentApplications"
+                            :key="app.id"
+                            class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
+                            @click="goToJob(app.jobId)"
+                        >
+                            <!-- Status line -->
                             <div class="flex justify-between items-start mb-4">
-                                <div class="w-12 h-12 rounded-lg bg-purple-50 flex items-center justify-center text-purple-600">
-                                    <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                                <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
+                                     :class="getJobIconBg(app.jobId)">
+                                    <i :class="getJobIcon(app.jobId)"></i>
                                 </div>
-                                <span class="bg-blue-50 text-blue-700 px-2.5 py-1 rounded-md text-xs font-bold border border-blue-100">Entretien RH</span>
+                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold border"
+                                      :class="getStatusBadgeClass(app.status)">
+                                    {{ app.status }}
+                                </span>
                             </div>
                             <div>
-                                <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">Fullstack Developer</h4>
-                                <p class="text-sm text-gray-500 mb-4">Innovate Corp • Remote</p>
+                                <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{{ getJobTitle(app.jobId) }}</h4>
+                                <p class="text-sm text-gray-500 mb-4">{{ getJobCompany(app.jobId) }}</p>
                                 <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                                    <span class="text-xs text-gray-400 font-medium">Demain à 14:00</span>
-                                    <button @click.stop="openDetails" class="text-xs font-bold text-gray-700 bg-gray-100 px-3 py-1.5 rounded-lg hover:bg-gray-200 transition">Détails</button>
+                                    <span class="text-xs text-gray-400 font-medium">{{ app.dateDisplay }}</span>
+                                    <button @click.stop="goToJob(app.jobId)" class="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
+                                        Consulter
+                                    </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </section>
 
-                <!-- Skills Analysis Chart - Large Animated Bar Chart -->
+                <!-- Skills Analysis Chart -->
                 <section class="skills-analysis-card">
                     <div class="chart-header">
                         <div>
@@ -109,7 +114,6 @@
                         </div>
                     </div>
                     
-                    <!-- Statistics Footer -->
                     <div class="chart-footer">
                         <div class="trend-indicator">
                             <i class="fa-solid fa-arrow-trend-up"></i>
@@ -130,7 +134,7 @@
                         <BoltIcon class="w-5 h-5 text-yellow-500" />
                     </div>
                     <div class="divide-y divide-gray-50">
-                        <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
+                        <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group" @click="goToJobs">
                             <div class="flex justify-between items-start mb-1">
                                 <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Développeur Frontend Senior</h4>
                             </div>
@@ -140,14 +144,14 @@
                                 <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">TypeScript</span>
                             </div>
                         </div>
-                        <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
+                        <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group" @click="goToJobs">
                             <div class="flex justify-between items-start mb-1">
                                 <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Architecte UX</h4>
                             </div>
                             <p class="text-xs text-gray-500 mb-3">Global Design Studio • Lyon</p>
                             <div class="flex items-center gap-2">
                                 <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Figma</span>
-                                <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Recherche Utilisateur</span>
+                                <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">UX Research</span>
                             </div>
                         </div>
                     </div>
@@ -159,7 +163,7 @@
                 <!-- Recent Results -->
                 <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
                     <div class="p-5 border-b border-gray-50">
-                        <h3 class="font-bold text-gray-900">Derniers Résultats</h3>
+                         <h3 class="font-bold text-gray-900">Derniers Résultats</h3>
                     </div>
                     <div class="p-2">
                         <table class="w-full text-left border-collapse">
@@ -194,10 +198,15 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { BoltIcon } from '@heroicons/vue/24/outline';
+import { MockData } from '../../services/MockData';
 
 const router = useRouter();
 
-// Chart Logic
+// Nom candidat (comme CandidateLayout.vue)
+const displayName = ref(localStorage.getItem('prof_name') || 'Candidat');
+const firstName = computed(() => (displayName.value.trim().split(' ')[0] || 'Candidat'));
+
+// --- Chart Logic ---
 const selectedRange = ref('6months');
 
 const chartData6Months = [
@@ -234,27 +243,45 @@ const results = [
     { name: 'UI Design Systems', date: '25 Sep 2023', score: 74 },
 ];
 
+// --- Recent Applications (from MockData) ---
+const recentApplications = computed(() => MockData.getRecentApplications());
+
+// --- Utility functions ---
+const getJobTitle = (jobId: number) => MockData.getJob(jobId)?.title ?? 'Offre inconnue';
+const getJobCompany = (jobId: number) => MockData.getJob(jobId)?.company ?? '';
+
+const getJobIcon = (jobId: number) => MockData.getJob(jobId)?.icon ?? 'fa-solid fa-briefcase';
+
+const getJobIconBg = (jobId: number) => {
+    const color = MockData.getJob(jobId)?.iconColor ?? '#3b82f6';
+    // Map color to tailwind bg class
+    if (color.includes('3b82f6')) return 'bg-blue-50 text-blue-600';
+    if (color.includes('8b5cf6')) return 'bg-purple-50 text-purple-600';
+    if (color.includes('10b981')) return 'bg-green-50 text-green-600';
+    if (color.includes('06b6d4')) return 'bg-cyan-50 text-cyan-600';
+    return 'bg-gray-100 text-gray-600';
+};
+
+const getStatusBadgeClass = (status: string) => {
+    switch (status) {
+        case 'En cours': return 'bg-blue-50 text-blue-700 border-blue-100';
+        case 'Entretiens': return 'bg-orange-50 text-orange-700 border-orange-100';
+        case 'Acceptée': return 'bg-green-50 text-green-700 border-green-100';
+        case 'Refusés': return 'bg-red-50 text-red-700 border-red-100';
+        case 'Annulée': return 'bg-gray-100 text-gray-600 border-gray-200';
+        default: return 'bg-gray-100 text-gray-600 border-gray-200';
+    }
+};
+
 const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-600';
     if (score >= 80) return 'text-blue-600';
     return 'text-orange-500';
 };
 
-const goToJobs = () => {
-    router.push('/candidat/jobs');
-};
-
-const openApplication = (title: string) => {
-    alert('Ouverture de la candidature: ' + title);
-};
-
-const startTest = () => {
-    alert('Redirection vers le module de test...');
-};
-
-const openDetails = () => {
-    alert('Affichage des détails du rendez-vous');
-};
+const goToJobs = () => router.push('/candidat/jobs');
+const goToHistory = () => router.push('/candidat/history');
+const goToJob = (jobId: number) => router.push(`/job-details-candidat/${jobId}`);
 </script>
 
 <style scoped>
@@ -462,5 +489,14 @@ const openDetails = () => {
   font-size: 0.75rem;
   color: #9CA3AF;
   font-weight: 500;
+}
+
+.animate-fade-in-up {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 </style>

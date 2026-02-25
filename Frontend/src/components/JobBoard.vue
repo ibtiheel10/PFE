@@ -25,7 +25,11 @@
             <div class="search-divider"></div>
             <div class="search-field">
               <i class="fa-solid fa-location-dot"></i>
-              <input type="text" placeholder="Ville ou région" />
+              <input
+                v-model="locationQuery"
+                type="text"
+                placeholder="Ville ou région"
+              />
             </div>
             <button class="search-btn">
               <i class="fa-solid fa-magnifying-glass"></i>
@@ -66,18 +70,6 @@
                   </p>
                 </div>
               </div>
-            </div>
-            <div class="sort-chips">
-              <span class="sort-label"><i class="fa-solid fa-arrow-up-wide-short"></i> Trier :</span>
-              <button
-                v-for="opt in sortOptions"
-                :key="opt.value"
-                class="sort-chip"
-                :class="{ active: sortBy === opt.value }"
-                @click="sortBy = opt.value"
-              >
-                {{ opt.label }}
-              </button>
             </div>
           </div>
 
@@ -227,14 +219,8 @@ import { MockData } from '../services/MockData';
 
 const router = useRouter();
 
-const sortBy = ref('recent');
 const searchQuery = ref('');
-
-const sortOptions = [
-  { value: 'recent',    label: 'Plus récent' },
-  { value: 'salary',   label: 'Salaire ↑' },
-  { value: 'relevance', label: 'Pertinence' },
-];
+const locationQuery = ref('');
 
 // --- Pagination State ---
 const currentPage = ref(1);
@@ -247,6 +233,12 @@ const filteredJobs = computed(() => {
     const q = searchQuery.value.toLowerCase();
     result = result.filter(j =>
       j.title.toLowerCase().includes(q) || j.company.toLowerCase().includes(q)
+    );
+  }
+  if (locationQuery.value.trim()) {
+    const loc = locationQuery.value.toLowerCase();
+    result = result.filter(j =>
+      j.location.toLowerCase().includes(loc)
     );
   }
   return result;

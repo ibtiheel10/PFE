@@ -7,22 +7,29 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-// Enable legacy timestamp behavior to avoid UTC issues
+// Pour éviter les problèmes de timestamps avec PostgreSQL
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllers();
-builder.Services.AddScoped<IEmailService, EmailService>();
-// builder.Services.AddEndpointsApiExplorer();
-// builder.Services.AddSwaggerGen();
+// -----------------------------
+// 1️⃣ Services
+// -----------------------------
 
-// Configure Database
+builder.Services.AddControllers();
+
+// Email service
+builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Swagger pour documentation API
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Base de données PostgreSQL
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("WebApiDatabase")));
 
-// Configure ASP.NET Identity
+// ASP.NET Identity
 builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
@@ -33,7 +40,7 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 .AddEntityFrameworkStores<ApplicationDbContext>()
 .AddDefaultTokenProviders();
 
-// Configure JWT Authentication
+// JWT Authentication
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -55,7 +62,7 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// Add CORS
+// CORS pour le Frontend
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -68,7 +75,9 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// ── Seed des rôles au démarrage ──
+// -----------------------------
+// 2️⃣ Seed des rôles au démarrage
+// -----------------------------
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -124,17 +133,22 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
-// if (app.Environment.IsDevelopment())
-// {
-//     app.UseSwagger();
-//     app.UseSwaggerUI();
-// }
+// -----------------------------
+// 3️⃣ Middleware
+// -----------------------------
 
-app.UseHttpsRedirection();
+app.UseSwagger();
+app.UseSwaggerUI();
+
+// app.UseHttpsRedirection(); // optionnel
+
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
 
+// -----------------------------
+// 4️⃣ Run
+// -----------------------------
 app.Run();

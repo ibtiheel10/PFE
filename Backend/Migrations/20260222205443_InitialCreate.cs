@@ -7,71 +7,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     /// <inheritdoc />
-    public partial class IdentityUpdate : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Candidatures_Utilisateurs_CandidatId",
-                table: "Candidatures");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_OffresEmploi_Utilisateurs_EntrepriseId",
-                table: "OffresEmploi");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Utilisateurs",
-                table: "Utilisateurs");
-
-            migrationBuilder.DropColumn(
-                name: "DateCreation",
-                table: "Utilisateurs");
-
-            migrationBuilder.DropColumn(
-                name: "DateNaissance",
-                table: "Utilisateurs");
-
-            migrationBuilder.DropColumn(
-                name: "Discriminator",
-                table: "Utilisateurs");
-
-            migrationBuilder.DropColumn(
-                name: "Email",
-                table: "Utilisateurs");
-
-            migrationBuilder.DropColumn(
-                name: "MotDePasse",
-                table: "Utilisateurs");
-
-            migrationBuilder.DropColumn(
-                name: "Prenom",
-                table: "Utilisateurs");
-
-            migrationBuilder.RenameTable(
-                name: "Utilisateurs",
-                newName: "Entreprises");
-
-            migrationBuilder.RenameColumn(
-                name: "Nom",
-                table: "Entreprises",
-                newName: "ApplicationUserId");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "Secteur",
-                table: "Entreprises",
-                type: "text",
-                nullable: false,
-                defaultValue: "",
-                oldClrType: typeof(string),
-                oldType: "text",
-                oldNullable: true);
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Entreprises",
-                table: "Entreprises",
-                column: "Id");
-
             migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
@@ -259,10 +199,109 @@ namespace Backend.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateIndex(
-                name: "IX_Entreprises_ApplicationUserId",
-                table: "Entreprises",
-                column: "ApplicationUserId");
+            migrationBuilder.CreateTable(
+                name: "Entreprises",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Secteur = table.Column<string>(type: "text", nullable: false),
+                    ApplicationUserId = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Entreprises", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Entreprises_AspNetUsers_ApplicationUserId",
+                        column: x => x.ApplicationUserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OffresEmploi",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Titre = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: false),
+                    Categorie = table.Column<string>(type: "text", nullable: false),
+                    DatePublication = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DateLimite = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    TypeDeContact = table.Column<string>(type: "text", nullable: true),
+                    ModeDeTravail = table.Column<string>(type: "text", nullable: true),
+                    Salaire = table.Column<float>(type: "real", nullable: true),
+                    Localisation = table.Column<string>(type: "text", nullable: false),
+                    ExperienceRequise = table.Column<string>(type: "text", nullable: true),
+                    NbPost = table.Column<int>(type: "integer", nullable: false),
+                    EntrepriseId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OffresEmploi", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OffresEmploi_Entreprises_EntrepriseId",
+                        column: x => x.EntrepriseId,
+                        principalTable: "Entreprises",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Candidatures",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    DatePostulation = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Statut = table.Column<string>(type: "text", nullable: false),
+                    Score = table.Column<float>(type: "real", nullable: true),
+                    Decision = table.Column<string>(type: "text", nullable: true),
+                    CandidatId = table.Column<int>(type: "integer", nullable: false),
+                    OffreEmploiId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Candidatures", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Candidatures_Candidats_CandidatId",
+                        column: x => x.CandidatId,
+                        principalTable: "Candidats",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Candidatures_OffresEmploi_OffreEmploiId",
+                        column: x => x.OffreEmploiId,
+                        principalTable: "OffresEmploi",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Questions",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Contenu = table.Column<string>(type: "text", nullable: false),
+                    Chronometre = table.Column<string>(type: "text", nullable: false),
+                    Reponses = table.Column<string>(type: "text", nullable: false),
+                    DateEvaluation = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    NiveauDifficulte = table.Column<string>(type: "text", nullable: false),
+                    OffreEmploiId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Questions", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Questions_OffresEmploi_OffreEmploiId",
+                        column: x => x.OffreEmploiId,
+                        principalTable: "OffresEmploi",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Admins_ApplicationUserId",
@@ -311,46 +350,35 @@ namespace Backend.Migrations
                 table: "Candidats",
                 column: "ApplicationUserId");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Candidatures_Candidats_CandidatId",
+            migrationBuilder.CreateIndex(
+                name: "IX_Candidatures_CandidatId",
                 table: "Candidatures",
-                column: "CandidatId",
-                principalTable: "Candidats",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                column: "CandidatId");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_Entreprises_AspNetUsers_ApplicationUserId",
+            migrationBuilder.CreateIndex(
+                name: "IX_Candidatures_OffreEmploiId",
+                table: "Candidatures",
+                column: "OffreEmploiId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Entreprises_ApplicationUserId",
                 table: "Entreprises",
-                column: "ApplicationUserId",
-                principalTable: "AspNetUsers",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                column: "ApplicationUserId");
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_OffresEmploi_Entreprises_EntrepriseId",
+            migrationBuilder.CreateIndex(
+                name: "IX_OffresEmploi_EntrepriseId",
                 table: "OffresEmploi",
-                column: "EntrepriseId",
-                principalTable: "Entreprises",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                column: "EntrepriseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Questions_OffreEmploiId",
+                table: "Questions",
+                column: "OffreEmploiId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Candidatures_Candidats_CandidatId",
-                table: "Candidatures");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_Entreprises_AspNetUsers_ApplicationUserId",
-                table: "Entreprises");
-
-            migrationBuilder.DropForeignKey(
-                name: "FK_OffresEmploi_Entreprises_EntrepriseId",
-                table: "OffresEmploi");
-
             migrationBuilder.DropTable(
                 name: "Admins");
 
@@ -370,100 +398,25 @@ namespace Backend.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
-                name: "Candidats");
+                name: "Candidatures");
+
+            migrationBuilder.DropTable(
+                name: "Questions");
 
             migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "Candidats");
+
+            migrationBuilder.DropTable(
+                name: "OffresEmploi");
+
+            migrationBuilder.DropTable(
+                name: "Entreprises");
+
+            migrationBuilder.DropTable(
                 name: "AspNetUsers");
-
-            migrationBuilder.DropPrimaryKey(
-                name: "PK_Entreprises",
-                table: "Entreprises");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Entreprises_ApplicationUserId",
-                table: "Entreprises");
-
-            migrationBuilder.RenameTable(
-                name: "Entreprises",
-                newName: "Utilisateurs");
-
-            migrationBuilder.RenameColumn(
-                name: "ApplicationUserId",
-                table: "Utilisateurs",
-                newName: "Nom");
-
-            migrationBuilder.AlterColumn<string>(
-                name: "Secteur",
-                table: "Utilisateurs",
-                type: "text",
-                nullable: true,
-                oldClrType: typeof(string),
-                oldType: "text");
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "DateCreation",
-                table: "Utilisateurs",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "DateNaissance",
-                table: "Utilisateurs",
-                type: "timestamp with time zone",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "Discriminator",
-                table: "Utilisateurs",
-                type: "character varying(13)",
-                maxLength: 13,
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Email",
-                table: "Utilisateurs",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "MotDePasse",
-                table: "Utilisateurs",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<string>(
-                name: "Prenom",
-                table: "Utilisateurs",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddPrimaryKey(
-                name: "PK_Utilisateurs",
-                table: "Utilisateurs",
-                column: "Id");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Candidatures_Utilisateurs_CandidatId",
-                table: "Candidatures",
-                column: "CandidatId",
-                principalTable: "Utilisateurs",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_OffresEmploi_Utilisateurs_EntrepriseId",
-                table: "OffresEmploi",
-                column: "EntrepriseId",
-                principalTable: "Utilisateurs",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
         }
     }
 }
