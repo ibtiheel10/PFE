@@ -64,8 +64,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/offres',
-    name: 'Offres',
-    component: JobBoard
+    redirect: '/candidat/jobs'
   },
   {
     path: '/tarifs',
@@ -148,6 +147,12 @@ const routes: RouteRecordRaw[] = [
         path: '/modifier-profil',
         name: 'ModifierProfil',
         component: CandidateDashboard,
+        meta: { requiresAuth: true, role: 'candidat' }
+      },
+      {
+        path: '/candidat/jobs',
+        name: 'CandidateJobs',
+        component: JobBoard,
         meta: { requiresAuth: true, role: 'candidat' }
       }
     ]

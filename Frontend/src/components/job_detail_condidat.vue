@@ -305,10 +305,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute } from 'vue-router';
 import { MockData, CURRENT_CANDIDATE, type Job } from '../services/MockData';
 
-const router = useRouter();
 const route  = useRoute();
 
 // ── State ─────────────────────────────────────────────────────────
@@ -399,8 +398,6 @@ const showToast = (emoji: string, msg: string) => {
   toastMsg.value   = msg;
   setTimeout(() => { toastMsg.value = ''; }, 3000);
 };
-
-const goBack = () => router.back();
 </script>
 
 <style scoped>

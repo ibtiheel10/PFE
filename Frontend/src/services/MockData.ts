@@ -33,8 +33,8 @@ export interface Application {
     jobId: number;
     candidateName: string;
     status: ApplicationStatus;
-    date: string;
-    dateDisplay: string;
+    date?: string;
+    dateDisplay?: string;
     score?: number;
 }
 
@@ -226,7 +226,7 @@ export const MockData = reactive({
     getMyApplications(): Application[] {
         return [...this.applications]
             .filter((a: Application) => a.candidateName === CURRENT_CANDIDATE)
-            .sort((a: Application, b: Application) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            .sort((a: Application, b: Application) => new Date(b.date || '').getTime() - new Date(a.date || '').getTime());
     },
 
     getRecentApplications(): Application[] {

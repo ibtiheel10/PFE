@@ -288,22 +288,23 @@ const goToPage = (page: number | string) => {
 .page-wrapper {
   font-family: 'Inter', sans-serif;
   width: 100%;
-  background: #f8faff;
-  min-height: 100vh;
+  background: transparent;
 }
 
 .jobboard-page {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100%;
 }
 
 /* ─── Hero Banner ─── */
 .hero-banner {
   background: linear-gradient(135deg, #1a1f5e 0%, #1f5bff 60%, #38bdf8 100%);
-  padding: 56px 24px 48px;
+  padding: 40px 24px 32px;
   position: relative;
   overflow: hidden;
+  border-radius: 0 0 24px 24px;
+  margin: -1px -1px 0 -1px;
 }
 
 .hero-banner::before {

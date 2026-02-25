@@ -159,8 +159,8 @@ const filteredApplications = computed(() => {
     }
     return [...result].sort((a, b) => {
         return sortBy.value === 'newest'
-            ? new Date(b.date).getTime() - new Date(a.date).getTime()
-            : new Date(a.date).getTime() - new Date(b.date).getTime();
+            ? new Date(b.date || '').getTime() - new Date(a.date || '').getTime()
+            : new Date(a.date || '').getTime() - new Date(b.date || '').getTime();
     });
 });
 
