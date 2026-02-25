@@ -57,24 +57,24 @@
             <p class="role-label">Vous êtes :</p>
 
       <div class="role">
-          <router-link to="/login" class="role-btn active">
-          <i class="fa-solid fa-user"></i>
-          <span>CANDIDAT</span>
-         </router-link>
+          <button @click="selectedRole = 'candidat'" :class="['role-btn', { active: selectedRole === 'candidat' }]">
+            <i class="fa-solid fa-user"></i>
+            <span>CANDIDAT</span>
+          </button>
 
-         <router-link to="/login-entreprise" class="role-btn">
-         <i class="fa-solid fa-building"></i>
-         <span>ENTREPRISE</span>
-         </router-link>
+          <button @click="selectedRole = 'entreprise'" :class="['role-btn', { active: selectedRole === 'entreprise' }]">
+            <i class="fa-solid fa-building"></i>
+            <span>ENTREPRISE</span>
+          </button>
       </div>
 
             <form v-if="!showForgotPassword">
-              <label>Adresse e-mail</label>
+              <label>{{ selectedRole === 'entreprise' ? 'Adresse e-mail professionnelle' : 'Adresse e-mail' }}</label>
               <input
               type="email"
               v-model="email"
               class="form-control"
-              placeholder="nom@exemple.com"
+              :placeholder="selectedRole === 'entreprise' ? 'contact@votreentreprise.com' : 'nom@exemple.com'"
               @input="validateEmail"/>
 
               <p
@@ -85,7 +85,7 @@
               ? 'fa-solid fa-circle-check' 
               : 'fa-solid fa-circle-exclamation'"></i>
              <span>
-               {{ isEmailValid ? 'Adresse e-mail valide' : 'Enter a valid email' }}
+               {{ emailValidationMessage }}
              </span>
              </p>
 
@@ -131,7 +131,7 @@
               <button
               class="login-btn"
               type="button"
-              :disabled="!canSubmit"
+
               @click="handleLogin">
               Se connecter
               </button>
@@ -181,6 +181,8 @@
 
           </div>
 
+
+
       </div>
       <footer class="footer">
   <a href="#">Conditions d'utilisation</a>
@@ -189,6 +191,12 @@
   <a href="#">@2026 Skillvia. Tous droits réservés</a>
 </footer>
     </div>
+    <OtpModal 
+      :show="showOtpModal" 
+      :email="email" 
+      @close="showOtpModal = false" 
+      @verify="completeLogin" 
+    />
   </div>
 </template>
 
@@ -198,8 +206,11 @@ import { ref,computed } from "vue";
 import { useRouter } from "vue-router";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
 import Navbar from './Navbar.vue';
+import OtpModal from './OtpModal.vue';
 
 const router = useRouter();
+
+const selectedRole = ref<'candidat' | 'entreprise'>('candidat');
 
 const password = ref<string>("");
 const showPassword = ref<boolean>(false);
@@ -208,6 +219,7 @@ const togglePassword = (): void => {
   showPassword.value = !showPassword.value;
 };
 
+const showOtpModal = ref(false);
 const showForgotPassword = ref(false);
 const toggleForgotPassword = () => {
     showForgotPassword.value = !showForgotPassword.value;
@@ -252,11 +264,12 @@ const handleSocialLogin = (provider: string) => {
 
     setTimeout(() => {
         popup.close();
-        localStorage.setItem('user_token', 'mock-social-token-' + Date.now());
+        localStorage.setItem('userToken', 'mock-social-token-' + Date.now());
+        localStorage.setItem('userRole', 'candidat');
         localStorage.setItem('user_info', JSON.stringify({ name: 'User ' + provider, role: 'candidat' }));
         
         alert(`Authentification avec ${provider} réussie !`);
-        router.push('/dashboard-candidat');
+        router.push('/dashboard');
     }, 2000);
     }
 };
@@ -264,6 +277,7 @@ const handleSocialLogin = (provider: string) => {
 const email = ref<string>("");
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const professionalEmailRegex = /^[^\s@]+@(?!(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|live\.com|aol\.com))[^\s@]+\.[^\s@]+$/i;
     
     const passwordError = computed(() => {
       if (!password.value) return "Le mot de passe est obligatoire.";
@@ -276,20 +290,49 @@ const email = ref<string>("");
     });
 
     const isEmailValid = computed<boolean>(() => {
+      if (selectedRole.value === 'entreprise') {
+         return professionalEmailRegex.test(email.value);
+      }
       return emailRegex.test(email.value);
+    });
+
+    const emailValidationMessage = computed<string>(() => {
+      if (selectedRole.value === 'entreprise') {
+        return isEmailValid.value ? 'E-mail professionnel valide' : 'Veuillez utiliser un e-mail professionnel (ex: pas de Gmail, Yahoo)';
+      }
+      return isEmailValid.value ? 'Adresse e-mail valide' : 'Veuillez entrer une adresse e-mail valide.';
     });
     
     const validateEmail = (): void => {
     };
 
-    const canSubmit = computed(() => {
-      return isEmailValid.value && passwordError.value === null;
-    });
-    
+
     const handleLogin = () => {
-        localStorage.setItem('user_token', 'mock-login-token-' + Date.now());
-        localStorage.setItem('user_info', JSON.stringify({ name: email.value, role: 'candidat' }));
-        router.push('/dashboard-candidat');
+        alert('Login Clicked');
+        // Au lieu de rediriger directement, on ouvre le modal OTP
+        // showOtpModal.value = true;
+        
+        // Passer directement à la connexion pour le test
+        completeLogin("123456");
+    };
+
+    const completeLogin = (otpCode: string) => {
+        console.log("OTP Verified:", otpCode);
+        localStorage.setItem('userToken', 'mock-login-token-' + Date.now());
+        
+        if (email.value === 'admin@skillvia.com') {
+          localStorage.setItem('userRole', 'admin');
+          showOtpModal.value = false;
+          router.push('/admin/dashboard');
+        } else {
+          localStorage.setItem('userRole', selectedRole.value);
+          showOtpModal.value = false;
+          if (selectedRole.value === 'entreprise') {
+             router.push('/dashboard-entreprise');
+          } else {
+             router.push('/dashboard');
+          }
+        }
     };
 
 </script>
@@ -632,14 +675,19 @@ const email = ref<string>("");
   color: #475569;
 }
 
+.role-btn.router-link-active,
+.role-btn.router-link-exact-active,
 .role-btn.active {
-  border-color: rgba(59, 130, 246, 0.4);
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.06);
+  border: 1px solid #93c5fd !important;
+  color: #3b82f6 !important;
+  background-color: #eff6ff !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.1);
 }
 
+.role-btn.router-link-active i,
+.role-btn.router-link-exact-active i,
 .role-btn.active i {
-  color: #60a5fa;
+  color: #3b82f6 !important;
 }
 
 form label {

@@ -231,7 +231,7 @@ const router = useRouter();
 const route = useRoute();
 
 // --- State ---
-const isSaved = ref(false);
+
 const searchQuery = ref('');
 const job = ref<Job | undefined>(undefined);
 
@@ -253,28 +253,7 @@ onMounted(() => {
   job.value = MockData.getJob(id) || MockData.jobs[0];
 });
 
-// --- Actions ---
 
-const toggleSave = () => {
-  isSaved.value = !isSaved.value;
-  if (isSaved.value) {
-    alert('Offre sauvegardée !');
-  }
-};
-
-const applyToJob = () => {
-    if (job.value) {
-        MockData.apply(job.value.id, 'CurrentUser');
-        alert('Candidature envoyée avec succès ! Vous pouvez suivre son statut dans "Mes Candidatures".');
-    }
-};
-
-
-
-
-const goBack = () => {
-    router.back();
-};
 
 </script>
 

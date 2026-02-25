@@ -48,10 +48,10 @@ namespace Backend.Controllers
             if (existingUser != null)
                 return BadRequest(new { message = "Cet email est déjà utilisé." });
 
-            // Valider le rôle
+            // Valider le rôle — Admin ne peut PAS être créé via l'inscription publique
             var allowedRoles = new[] { "Candidat", "Entreprise" };
             if (!allowedRoles.Contains(dto.Role))
-                return BadRequest(new { message = "Rôle invalide. Utilisez 'Candidat' ou 'Entreprise'." });
+                return BadRequest(new { message = "Rôle invalide. Seuls 'Candidat' ou 'Entreprise' sont autorisés lors de l'inscription." });
 
             // Créer l'ApplicationUser
             var user = new ApplicationUser
@@ -284,6 +284,17 @@ namespace Backend.Controllers
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            // Si l'utilisateur est une Entreprise, ajouter l'EntrepriseId dans le JWT
+            if (roles.Contains("Entreprise"))
+            {
+                var entreprise = await _context.Entreprises
+                    .FirstOrDefaultAsync(e => e.ApplicationUserId == user.Id);
+                if (entreprise != null)
+                {
+                    claims.Add(new Claim("entreprise_id", entreprise.Id.ToString()));
+                }
             }
 
             var key = new SymmetricSecurityKey(

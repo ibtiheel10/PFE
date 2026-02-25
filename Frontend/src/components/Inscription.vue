@@ -58,43 +58,53 @@
 
           <h2>S'inscrire</h2>
           <p class="subtitle">
-            Créez votre compte pour commencer l'aventure Skillvia.
+            Créez votre compte {{ selectedRole === 'entreprise' ? 'entreprise ' : '' }}pour commencer l'aventure Skillvia.
           </p>
 
           <!-- ROLE -->
           <div class="role">
-            <router-link
-              to="/inscription"
-              class="role-btn active">
+            <button
+              @click="selectedRole = 'candidat'"
+              :class="['role-btn', { active: selectedRole === 'candidat' }]">
               <i class="fa-solid fa-user"></i>
               <span>CANDIDAT</span>
-            </router-link>
+            </button>
 
-            <router-link
-              to="/inscription-entreprise"
-              class="role-btn">
+            <button
+              @click="selectedRole = 'entreprise'"
+              :class="['role-btn', { active: selectedRole === 'entreprise' }]">
               <i class="fa-solid fa-building"></i>
               <span>ENTREPRISE</span>
-            </router-link>
+            </button>
           </div>
 
           <!-- FORM -->
           <form>
 
-            <label>Nom complet</label>
+            <label>{{ selectedRole === 'entreprise' ? "Nom de l'entreprise" : "Nom complet" }}</label>
             <input
               type="text"
               v-model="fullname"
               class="form-control"
-              placeholder="Jean Dupont"
+              :placeholder="selectedRole === 'entreprise' ? 'Nom de l\'entreprise' : 'Jean Dupont'"
               required />
 
-            <label>Adresse e-mail</label>
+            <div v-if="selectedRole === 'entreprise'">
+              <label>Secteur d'activité</label>
+              <input
+                type="text"
+                v-model="sector"
+                class="form-control"
+                placeholder="Ex: Technologie, Finance, Santé"
+                required />
+            </div>
+
+            <label>{{ selectedRole === 'entreprise' ? 'Adresse e-mail professionnelle' : 'Adresse e-mail' }}</label>
             <input
               type="email"
               v-model="email"
               class="form-control"
-              placeholder="jean@exemple.com" />
+              :placeholder="selectedRole === 'entreprise' ? 'contact@votreentreprise.com' : 'jean@exemple.com'" />
 
             <p
               v-if="email"
@@ -104,7 +114,7 @@
                   ? 'fa-solid fa-circle-check'
                   : 'fa-solid fa-circle-exclamation'"></i>
               <span>
-                {{ isEmailValid ? 'Adresse e-mail valide' : 'Adresse e-mail invalide' }}
+                {{ emailValidationMessage }}
               </span>
             </p>
 
@@ -232,7 +242,10 @@
     
     const router = useRouter();
     
+    const selectedRole = ref<'candidat' | 'entreprise'>('candidat');
+    
     const fullname = ref("");
+    const sector = ref("");
     const email = ref("");
     const password = ref("");
     const confirmPassword = ref("");
@@ -298,17 +311,32 @@
         
         setTimeout(() => {
           popup.close();
-          localStorage.setItem('user_token', 'mock-social-token-' + Date.now());
+          localStorage.setItem('userToken', 'mock-social-token-' + Date.now());
+          localStorage.setItem('userRole', 'candidat');
           localStorage.setItem('user_info', JSON.stringify({ name: 'User ' + provider, role: 'candidat' }));
           
           alert(`Authentification avec ${provider} réussie !`);
-          router.push('/jobs');
+          router.push('/dashboard');
         }, 2000);
       }
     };
     
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isEmailValid = computed(() => emailRegex.test(email.value));
+    const professionalEmailRegex = /^[^\s@]+@(?!(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|live\.com|aol\.com))[^\s@]+\.[^\s@]+$/i;
+    
+    const isEmailValid = computed(() => {
+      if (selectedRole.value === 'entreprise') {
+         return professionalEmailRegex.test(email.value);
+      }
+      return emailRegex.test(email.value);
+    });
+
+    const emailValidationMessage = computed<string>(() => {
+      if (selectedRole.value === 'entreprise') {
+        return isEmailValid.value ? 'E-mail professionnel valide' : 'Veuillez utiliser un e-mail professionnel (ex: pas de Gmail, Yahoo)';
+      }
+      return isEmailValid.value ? 'Adresse e-mail valide' : 'Veuillez entrer une adresse e-mail valide.';
+    });
     
     const passwordError = computed(() => {
       if (!password.value) return "Le mot de passe est obligatoire.";
@@ -329,8 +357,11 @@
     const isPasswordValid = computed(() => passwordError.value === null);
     
     const canSubmit = computed(() => {
+      const isSectorValid = selectedRole.value === 'entreprise' ? sector.value.length > 2 : true;
+      
       return (
         fullname.value.length > 2 &&
+        isSectorValid &&
         isEmailValid.value &&
         isPasswordValid.value &&
         confirmPasswordError.value === null &&
@@ -343,8 +374,15 @@
         alert("Veuillez accepter les conditions d'utilisation.");
         return;
       }
-      localStorage.setItem('user_token', 'mock-signup-token-' + Date.now());
-      localStorage.setItem('user_info', JSON.stringify({ name: fullname.value, role: 'candidat' }));
+      localStorage.setItem('userToken', 'mock-signup-token-' + Date.now());
+      localStorage.setItem('userRole', selectedRole.value);
+      
+      const userInfo = { 
+          name: fullname.value, 
+          role: selectedRole.value,
+          ...(selectedRole.value === 'entreprise' && { sector: sector.value })
+      };
+      localStorage.setItem('user_info', JSON.stringify(userInfo));
 
       alert(`Compte créé avec succès pour ${fullname.value} !`);
       router.push('/login');
@@ -672,14 +710,19 @@
   color: #475569;
 }
 
+.role-btn.router-link-active,
+.role-btn.router-link-exact-active,
 .role-btn.active {
-  border-color: rgba(59, 130, 246, 0.4);
-  color: #93b4ff;
-  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid #93c5fd !important;
+  color: #3b82f6 !important;
+  background-color: #eff6ff !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.1);
 }
 
+.role-btn.router-link-active i,
+.role-btn.router-link-exact-active i,
 .role-btn.active i {
-  color: #60a5fa;
+  color: #3b82f6 !important;
 }
 
 /* FORM */

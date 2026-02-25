@@ -72,13 +72,54 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    string[] roles = { "Candidat", "Entreprise", "Admin" };
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+    var config     = scope.ServiceProvider.GetRequiredService<IConfiguration>();
 
+    // 1. Créer les rôles s'ils n'existent pas
+    string[] roles = { "Candidat", "Entreprise", "Admin" };
     foreach (var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))
-        {
             await roleManager.CreateAsync(new IdentityRole(role));
+    }
+
+    // 2. Seed du compte Admin si aucun admin n'existe encore
+    var adminEmail    = config["AdminSettings:Email"]    ?? "admin@skillvia.com";
+    var adminPassword = config["AdminSettings:Password"] ?? "Admin@Skillvia2026!";
+    var adminNom      = config["AdminSettings:Nom"]      ?? "Super Admin";
+
+    var adminUsersInRole = await userManager.GetUsersInRoleAsync("Admin");
+    if (adminUsersInRole.Count == 0)
+    {
+        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+        if (existingAdmin == null)
+        {
+            var adminUser = new ApplicationUser
+            {
+                UserName = adminEmail,
+                Email    = adminEmail,
+                Nom      = adminNom,
+                EmailConfirmed = true   // skip email confirmation for seeded admin
+            };
+
+            // CreateAsync hashes the password automatically ✅
+            var result = await userManager.CreateAsync(adminUser, adminPassword);
+            if (result.Succeeded)
+            {
+                await userManager.AddToRoleAsync(adminUser, "Admin");
+                Console.WriteLine($"[Seed] Admin créé : {adminEmail}");
+            }
+            else
+            {
+                var errs = string.Join(", ", result.Errors.Select(e => e.Description));
+                Console.WriteLine($"[Seed] Erreur création admin : {errs}");
+            }
+        }
+        else
+        {
+            // User exists but wasn't in the Admin role — assign it
+            await userManager.AddToRoleAsync(existingAdmin, "Admin");
+            Console.WriteLine($"[Seed] Rôle Admin assigné à : {adminEmail}");
         }
     }
 }

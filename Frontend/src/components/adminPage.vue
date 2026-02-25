@@ -420,7 +420,6 @@
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Entreprises</h2>
                 <div class="flex gap-2">
-                    <button class="bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all text-gray-700 dark:text-gray-300">Exporter CSV</button>
                     <button class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all">Approuver tout</button>
                 </div>
             </div>

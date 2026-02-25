@@ -217,22 +217,28 @@ const handleCardTilt = (e: MouseEvent, index: number) => {
   const xPct = x / rect.width;
   const yPct = y / rect.height;
 
-  cardTilts[index].x = (0.5 - yPct) * 12;
-  cardTilts[index].y = (xPct - 0.5) * 12;
+  const tilt = cardTilts[index];
+  if (tilt) {
+    tilt.x = (0.5 - yPct) * 12;
+    tilt.y = (xPct - 0.5) * 12;
 
-  cardStyles.value[index] = {
-    transform: `perspective(800px) rotateX(${cardTilts[index].x}deg) rotateY(${cardTilts[index].y}deg) translateZ(10px)`,
-    transition: 'transform 0.1s ease-out'
-  };
+    cardStyles.value[index] = {
+      transform: `perspective(800px) rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) translateZ(10px)`,
+      transition: 'transform 0.1s ease-out'
+    };
+  }
 };
 
 const resetCardTilt = (index: number) => {
-  cardTilts[index].x = 0;
-  cardTilts[index].y = 0;
-  cardStyles.value[index] = {
-    transform: 'perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0px)',
-    transition: 'transform 0.4s ease-out'
-  };
+  const tilt = cardTilts[index];
+  if (tilt) {
+    tilt.x = 0;
+    tilt.y = 0;
+    cardStyles.value[index] = {
+      transform: 'perspective(800px) rotateX(0deg) rotateY(0deg) translateZ(0px)',
+      transition: 'transform 0.4s ease-out'
+    };
+  }
 };
 </script>
 

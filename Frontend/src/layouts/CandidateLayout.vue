@@ -183,10 +183,10 @@ const editName = ref('Alexandre Martin');
 const editUsername = ref('@alexandre');
 
 const navItems = [
-    { name: 'Tableau de bord', icon: Squares2X2Icon, path: '/candidat/dashboard' },
-    { name: 'Offres', icon: BriefcaseIcon, path: '/candidat/jobs' },
-    { name: 'Historique des Candidatures', icon: ClockIcon, path: '/candidat/history' },
-    { name: 'Résultats', icon: ChartBarIcon, path: '/candidat/results' }
+    { name: 'Tableau de bord', icon: Squares2X2Icon, path: '/dashboard' },
+    { name: 'Offres', icon: BriefcaseIcon, path: '/offres' },
+    { name: 'Historique des Candidatures', icon: ClockIcon, path: '/mes-candidatures' },
+    { name: 'Résultats', icon: ChartBarIcon, path: '/resultats' }
 ];
 
 const pageTitle = computed(() => {
