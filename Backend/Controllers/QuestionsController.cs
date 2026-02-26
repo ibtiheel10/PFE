@@ -1,8 +1,9 @@
+using Backend.Data;
+using Backend.DTOs;
+using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Backend.Data;
-using Backend.Models;
 
 namespace Backend.Controllers
 {
@@ -34,32 +35,38 @@ namespace Backend.Controllers
         // GET: api/Questions
         [Authorize(Roles = "Candidat,Entreprise")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Questions>>> GetQuestions()
+        public async Task<ActionResult<IEnumerable<QuestionResponseDto>>> GetQuestions()
         {
-            return await _context.Questions.Include(q => q.OffreEmploi).ToListAsync();
+            var questions = await _context.Questions
+                .Include(q => q.OffreEmploi)
+                .ToListAsync();
+
+            return Ok(questions.Select(q => q.ToDto()));
         }
 
         // GET: api/Questions/5
         [Authorize(Roles = "Candidat,Entreprise")]
         [HttpGet("{id}")]
-        public async Task<ActionResult<Questions>> GetQuestion(int id)
+        public async Task<ActionResult<QuestionResponseDto>> GetQuestion(int id)
         {
             var question = await _context.Questions
                 .Include(q => q.OffreEmploi)
                 .FirstOrDefaultAsync(q => q.Id == id);
 
             if (question == null) return NotFound();
-            return question;
+            return question.ToDto();
         }
 
         // GET: api/Questions/offre/{offreId} — questions for a specific job offer
         [Authorize(Roles = "Candidat,Entreprise")]
         [HttpGet("offre/{offreId}")]
-        public async Task<ActionResult<IEnumerable<Questions>>> GetQuestionsByOffre(int offreId)
+        public async Task<ActionResult<IEnumerable<QuestionResponseDto>>> GetQuestionsByOffre(int offreId)
         {
-            return await _context.Questions
+            var questions = await _context.Questions
                 .Where(q => q.OffreEmploiId == offreId)
                 .ToListAsync();
+
+            return Ok(questions.Select(q => q.ToDto()));
         }
 
         // ════════════════════════════════════════════════════════
@@ -69,43 +76,60 @@ namespace Backend.Controllers
         // POST: api/Questions
         [Authorize(Roles = "Entreprise")]
         [HttpPost]
-        public async Task<ActionResult<Questions>> CreateQuestion(Questions question)
+        public async Task<ActionResult<QuestionResponseDto>> CreateQuestion([FromBody] QuestionCreateDto dto)
         {
             var entrepriseId = GetEntrepriseIdFromToken();
             if (entrepriseId == null) return Forbid();
 
             // Verify the offer belongs to this company
-            var offre = await _context.OffresEmploi.FindAsync(question.OffreEmploiId);
+            var offre = await _context.OffresEmploi.FindAsync(dto.OffreEmploiId);
             if (offre == null)
                 return BadRequest("L'offre d'emploi spécifiée n'existe pas.");
             if (offre.EntrepriseId != entrepriseId)
                 return StatusCode(403, "Vous ne pouvez pas ajouter une question à une offre qui ne vous appartient pas.");
 
+            var question = new Questions
+            {
+                Contenu = dto.Contenu,
+                Chronometre = dto.Chronometre,
+                Reponses = dto.Reponses,
+                NiveauDifficulte = dto.NiveauDifficulte,
+                OffreEmploiId = dto.OffreEmploiId
+            };
+
             _context.Questions.Add(question);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetQuestion), new { id = question.Id }, question);
+            return CreatedAtAction(nameof(GetQuestion), new { id = question.Id }, question.ToDto());
         }
 
         // PUT: api/Questions/5
         [Authorize(Roles = "Entreprise")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateQuestion(int id, Questions question)
+        public async Task<IActionResult> UpdateQuestion(int id, [FromBody] QuestionUpdateDto dto)
         {
-            if (id != question.Id) return BadRequest();
+            if (id != dto.Id) return BadRequest();
 
             var entrepriseId = GetEntrepriseIdFromToken();
             if (entrepriseId == null) return Forbid();
 
             // Ownership check via the associated offer
-            var existing = await _context.Questions.AsNoTracking()
+            var existing = await _context.Questions
                 .Include(q => q.OffreEmploi)
                 .FirstOrDefaultAsync(q => q.Id == id);
             if (existing == null) return NotFound();
+            if (existing.OffreEmploi == null) return NotFound();
             if (existing.OffreEmploi.EntrepriseId != entrepriseId)
                 return StatusCode(403, "Vous ne pouvez pas modifier une question d'une offre qui ne vous appartient pas.");
 
-            _context.Entry(question).State = EntityState.Modified;
+            // Mise à jour seulement des champs autorisés
+            existing.Contenu = dto.Contenu;
+            existing.Chronometre = dto.Chronometre;
+            existing.Reponses = dto.Reponses;
+            existing.NiveauDifficulte = dto.NiveauDifficulte;
+            existing.DateEvaluation = dto.DateEvaluation;
+
+            _context.Entry(existing).State = EntityState.Modified;
 
             try { await _context.SaveChangesAsync(); }
             catch (DbUpdateConcurrencyException)
@@ -129,6 +153,7 @@ namespace Backend.Controllers
                 .Include(q => q.OffreEmploi)
                 .FirstOrDefaultAsync(q => q.Id == id);
             if (question == null) return NotFound();
+            if (question.OffreEmploi == null) return NotFound();
 
             if (question.OffreEmploi.EntrepriseId != entrepriseId)
                 return StatusCode(403, "Vous ne pouvez pas supprimer une question d'une offre qui ne vous appartient pas.");

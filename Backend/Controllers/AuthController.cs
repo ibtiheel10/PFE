@@ -22,19 +22,22 @@ namespace Backend.Controllers
         private readonly IConfiguration _configuration;
         private readonly ApplicationDbContext _context;
         private readonly IEmailService _emailService;
+        private readonly ILogger<AuthController> _logger;
 
         public AuthController(
             UserManager<ApplicationUser> userManager,
             RoleManager<IdentityRole> roleManager,
             IConfiguration configuration,
             ApplicationDbContext context,
-            IEmailService emailService)
+            IEmailService emailService,
+            ILogger<AuthController> logger)
         {
             _userManager = userManager;
             _roleManager = roleManager;
             _configuration = configuration;
             _context = context;
             _emailService = emailService;
+            _logger = logger;
         }
 
         // ──────────────────────────────────────────────
@@ -43,15 +46,29 @@ namespace Backend.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterDto dto)
         {
+            _logger.LogInformation("Register attempt for email {Email} with role {Role}", dto.Email, dto.Role);
             // Vérifier si l'email existe déjà
             var existingUser = await _userManager.FindByEmailAsync(dto.Email);
             if (existingUser != null)
+            {
+                _logger.LogWarning("Registration failed: email {Email} already used", dto.Email);
                 return BadRequest(new { message = "Cet email est déjà utilisé." });
+            }
 
             // Valider le rôle — Admin ne peut PAS être créé via l'inscription publique
             var allowedRoles = new[] { "Candidat", "Entreprise" };
             if (!allowedRoles.Contains(dto.Role))
+            {
+                _logger.LogWarning("Registration failed: invalid role {Role} for email {Email}", dto.Role, dto.Email);
                 return BadRequest(new { message = "Rôle invalide. Seuls 'Candidat' ou 'Entreprise' sont autorisés lors de l'inscription." });
+            }
+
+            // Règle métier : une Entreprise doit obligatoirement renseigner son secteur
+            if (dto.Role == "Entreprise" && string.IsNullOrWhiteSpace(dto.Secteur))
+            {
+                _logger.LogWarning("Registration failed: missing secteur for entreprise email {Email}", dto.Email);
+                return BadRequest(new { message = "Le secteur d'activité est obligatoire pour un compte Entreprise." });
+            }
 
             // Créer l'ApplicationUser
             var user = new ApplicationUser
@@ -66,6 +83,7 @@ namespace Backend.Controllers
             if (!result.Succeeded)
             {
                 var errors = result.Errors.Select(e => e.Description);
+                _logger.LogError("Registration failed for email {Email}: {Errors}", dto.Email, string.Join("; ", errors));
                 return BadRequest(new { message = "Erreur lors de la création du compte.", errors });
             }
 
@@ -95,6 +113,8 @@ namespace Backend.Controllers
 
             await _context.SaveChangesAsync();
 
+            _logger.LogInformation("User {UserId} registered successfully with role {Role}", user.Id, dto.Role);
+
             // Générer le token JWT
             var token = await GenerateJwtToken(user);
 
@@ -113,15 +133,22 @@ namespace Backend.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginDto dto)
         {
+            _logger.LogInformation("Login attempt for email {Email}", dto.Email);
             // Trouver l'utilisateur par email
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null)
+            {
+                _logger.LogWarning("Login failed: user not found for email {Email}", dto.Email);
                 return Unauthorized(new { message = "Email ou mot de passe incorrect." });
+            }
 
             // Vérifier le mot de passe (compare avec le hash) ✅
             var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
             if (!isPasswordValid)
+            {
+                _logger.LogWarning("Login failed: invalid password for email {Email}", dto.Email);
                 return Unauthorized(new { message = "Email ou mot de passe incorrect." });
+            }
 
             // Enregistrer le nouveau code dans la DB
             var emailKey = dto.Email.ToLower();
@@ -152,6 +179,7 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error sending OTP email to {Email}", dto.Email);
                 return StatusCode(500, new { message = "Erreur lors de l'envoi de l'email.", details = ex.Message });
             }
 
@@ -172,24 +200,32 @@ namespace Backend.Controllers
         [HttpPost("verify-otp")]
         public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpDto dto)
         {
+            _logger.LogInformation("Verify OTP attempt for email {Email}", dto.Email);
             var emailKey = dto.Email.ToLower();
 
             // Vérifier si un OTP existe pour cet email dans la DB
             var otpEntry = await _context.OtpCodes.FirstOrDefaultAsync(o => o.Email == emailKey);
             if (otpEntry == null)
+            {
+                _logger.LogWarning("Verify OTP failed: no OTP entry for email {Email}", dto.Email);
                 return Unauthorized(new { message = "Aucun code de vérification trouvé. Veuillez vous reconnecter." });
+            }
 
             // Vérifier si le code a expiré
             if (DateTime.UtcNow > otpEntry.Expiry)
             {
                 _context.OtpCodes.Remove(otpEntry);
                 await _context.SaveChangesAsync();
+                _logger.LogWarning("Verify OTP failed: OTP expired for email {Email}", dto.Email);
                 return Unauthorized(new { message = "Le code de vérification a expiré. Veuillez en demander un nouveau." });
             }
 
             // Vérifier le code OTP
             if (otpEntry.Code != dto.OtpCode)
+            {
+                _logger.LogWarning("Verify OTP failed: invalid code for email {Email}", dto.Email);
                 return Unauthorized(new { message = "Code de vérification incorrect." });
+            }
 
             // Supprimer le code OTP utilisé de la DB
             _context.OtpCodes.Remove(otpEntry);
@@ -198,7 +234,10 @@ namespace Backend.Controllers
             // Récupérer l'utilisateur
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null)
+            {
+                _logger.LogWarning("Verify OTP failed: user not found for email {Email}", dto.Email);
                 return Unauthorized(new { message = "Utilisateur introuvable." });
+            }
 
             // Récupérer les rôles
             var roles = await _userManager.GetRolesAsync(user);
@@ -225,7 +264,10 @@ namespace Backend.Controllers
             // Vérifier que l'utilisateur existe
             var user = await _userManager.FindByEmailAsync(dto.Email);
             if (user == null)
+            {
+                _logger.LogWarning("Resend OTP failed: user not found for email {Email}", dto.Email);
                 return BadRequest(new { message = "Email introuvable." });
+            }
 
             // Générer un nouveau code OTP
             var otpCode = GenerateOtpCode();
@@ -256,6 +298,7 @@ namespace Backend.Controllers
             }
             catch (Exception ex)
             {
+                _logger.LogError(ex, "Error resending OTP email to {Email}", dto.Email);
                 return StatusCode(500, new { message = "Erreur lors de l'envoi de l'email.", details = ex.Message });
             }
 

@@ -1,8 +1,9 @@
+using Backend.Data;
+using Backend.DTOs;
+using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Backend.Data;
-using Backend.Models;
 
 namespace Backend.Controllers
 {
@@ -31,28 +32,31 @@ namespace Backend.Controllers
         // GET: api/Candidat/mon-profil
         [Authorize(Roles = "Candidat")]
         [HttpGet("mon-profil")]
-        public async Task<ActionResult<Candidat>> GetMonProfil()
+        public async Task<ActionResult<CandidatResponseDto>> GetMonProfil()
         {
             var userId = GetUserIdFromToken();
             if (userId == null) return Unauthorized();
 
             var candidat = await _context.Candidats
+                .Include(c => c.ApplicationUser)
                 .FirstOrDefaultAsync(c => c.ApplicationUserId == userId);
 
             if (candidat == null) return NotFound("Profil introuvable.");
 
-            return Ok(candidat);
+            return Ok(candidat.ToDto());
         }
 
         // GET: api/Candidat/5
         [Authorize(Roles = "Candidat,Admin")]
         [HttpGet("{id}")]
-        public async Task<ActionResult<Candidat>> GetCandidat(int id)
+        public async Task<ActionResult<CandidatResponseDto>> GetCandidat(int id)
         {
             var userId = GetUserIdFromToken();
             if (userId == null) return Unauthorized();
 
-            var candidat = await _context.Candidats.FindAsync(id);
+            var candidat = await _context.Candidats
+                .Include(c => c.ApplicationUser)
+                .FirstOrDefaultAsync(c => c.Id == id);
             if (candidat == null) return NotFound();
 
             // Security check: Only the candidate themselves or an admin can view this profile
@@ -61,30 +65,31 @@ namespace Backend.Controllers
                 return Forbid();
             }
 
-            return Ok(candidat);
+            return Ok(candidat.ToDto());
         }
 
         // PUT: api/Candidat/5
         [Authorize(Roles = "Candidat")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateCandidat(int id, Candidat candidat)
+        public async Task<IActionResult> UpdateCandidat(int id, [FromBody] CandidatUpdateDto dto)
         {
-            if (id != candidat.Id) return BadRequest();
+            if (id != dto.Id) return BadRequest();
 
             var userId = GetUserIdFromToken();
             if (userId == null) return Unauthorized();
 
             // Security check: Ensure the profile belongs to the logged-in user
-            var existing = await _context.Candidats.AsNoTracking()
+            var existing = await _context.Candidats
                 .FirstOrDefaultAsync(c => c.Id == id);
             
             if (existing == null) return NotFound();
             if (existing.ApplicationUserId != userId) return Forbid();
 
-            // Force the ApplicationUserId from the existing record to prevent changing owner
-            candidat.ApplicationUserId = userId;
+            // Mise à jour des champs autorisés uniquement
+            existing.Prenom = dto.Prenom;
+            existing.DateNaissance = dto.DateNaissance;
 
-            _context.Entry(candidat).State = EntityState.Modified;
+            _context.Entry(existing).State = EntityState.Modified;
 
             try { await _context.SaveChangesAsync(); }
             catch (DbUpdateConcurrencyException)
@@ -103,9 +108,13 @@ namespace Backend.Controllers
         // GET: api/Candidat  — Admin list
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Candidat>>> GetCandidats()
+        public async Task<ActionResult<IEnumerable<CandidatResponseDto>>> GetCandidats()
         {
-            return await _context.Candidats.ToListAsync();
+            var candidats = await _context.Candidats
+                .Include(c => c.ApplicationUser)
+                .ToListAsync();
+
+            return Ok(candidats.Select(c => c.ToDto()));
         }
 
         // DELETE: api/Candidat/5 — Admin or self-deletion

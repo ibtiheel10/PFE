@@ -1,8 +1,9 @@
+using Backend.Data;
+using Backend.DTOs;
+using Backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Backend.Data;
-using Backend.Models;
 
 namespace Backend.Controllers
 {
@@ -38,28 +39,31 @@ namespace Backend.Controllers
         // GET: api/Entreprise/mon-profil
         [Authorize(Roles = "Entreprise")]
         [HttpGet("mon-profil")]
-        public async Task<ActionResult<Entreprise>> GetMonProfil()
+        public async Task<ActionResult<EntrepriseResponseDto>> GetMonProfil()
         {
             var userId = GetUserIdFromToken();
             if (userId == null) return Unauthorized();
 
             var entreprise = await _context.Entreprises
+                .Include(e => e.ApplicationUser)
                 .FirstOrDefaultAsync(e => e.ApplicationUserId == userId);
 
             if (entreprise == null) return NotFound("Profil entreprise introuvable.");
 
-            return Ok(entreprise);
+            return Ok(entreprise.ToDto());
         }
 
         // GET: api/Entreprise/5
         [Authorize(Roles = "Entreprise,Admin")]
         [HttpGet("{id}")]
-        public async Task<ActionResult<Entreprise>> GetEntreprise(int id)
+        public async Task<ActionResult<EntrepriseResponseDto>> GetEntreprise(int id)
         {
             var userId = GetUserIdFromToken();
             if (userId == null) return Unauthorized();
 
-            var entreprise = await _context.Entreprises.FindAsync(id);
+            var entreprise = await _context.Entreprises
+                .Include(e => e.ApplicationUser)
+                .FirstOrDefaultAsync(e => e.Id == id);
             if (entreprise == null) return NotFound();
 
             // Security check: Only the company themselves or an admin can view details
@@ -68,30 +72,30 @@ namespace Backend.Controllers
                 return Forbid();
             }
 
-            return Ok(entreprise);
+            return Ok(entreprise.ToDto());
         }
 
         // PUT: api/Entreprise/5
         [Authorize(Roles = "Entreprise")]
         [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateEntreprise(int id, Entreprise entreprise)
+        public async Task<IActionResult> UpdateEntreprise(int id, [FromBody] EntrepriseUpdateDto dto)
         {
-            if (id != entreprise.Id) return BadRequest();
+            if (id != dto.Id) return BadRequest();
 
             var userId = GetUserIdFromToken();
             if (userId == null) return Unauthorized();
 
             // Security check: Ensure ownership
-            var existing = await _context.Entreprises.AsNoTracking()
+            var existing = await _context.Entreprises
                 .FirstOrDefaultAsync(e => e.Id == id);
             
             if (existing == null) return NotFound();
             if (existing.ApplicationUserId != userId) return Forbid();
 
-            // Protect ApplicationUserId from being changed via body
-            entreprise.ApplicationUserId = userId;
+            // Mise à jour des champs autorisés uniquement
+            existing.Secteur = dto.Secteur;
 
-            _context.Entry(entreprise).State = EntityState.Modified;
+            _context.Entry(existing).State = EntityState.Modified;
 
             try { await _context.SaveChangesAsync(); }
             catch (DbUpdateConcurrencyException)
@@ -110,10 +114,13 @@ namespace Backend.Controllers
         // GET: api/Entreprise — Public listing (basic info)
         [AllowAnonymous]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Entreprise>>> GetEntreprises()
+        public async Task<ActionResult<IEnumerable<EntrepriseResponseDto>>> GetEntreprises()
         {
-            // For public listing, we might normally filter or project but here we return all
-            return await _context.Entreprises.ToListAsync();
+            var entreprises = await _context.Entreprises
+                .Include(e => e.ApplicationUser)
+                .ToListAsync();
+
+            return Ok(entreprises.Select(e => e.ToDto()));
         }
 
         // ════════════════════════════════════════════════════════
