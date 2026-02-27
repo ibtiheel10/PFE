@@ -9,6 +9,8 @@ namespace Backend.Models
         public string Statut { get; set; } = null!;
         public float? Score { get; set; }
         public string? Decision { get; set; }
+        public float? Note { get; set; }
+        public string? Commentaire { get; set; }
 
         // Relations
         public int CandidatId { get; set; }

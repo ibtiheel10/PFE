@@ -6,6 +6,8 @@ namespace Backend.Models
     {
         public int Id { get; set; }
         public string Secteur { get; set; } = null!;
+        public string? Taille { get; set; }
+        public string? Ville { get; set; }
 
         // Lien vers ApplicationUser (AspNetUsers)
         public string ApplicationUserId { get; set; } = null!;

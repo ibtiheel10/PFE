@@ -308,6 +308,39 @@ namespace Backend.Controllers
         }
 
         // ──────────────────────────────────────────────
+        //  POST /api/auth/forgot-password
+        // ──────────────────────────────────────────────
+        [HttpPost("forgot-password")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
+        {
+            var user = await _userManager.FindByEmailAsync(dto.Email);
+            if (user == null)
+            {
+                // Evite l'énumération par email
+                return Ok(new { message = "Si cet email existe, un lien de réinitialisation a été envoyé." });
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            
+            // Optionnel : Envoyer un email avec un lien de réinitialisation
+            // var callbackUrl = $"http://localhost:5173/reset-password?token={Uri.EscapeDataString(token)}&email={Uri.EscapeDataString(user.Email)}";
+            // await _emailService.SendEmailAsync(dto.Email, "Réinitialisation de mot de passe", $"Cliquez ici pour réinitialiser : {callbackUrl}");
+            
+            return Ok(new { message = "Si cet email existe, un lien de réinitialisation a été envoyé." });
+        }
+
+        // ──────────────────────────────────────────────
+        //  POST /api/auth/logout
+        // ──────────────────────────────────────────────
+        [HttpPost("logout")]
+        public IActionResult Logout()
+        {
+            // En auth JWT (sans-état), le backend se contente souvent de répondre un succès
+            // Le frontend doit s'occuper de supprimer le token de son côté (localStorage, pinia, etc.)
+            return Ok(new { message = "Déconnexion réussie." });
+        }
+
+        // ──────────────────────────────────────────────
         //  Méthodes utilitaires privées
         // ──────────────────────────────────────────────
 
@@ -467,6 +500,11 @@ namespace Backend.Controllers
 
     // DTO simple pour le resend
     public class ResendOtpDto
+    {
+        public string Email { get; set; } = null!;
+    }
+
+    public class ForgotPasswordDto
     {
         public string Email { get; set; } = null!;
     }

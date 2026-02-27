@@ -129,9 +129,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { MockData } from '../../services/MockData';
+import axios from 'axios';
 
 const router = useRouter();
 
@@ -139,6 +140,30 @@ const router = useRouter();
 const activeTab = ref('all');
 const sortBy = ref('newest');
 const toastMessage = ref('');
+const allMyApplications = ref<any[]>([]);
+
+const fetchApplications = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) return;
+        const resp = await axios.get('http://localhost:5243/api/candidature/mes-candidatures', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        allMyApplications.value = resp.data.map((app: any) => ({
+            id: app.id,
+            jobId: app.offreEmploiId,
+            status: app.statut === 'En attente' ? 'En cours' : app.statut,
+            date: app.datePostulation,
+            dateDisplay: new Date(app.datePostulation).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
+        }));
+    } catch (e) {
+        console.error("Failed to fetch applications:", e);
+    }
+};
+
+onMounted(() => {
+    fetchApplications();
+});
 
 const tabs = [
     { id: 'all', label: 'Tout' },
@@ -149,8 +174,7 @@ const tabs = [
     { id: 'Annulée', label: 'Annulées' },
 ];
 
-// --- Computed (live from MockData) ---
-const allMyApplications = computed(() => MockData.getMyApplications());
+// --- Computed (live from Backend) ---
 
 const filteredApplications = computed(() => {
     let result = allMyApplications.value;
@@ -210,10 +234,16 @@ const showToast = (msg: string) => {
     setTimeout(() => { toastMessage.value = ''; }, 3000);
 };
 
-const handleCancel = (appId: number) => {
-    const success = MockData.cancelApplication(appId);
-    if (success) {
+const handleCancel = async (appId: number) => {
+    try {
+        const token = localStorage.getItem('userToken');
+        await axios.delete(`http://localhost:5243/api/candidature/${appId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
         showToast('Candidature annulée avec succès.');
+        allMyApplications.value = allMyApplications.value.filter(a => a.id !== appId);
+    } catch (e: any) {
+        alert("Erreur lors de l'annulation.");
     }
 };
 </script>

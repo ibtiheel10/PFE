@@ -1,197 +1,131 @@
+using Backend.DTOs;
+using Backend.Services;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Backend.Data;
-using Backend.Models;
 
 namespace Backend.Controllers
 {
     /// <summary>
     /// All endpoints are accessible to Admin role only.
-    /// Admin accounts CANNOT be created via the public register endpoint—
-    /// they are seeded automatically at application startup.
     /// </summary>
     [Authorize(Roles = "Admin")]
     [ApiController]
     [Route("api/admin")]
     public class AdminController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IAdminService _adminService;
+        private readonly IDashboardService _dashboardService;
+        private readonly ICompanyService _companyService;
 
-        public AdminController(ApplicationDbContext context,
-                               UserManager<ApplicationUser> userManager)
+        public AdminController(
+            IAdminService adminService,
+            IDashboardService dashboardService,
+            ICompanyService companyService)
         {
-            _context = context;
-            _userManager = userManager;
+            _adminService = adminService;
+            _dashboardService = dashboardService;
+            _companyService = companyService;
         }
 
-        // ════════════════════════════════════════════════════════
-        // DASHBOARD — statistiques globales
-        // GET /api/admin/dashboard
-        // ════════════════════════════════════════════════════════
+        private string? GetCurrentUserId()
+            => User.FindFirst(System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
+
+        // ══════════ DASHBOARD ══════════
+
+        /// <summary>GET /api/admin/dashboard</summary>
         [HttpGet("dashboard")]
         public async Task<IActionResult> GetDashboard()
-        {
-            var totalUsers        = _userManager.Users.Count();
-            var totalOffres       = await _context.OffresEmploi.CountAsync();
-            var totalCandidatures = await _context.Candidatures.CountAsync();
-            var totalEntreprises  = await _context.Entreprises.CountAsync();
-            var totalCandidats    = await _context.Candidats.CountAsync();
+            => Ok(await _dashboardService.GetAdminBasicDashboardAsync());
 
-            return Ok(new
-            {
-                TotalUtilisateurs = totalUsers,
-                TotalCandidats    = totalCandidats,
-                TotalEntreprises  = totalEntreprises,
-                TotalOffres       = totalOffres,
-                TotalCandidatures = totalCandidatures
-            });
-        }
+        /// <summary>GET /api/admin/dashboard/stats</summary>
+        [HttpGet("dashboard/stats")]
+        public async Task<IActionResult> GetDashboardStats()
+            => Ok(await _dashboardService.GetAdminStatsAsync());
 
-        // ════════════════════════════════════════════════════════
-        // USERS — liste de tous les utilisateurs avec leurs rôles
-        // GET /api/admin/users
-        // ════════════════════════════════════════════════════════
+        // ══════════ USERS ══════════
+
+        /// <summary>GET /api/admin/users</summary>
         [HttpGet("users")]
         public async Task<IActionResult> GetUsers()
+            => Ok(await _adminService.GetAllUsersAsync());
+
+        /// <summary>POST /api/admin/users</summary>
+        [HttpPost("users")]
+        public async Task<IActionResult> CreateUser([FromBody] AdminCreateUserDto dto)
         {
-            var users = _userManager.Users.ToList();
-            var result = new List<object>();
-
-            foreach (var user in users)
-            {
-                var roles = await _userManager.GetRolesAsync(user);
-                result.Add(new
-                {
-                    user.Id,
-                    user.Email,
-                    user.Nom,
-                    Roles = roles
-                });
-            }
-
-            return Ok(result);
+            var (success, message, userId) = await _adminService.CreateUserAsync(dto);
+            if (!success) return BadRequest(new { message });
+            return Ok(new { message, userId });
         }
 
-        // DELETE /api/admin/users/{id}
+        /// <summary>PUT /api/admin/users/{id}/statut</summary>
+        [HttpPut("users/{id}/statut")]
+        public async Task<IActionResult> ToggleUserStatut(string id)
+        {
+            var (success, message, estActif) = await _adminService.ToggleUserStatutAsync(id);
+            if (!success) return NotFound(new { message });
+            return Ok(new { message, estActif });
+        }
+
+        /// <summary>DELETE /api/admin/users/{id}</summary>
         [HttpDelete("users/{id}")]
         public async Task<IActionResult> DeleteUser(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
-            if (user == null) return NotFound();
-
-            // Prevent the admin from deleting their own account
-            var currentUserId = User.FindFirst(
-                System.IdentityModel.Tokens.Jwt.JwtRegisteredClaimNames.Sub)?.Value;
-            if (user.Id == currentUserId)
-                return BadRequest(new { message = "Vous ne pouvez pas supprimer votre propre compte." });
-
-            var result = await _userManager.DeleteAsync(user);
-            if (!result.Succeeded)
-                return BadRequest(result.Errors);
-
+            var currentUserId = GetCurrentUserId();
+            var (success, message) = await _adminService.DeleteUserAsync(id, currentUserId ?? "");
+            if (!success) return BadRequest(new { message });
             return NoContent();
         }
 
-        // ════════════════════════════════════════════════════════
-        // OFFRES — toutes les offres d'emploi
-        // GET /api/admin/offres
-        // ════════════════════════════════════════════════════════
+        // ══════════ OFFRES ══════════
+
+        /// <summary>GET /api/admin/offres</summary>
         [HttpGet("offres")]
         public async Task<IActionResult> GetOffres()
-        {
-            var offres = await _context.OffresEmploi
-                .Include(o => o.Entreprise)
-                .OrderByDescending(o => o.Id)
-                .ToListAsync();
+            => Ok(await _adminService.GetAllOffresAsync());
 
-            return Ok(offres);
-        }
-
-        // DELETE /api/admin/offres/{id}
+        /// <summary>DELETE /api/admin/offres/{id}</summary>
         [HttpDelete("offres/{id}")]
         public async Task<IActionResult> DeleteOffre(int id)
         {
-            var offre = await _context.OffresEmploi.FindAsync(id);
-            if (offre == null) return NotFound();
-
-            _context.OffresEmploi.Remove(offre);
-            await _context.SaveChangesAsync();
+            var success = await _adminService.DeleteOffreAsync(id);
+            if (!success) return NotFound();
             return NoContent();
         }
 
-        // ════════════════════════════════════════════════════════
-        // ENTREPRISES — toutes les entreprises
-        // GET /api/admin/entreprises
-        // ════════════════════════════════════════════════════════
+        // ══════════ ENTREPRISES ══════════
+
+        /// <summary>GET /api/admin/entreprises</summary>
         [HttpGet("entreprises")]
         public async Task<IActionResult> GetEntreprises()
-        {
-            var entreprises = await _context.Entreprises
-                .Include(e => e.Offres)
-                .ToListAsync();
+            => Ok(await _adminService.GetAllEntreprisesAsync());
 
-            return Ok(entreprises);
+        /// <summary>PUT /api/admin/entreprises/{id}/approuver</summary>
+        [HttpPut("entreprises/{id}/approuver")]
+        public async Task<IActionResult> ApprouverEntreprise(int id)
+        {
+            var (success, message) = await _companyService.ApprouverEntrepriseAsync(id);
+            if (!success) return NotFound(new { message });
+            return Ok(new { message });
         }
 
-        // ════════════════════════════════════════════════════════
-        // STATISTIQUES — données agrégées
-        // GET /api/admin/statistiques
-        // ════════════════════════════════════════════════════════
+        // ══════════ STATISTIQUES ══════════
+
+        /// <summary>GET /api/admin/statistiques</summary>
         [HttpGet("statistiques")]
         public async Task<IActionResult> GetStatistiques()
-        {
-            // Candidatures par offre
-            var candidaturesParOffre = await _context.Candidatures
-                .GroupBy(c => c.OffreEmploiId)
-                .Select(g => new
-                {
-                    OffreId = g.Key,
-                    NbCandidatures = g.Count()
-                })
-                .ToListAsync();
+            => Ok(await _adminService.GetStatistiquesAsync());
 
-            // Offres par entreprise
-            var offresParEntreprise = await _context.OffresEmploi
-                .GroupBy(o => o.EntrepriseId)
-                .Select(g => new
-                {
-                    EntrepriseId = g.Key,
-                    NbOffres = g.Count()
-                })
-                .ToListAsync();
+        // ══════════ LOGS & TRAFIC ══════════
 
-            return Ok(new
-            {
-                CandidaturesParOffre  = candidaturesParOffre,
-                OffresParEntreprise   = offresParEntreprise
-            });
-        }
-
-        // ════════════════════════════════════════════════════════
-        // LOGS — historique des codes OTP (expire/utilisé)
-        // GET /api/admin/logs
-        // ════════════════════════════════════════════════════════
+        /// <summary>GET /api/admin/logs</summary>
         [HttpGet("logs")]
         public async Task<IActionResult> GetLogs()
-        {
-            // Return current pending OTPs as an activity log
-            var otpLogs = await _context.OtpCodes
-                .OrderByDescending(o => o.Expiry)
-                .Select(o => new
-                {
-                    o.Email,
-                    o.Expiry,
-                    IsExpired = DateTime.UtcNow > o.Expiry
-                })
-                .ToListAsync();
+            => Ok(await _adminService.GetLogsAsync());
 
-            return Ok(new
-            {
-                OtpActiveOuExpires = otpLogs
-            });
-        }
+        /// <summary>GET /api/admin/trafic</summary>
+        [HttpGet("trafic")]
+        public async Task<IActionResult> GetTrafic()
+            => Ok(await _adminService.GetTraficAsync());
     }
 }

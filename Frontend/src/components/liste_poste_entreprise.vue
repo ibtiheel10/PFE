@@ -458,8 +458,8 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { MockData } from '../services/MockData';
 import { TrashIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
+import axios from 'axios';
 
 const props = defineProps({
     searchQuery: {
@@ -487,26 +487,56 @@ const deleteJob = (id: number) => {
     activeJobMenu.value = null;
 };
 
-const confirmDeleteJob = () => {
+const confirmDeleteJob = async () => {
     if (jobToDelete.value !== null) {
-        MockData.deleteJob(jobToDelete.value);
-        showDeleteConfirm.value = false;
-        jobToDelete.value = null;
+        try {
+            const token = localStorage.getItem('userToken');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            await axios.delete(`http://localhost:5243/api/OffreEmploi/${jobToDelete.value}`, config);
+            showDeleteConfirm.value = false;
+            jobToDelete.value = null;
+            fetchMyJobs();
+        } catch (e) {
+            console.error(e);
+            alert("Erreur lors de la suppression.");
+        }
     }
 };
 
 const renameJob = (job: any) => {
-    jobToRename.value = job;
+    jobToRename.value = job.raw;
     newJobTitle.value = job.title;
     showRenameModal.value = true;
     activeJobMenu.value = null;
 };
 
-const confirmRenameJob = () => {
+const confirmRenameJob = async () => {
     if (jobToRename.value && newJobTitle.value.trim() !== '') {
-        MockData.updateJobTitle(jobToRename.value.id, newJobTitle.value.trim());
-        showRenameModal.value = false;
-        jobToRename.value = null;
+        try {
+            const token = localStorage.getItem('userToken');
+            const config = { headers: { Authorization: `Bearer ${token}` } };
+            const payload = {
+                titre: newJobTitle.value.trim(),
+                categorie: jobToRename.value.categorie,
+                localisation: jobToRename.value.localisation,
+                typeDeContact: jobToRename.value.typeDeContact,
+                experienceRequise: jobToRename.value.experienceRequise,
+                salaire: jobToRename.value.salaire,
+                description: jobToRename.value.description,
+                competences: jobToRename.value.competences,
+                icon: jobToRename.value.icon,
+                iconColor: jobToRename.value.iconColor,
+                nbPost: jobToRename.value.nbPost,
+                dateLimite: jobToRename.value.dateLimite
+            };
+            await axios.put(`http://localhost:5243/api/OffreEmploi/${jobToRename.value.id}`, payload, config);
+            showRenameModal.value = false;
+            jobToRename.value = null;
+            fetchMyJobs();
+        } catch (e) {
+            console.error(e);
+            alert("Erreur de modification.");
+        }
     }
 };
 
@@ -571,15 +601,28 @@ const formData = ref<PostFormData>({
   qcmId: ''
 });
 
+const jobsList = ref<any[]>([]);
+
+const fetchMyJobs = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) return;
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const res = await axios.get('http://localhost:5243/api/OffreEmploi/mes-offres', config);
+        jobsList.value = res.data;
+    } catch (e) { console.error("Erreur de récupération des offres", e); }
+};
+
 const displayJobs = computed(() => {
-    let list = MockData.jobs.map(j => ({
+    let list = jobsList.value.map(j => ({
         id: j.id,
-        title: j.title,
-        applicants: MockData.getApplicantsCount(j.id),
-        daysLeft: j.daysLeft || 0,
+        title: j.titre,
+        applicants: j.candidatures ? j.candidatures.length : 0,
+        daysLeft: j.dateLimite ? Math.max(0, Math.ceil((new Date(j.dateLimite).getTime() - new Date().getTime()) / (1000 * 3600 * 24))) : 0,
         progress: Math.floor(Math.random() * 100),
         quality: 'ÉLEVÉE',
-        status: 'ACTIVE'
+        status: (j.dateLimite && new Date(j.dateLimite) < new Date()) ? 'EXPIRÉE' : 'ACTIVE',
+        raw: j
     }));
     
     if (!props.searchQuery.trim()) return list;
@@ -624,10 +667,29 @@ const saveDraft = () => {
     alert('Brouillon sauvegardé avec succès !');
 };
 
-const submitPost = () => {
-    console.log('Submitting post:', formData.value);
-    alert('Poste publié avec succès !');
-    closeCreateModal();
+const submitPost = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const payload = {
+            titre: formData.value.title,
+            categorie: formData.value.category,
+            localisation: formData.value.location,
+            typeDeContact: formData.value.contractType,
+            experienceRequise: formData.value.experience,
+            salaire: formData.value.salary,
+            description: formData.value.description,
+            competences: formData.value.requirements,
+            icon: 'fa-solid fa-briefcase',
+            iconColor: '#3b82f6',
+            nbPost: formData.value.positions,
+            dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : null
+        };
+        await axios.post('http://localhost:5243/api/OffreEmploi', payload, config);
+        alert('Poste publié avec succès !');
+        closeCreateModal();
+        fetchMyJobs();
+    } catch(e) { console.error(e); alert("Erreur lors de la publication !"); }
 };
 
 // ─── QCM Dialog state ────────────────────────────────────────────
@@ -738,6 +800,7 @@ const updateIndicator = async () => {
 watch(currentTab, updateIndicator);
 
 onMounted(() => {
+    fetchMyJobs();
     updateIndicator();
     window.addEventListener('resize', updateIndicator);
 });

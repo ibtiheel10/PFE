@@ -13,6 +13,23 @@ namespace Backend.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.CreateTable(
+                name: "ActivityLogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Action = table.Column<string>(type: "text", nullable: false),
+                    Details = table.Column<string>(type: "text", nullable: true),
+                    UserId = table.Column<string>(type: "text", nullable: true),
+                    DateAction = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    IpAddress = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ActivityLogs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AspNetRoles",
                 columns: table => new
                 {
@@ -33,6 +50,7 @@ namespace Backend.Migrations
                     Id = table.Column<string>(type: "text", nullable: false),
                     Nom = table.Column<string>(type: "text", nullable: false),
                     DateCreation = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    EstActif = table.Column<bool>(type: "boolean", nullable: false),
                     UserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: true),
@@ -51,6 +69,21 @@ namespace Backend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OtpCodes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    Code = table.Column<string>(type: "character varying(6)", maxLength: 6, nullable: false),
+                    Expiry = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OtpCodes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -220,6 +253,29 @@ namespace Backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Message = table.Column<string>(type: "text", nullable: false),
+                    Type = table.Column<string>(type: "text", nullable: false),
+                    EstLue = table.Column<bool>(type: "boolean", nullable: false),
+                    DateCreation = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UserId = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Notifications_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OffresEmploi",
                 columns: table => new
                 {
@@ -259,6 +315,8 @@ namespace Backend.Migrations
                     Statut = table.Column<string>(type: "text", nullable: false),
                     Score = table.Column<float>(type: "real", nullable: true),
                     Decision = table.Column<string>(type: "text", nullable: true),
+                    Note = table.Column<float>(type: "real", nullable: true),
+                    Commentaire = table.Column<string>(type: "text", nullable: true),
                     CandidatId = table.Column<int>(type: "integer", nullable: false),
                     OffreEmploiId = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -290,6 +348,7 @@ namespace Backend.Migrations
                     Reponses = table.Column<string>(type: "text", nullable: false),
                     DateEvaluation = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     NiveauDifficulte = table.Column<string>(type: "text", nullable: false),
+                    Competence = table.Column<string>(type: "text", nullable: true),
                     OffreEmploiId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -366,6 +425,11 @@ namespace Backend.Migrations
                 column: "ApplicationUserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId",
+                table: "Notifications",
+                column: "UserId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OffresEmploi_EntrepriseId",
                 table: "OffresEmploi",
                 column: "EntrepriseId");
@@ -379,6 +443,9 @@ namespace Backend.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ActivityLogs");
+
             migrationBuilder.DropTable(
                 name: "Admins");
 
@@ -399,6 +466,12 @@ namespace Backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "Candidatures");
+
+            migrationBuilder.DropTable(
+                name: "Notifications");
+
+            migrationBuilder.DropTable(
+                name: "OtpCodes");
 
             migrationBuilder.DropTable(
                 name: "Questions");

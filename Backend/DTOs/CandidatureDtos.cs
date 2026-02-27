@@ -10,6 +10,8 @@ namespace Backend.DTOs
         public string Statut { get; set; } = null!;
         public float? Score { get; set; }
         public string? Decision { get; set; }
+        public float? Note { get; set; }
+        public string? Commentaire { get; set; }
 
         public int CandidatId { get; set; }
         public string? CandidatPrenom { get; set; }
@@ -38,6 +40,18 @@ namespace Backend.DTOs
         public string? Decision { get; set; }
     }
 
+    public class CandidatureEvaluerDto
+    {
+        public string? Statut { get; set; }
+        public float? Note { get; set; }
+        public string? Commentaire { get; set; }
+    }
+
+    public class CandidatureStatutDto
+    {
+        public string Statut { get; set; } = null!;
+    }
+
     public static class CandidatureMappingExtensions
     {
         public static CandidatureResponseDto ToDto(this Candidature entity)
@@ -49,6 +63,8 @@ namespace Backend.DTOs
                 Statut = entity.Statut,
                 Score = entity.Score,
                 Decision = entity.Decision,
+                Note = entity.Note,
+                Commentaire = entity.Commentaire,
                 CandidatId = entity.CandidatId,
                 CandidatPrenom = entity.Candidat?.Prenom,
                 OffreEmploiId = entity.OffreEmploiId,

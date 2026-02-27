@@ -16,6 +16,9 @@ namespace Backend.DTOs
         public float? Salaire { get; set; }
         public string Localisation { get; set; } = null!;
         public string? ExperienceRequise { get; set; }
+        public string? Competences { get; set; }
+        public string? Icon { get; set; }
+        public string? IconColor { get; set; }
         public int NbPost { get; set; }
 
         // Informations basiques sur l'entreprise
@@ -54,6 +57,9 @@ namespace Backend.DTOs
         public string Localisation { get; set; } = null!;
 
         public string? ExperienceRequise { get; set; }
+        public string? Competences { get; set; }
+        public string? Icon { get; set; }
+        public string? IconColor { get; set; }
 
         [Range(1, int.MaxValue)]
         public int NbPost { get; set; } = 1;
@@ -81,6 +87,9 @@ namespace Backend.DTOs
                 Salaire = entity.Salaire,
                 Localisation = entity.Localisation,
                 ExperienceRequise = entity.ExperienceRequise,
+                Competences = entity.Competences,
+                Icon = entity.Icon,
+                IconColor = entity.IconColor,
                 NbPost = entity.NbPost,
                 EntrepriseId = entity.EntrepriseId,
                 SecteurEntreprise = entity.Entreprise?.Secteur ?? string.Empty

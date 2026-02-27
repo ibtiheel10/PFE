@@ -22,5 +22,8 @@ namespace Backend.DTOs
         public int ScorePercent { get; set; }
         public string StatutCandidature { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
+        public int TopPercent { get; set; }
+        public Dictionary<string, int> ScoreParCompetence { get; set; } = new();
+        public string? Temps { get; set; }
     }
 }

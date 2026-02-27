@@ -207,6 +207,7 @@ import { useRouter } from "vue-router";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
 import Navbar from './Navbar.vue';
 import OtpModal from './OtpModal.vue';
+import axios from 'axios';
 
 const router = useRouter();
 
@@ -225,9 +226,14 @@ const toggleForgotPassword = () => {
     showForgotPassword.value = !showForgotPassword.value;
 };
 
-const handleResetPassword = () => {
-    alert(`Un lien de réinitialisation a été envoyé à ${email.value}`);
-    showForgotPassword.value = false;
+const handleResetPassword = async () => {
+    try {
+        await axios.post('http://localhost:5243/api/auth/forgot-password', { email: email.value });
+        alert(`Si cet e-mail existe, un lien de réinitialisation a été envoyé à ${email.value}`);
+        showForgotPassword.value = false;
+    } catch (error: any) {
+        alert(error.response?.data?.message || "Erreur lors de la demande de réinitialisation.");
+    }
 };
 
 const handleSocialLogin = (provider: string) => {

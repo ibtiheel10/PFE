@@ -434,6 +434,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 import { MockData } from '../services/MockData';
 import Top5Candidates from './top_5_condidat.vue';
 import ListeCondidat from './liste_condidat.vue';
@@ -474,7 +475,10 @@ const toggleProfileMenu = () => {
     showProfileMenu.value = !showProfileMenu.value;
 };
 
-const handleLogout = () => {
+const handleLogout = async () => {
+    try {
+        await axios.post('http://localhost:5243/api/auth/logout');
+    } catch (e) { console.error(e); }
     localStorage.removeItem('userToken');
     localStorage.removeItem('userRole');
     router.push('/');

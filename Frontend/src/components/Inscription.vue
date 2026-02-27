@@ -81,15 +81,23 @@
           <!-- FORM -->
           <form>
 
-            <label>{{ selectedRole === 'entreprise' ? "Nom de l'entreprise" : "Nom complet" }}</label>
-            <input
-              type="text"
-              v-model="fullname"
-              class="form-control"
-              :placeholder="selectedRole === 'entreprise' ? 'Nom de l\'entreprise' : 'Jean Dupont'"
-              required />
-
-            <div v-if="selectedRole === 'entreprise'">
+            <template v-if="selectedRole === 'candidat'">
+              <div style="display: flex; gap: 10px; width: 100%;">
+                <div style="flex: 1;">
+                  <label>Prénom</label>
+                  <input type="text" v-model="prenom" class="form-control" placeholder="Jean" required />
+                </div>
+                <div style="flex: 1;">
+                  <label>Nom de famille</label>
+                  <input type="text" v-model="fullname" class="form-control" placeholder="Dupont" required />
+                </div>
+              </div>
+              <label>Date de naissance</label>
+              <input type="date" v-model="dateNaissance" class="form-control" required />
+            </template>
+            <template v-else>
+              <label>Nom de l'entreprise</label>
+              <input type="text" v-model="fullname" class="form-control" placeholder="Nom de l'entreprise" required />
               <label>Secteur d'activité</label>
               <input
                 type="text"
@@ -97,7 +105,7 @@
                 class="form-control"
                 placeholder="Ex: Technologie, Finance, Santé"
                 required />
-            </div>
+            </template>
 
             <label>{{ selectedRole === 'entreprise' ? 'Adresse e-mail professionnelle' : 'Adresse e-mail' }}</label>
             <input
@@ -238,6 +246,7 @@
     import { ref, computed } from "vue";
     import { useRouter } from "vue-router";
     import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
+    import axios from "axios";
     import Navbar from './Navbar.vue';
     
     const router = useRouter();
@@ -245,6 +254,8 @@
     const selectedRole = ref<'candidat' | 'entreprise'>('candidat');
     
     const fullname = ref("");
+    const prenom = ref("");
+    const dateNaissance = ref("");
     const sector = ref("");
     const email = ref("");
     const password = ref("");
@@ -358,10 +369,12 @@
     
     const canSubmit = computed(() => {
       const isSectorValid = selectedRole.value === 'entreprise' ? sector.value.length > 2 : true;
+      const isCandidatValid = selectedRole.value === 'candidat' ? prenom.value.length > 1 && dateNaissance.value !== '' : true;
       
       return (
         fullname.value.length > 2 &&
         isSectorValid &&
+        isCandidatValid &&
         isEmailValid.value &&
         isPasswordValid.value &&
         confirmPasswordError.value === null &&
@@ -369,23 +382,28 @@
       );
     });
 
-    const handleSignup = () => {
+    const handleSignup = async () => {
       if (!acceptedTerms.value) {
         alert("Veuillez accepter les conditions d'utilisation.");
         return;
       }
-      localStorage.setItem('userToken', 'mock-signup-token-' + Date.now());
-      localStorage.setItem('userRole', selectedRole.value);
       
-      const userInfo = { 
-          name: fullname.value, 
-          role: selectedRole.value,
-          ...(selectedRole.value === 'entreprise' && { sector: sector.value })
+      const payload = {
+          nom: fullname.value,
+          email: email.value,
+          password: password.value,
+          role: selectedRole.value === 'entreprise' ? 'Entreprise' : 'Candidat',
+          ...(selectedRole.value === 'entreprise' && { secteur: sector.value }),
+          ...(selectedRole.value === 'candidat' && { prenom: prenom.value, dateNaissance: dateNaissance.value })
       };
-      localStorage.setItem('user_info', JSON.stringify(userInfo));
-
-      alert(`Compte créé avec succès pour ${fullname.value} !`);
-      router.push('/login');
+      
+      try {
+        const response = await axios.post('http://localhost:5243/api/auth/register', payload);
+        alert(`Compte créé avec succès pour ${fullname.value} !`);
+        router.push('/login');
+      } catch (error: any) {
+        alert(error.response?.data?.message || "Erreur lors de l'inscription.");
+      }
     };
     </script>
 <style scoped>

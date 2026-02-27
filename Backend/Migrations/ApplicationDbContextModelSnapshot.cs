@@ -22,6 +22,35 @@ namespace Backend.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Backend.Models.ActivityLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DateAction")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IpAddress")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ActivityLogs");
+                });
+
             modelBuilder.Entity("Backend.Models.Admin", b =>
                 {
                     b.Property<int>("Id")
@@ -61,6 +90,9 @@ namespace Backend.Migrations
                         .HasColumnType("character varying(256)");
 
                     b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("EstActif")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("LockoutEnabled")
@@ -149,11 +181,17 @@ namespace Backend.Migrations
                     b.Property<int>("CandidatId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Commentaire")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("DatePostulation")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Decision")
                         .HasColumnType("text");
+
+                    b.Property<float?>("Note")
+                        .HasColumnType("real");
 
                     b.Property<int>("OffreEmploiId")
                         .HasColumnType("integer");
@@ -190,11 +228,50 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Taille")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Ville")
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ApplicationUserId");
 
                     b.ToTable("Entreprises");
+                });
+
+            modelBuilder.Entity("Backend.Models.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("DateCreation")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("EstLue")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("Backend.Models.OffreEmploi", b =>
@@ -207,6 +284,9 @@ namespace Backend.Migrations
 
                     b.Property<string>("Categorie")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Competences")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("DateLimite")
@@ -223,6 +303,12 @@ namespace Backend.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("ExperienceRequise")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Icon")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IconColor")
                         .HasColumnType("text");
 
                     b.Property<string>("Localisation")
@@ -287,6 +373,9 @@ namespace Backend.Migrations
 
                     b.Property<string>("Chronometre")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Competence")
                         .HasColumnType("text");
 
                     b.Property<string>("Contenu")
@@ -496,6 +585,17 @@ namespace Backend.Migrations
                         .IsRequired();
 
                     b.Navigation("ApplicationUser");
+                });
+
+            modelBuilder.Entity("Backend.Models.Notification", b =>
+                {
+                    b.HasOne("Backend.Models.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Backend.Models.OffreEmploi", b =>
