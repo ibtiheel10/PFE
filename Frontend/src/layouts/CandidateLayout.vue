@@ -118,7 +118,13 @@
           <!-- Profile -->
           <div class="relative" ref="profileDropdownRef">
             <button @click="toggleProfileMenu" class="flex items-center gap-2.5 hover:bg-gray-50 p-1.5 pr-3 rounded-xl border border-transparent hover:border-gray-200 transition-all">
-              <img :src="userAvatar" alt="User" class="w-8 h-8 rounded-full object-cover border border-gray-200 shadow-sm" />
+              <!-- Avatar or initials -->
+              <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-200 shadow-sm flex-shrink-0">
+                <img v-if="userAvatar" :src="userAvatar" alt="User" class="w-full h-full object-cover" @error="userAvatar = ''" />
+                <div v-else class="w-full h-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm select-none">
+                  {{ displayName.charAt(0).toUpperCase() }}
+                </div>
+              </div>
               <div class="hidden md:flex flex-col items-start">
                 <span class="text-sm font-bold text-gray-700 leading-none">{{ displayName }}</span>
                 <span class="text-[11px] font-medium text-blue-600 mt-0.5">{{ displayEmail }}</span>
@@ -131,7 +137,12 @@
               <div v-if="showProfileMenu" class="absolute right-0 top-full mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50">
                 <div class="px-4 py-3 border-b border-gray-50">
                   <div class="flex items-center gap-3">
-                    <img :src="userAvatar" class="w-10 h-10 rounded-full border border-gray-200" />
+                  <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-200 flex-shrink-0">
+                    <img v-if="userAvatar" :src="userAvatar" alt="User" class="w-full h-full object-cover" @error="userAvatar = ''" />
+                    <div v-else class="w-full h-full bg-blue-600 flex items-center justify-center text-white font-bold text-base select-none">
+                      {{ displayName.charAt(0).toUpperCase() }}
+                    </div>
+                  </div>
                     <div>
                       <p class="text-sm font-bold text-gray-900">{{ displayName }}</p>
                       <p class="text-xs text-gray-400 truncate">{{ displayEmail }}</p>
@@ -301,9 +312,19 @@ onMounted(() => {
 });
 
 // ── Profile State ────────────────────────────────────────────────
-const displayName   = ref(localStorage.getItem('prof_name')   || 'Alexandre Martin');
-const displayEmail  = ref(localStorage.getItem('prof_email')  || 'alex.martin@example.com');
-const userAvatar    = ref(localStorage.getItem('prof_avatar') || 'https://i.pravatar.cc/150?u=alexandre');
+// Always use real login session as primary source
+const _session = JSON.parse(localStorage.getItem('user_info') || '{}');
+const _sessionName  = _session.nom   || '';
+const _sessionEmail = _session.email || '';
+
+// Only use prof_* keys if they belong to the CURRENT logged-in user
+const _profEmail = localStorage.getItem('prof_email') || '';
+const _profName  = localStorage.getItem('prof_name')  || '';
+const _isSameUser = _profEmail === _sessionEmail;
+
+const displayName   = ref(_isSameUser && _profName  ? _profName  : _sessionName  || 'Utilisateur');
+const displayEmail  = ref(_sessionEmail || '');
+const userAvatar    = ref(_isSameUser ? (localStorage.getItem('prof_avatar') || '') : '');
 
 const editFirstName        = ref(displayName.value.split(' ')[0]);
 const editLastName         = ref(displayName.value.split(' ').slice(1).join(' '));
@@ -342,10 +363,10 @@ const getNotifIconClass = (msg: string) => {
 
 // ── Nav ───────────────────────────────────────────────────────────
 const navItems = [
-    { name: 'Tableau de bord', icon: Squares2X2Icon, path: '/candidat/dashboard', sub: 'Vue d\'ensemble' },
+    { name: 'Tableau de bord', icon: Squares2X2Icon, path: '/dashboard', sub: 'Vue d\'ensemble' },
     { name: 'Offres d\'emploi',  icon: BriefcaseIcon,  path: '/candidat/jobs',      sub: 'Parcourez les offres' },
-    { name: 'Mes Candidatures', icon: ClockIcon,       path: '/candidat/history',   sub: 'Historique & statuts' },
-    { name: 'Résultats',        icon: ChartBarIcon,    path: '/candidat/results',   sub: 'Scores & évaluations' },
+    { name: 'Mes Candidatures', icon: ClockIcon,       path: '/mes-candidatures',   sub: 'Historique & statuts' },
+    { name: 'Résultats',        icon: ChartBarIcon,    path: '/resultats',   sub: 'Scores & évaluations' },
 ];
 
 const pageTitle = computed(() => {
@@ -429,6 +450,14 @@ const saveProfile = () => {
 const handleLogout = () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userRole');
+    localStorage.removeItem('user_info');
+    // Clear profile customizations so next user starts fresh
+    localStorage.removeItem('prof_name');
+    localStorage.removeItem('prof_email');
+    localStorage.removeItem('prof_avatar');
+    localStorage.removeItem('prof_title');
+    localStorage.removeItem('prof_location');
+    localStorage.removeItem('prof_bio');
     router.push('/login');
 };
 </script>

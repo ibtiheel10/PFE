@@ -305,8 +305,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';
-import { MockData, CURRENT_CANDIDATE, type Job } from '../services/MockData';
+import { useRoute } from 'vue-router';import { MockData, type Job } from '../services/MockData';
 import axios from 'axios';
 
 const route  = useRoute();

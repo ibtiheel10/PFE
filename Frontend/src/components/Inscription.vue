@@ -257,7 +257,6 @@
     import { ref, computed } from "vue";
     import { useRouter } from "vue-router";
     import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
-    import axios from "axios";
     import Navbar from './Navbar.vue';
     import { register } from '../services/authService';
 

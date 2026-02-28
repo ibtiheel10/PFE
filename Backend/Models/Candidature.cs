@@ -11,6 +11,9 @@ namespace Backend.Models
         public string? Decision { get; set; }
         public float? Note { get; set; }
         public string? Commentaire { get; set; }
+        
+        // JSON storage for detailed evaluation stats (time, competencies, etc.)
+        public string? EvaluationDetails { get; set; }
 
         // Relations
         public int CandidatId { get; set; }

@@ -33,7 +33,7 @@
                             </div>
                             <div>
                                 <span class="stat-label">Temps Écoulé</span>
-                                <span class="stat-value">24m 30s</span>
+                                <span class="stat-value">{{ evalStats.tempsEcoule }}</span>
                             </div>
                         </div>
                         <div class="stat-box">
@@ -42,7 +42,7 @@
                             </div>
                             <div>
                                 <span class="stat-label">Réponses Correctes</span>
-                                <span class="stat-value">18/20</span>
+                                <span class="stat-value">{{ evalStats.bonnesReponses }}</span>
                             </div>
                         </div>
                         <div class="stat-box">
@@ -51,12 +51,12 @@
                             </div>
                             <div>
                                 <span class="stat-label">Rapidité</span>
-                                <span class="stat-value">Top 10%</span>
+                                <span class="stat-value">{{ evalStats.topPercent }}</span>
                             </div>
                         </div>
                     </div>
 
-                    <div class="competencies-section">
+                    <div class="competencies-section" v-if="competencies.length > 0">
                         <h3 class="section-title">
                             <i class="fa-solid fa-list-check"></i> Détails par Compétence
                         </h3>
@@ -117,14 +117,95 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
+import { getCandidatureById, type CandidatureResponseDto } from '../services/candidatureService';
+import { getCandidatDashboard } from '../services/dashboardService';
 
 const route = useRoute();
 const router = useRouter();
 const score = ref(0);
+const candidature = ref<CandidatureResponseDto | null>(null);
 
-onMounted(() => {
-  const s = Number(route.query.score);
-  score.value = isNaN(s) ? 85 : s; // Default high score for demo
+// Parsed evaluation details
+const evalStats = ref({
+    tempsEcoule: 'N/A',
+    bonnesReponses: '0/0',
+    topPercent: 'N/A'
+});
+
+onMounted(async () => {
+  try {
+      // Prioritize candidatureId from route query
+      const candidatureIdParam = route.query.candidatureId;
+      let targetCandidatureId: number | null = null;
+      
+      if (candidatureIdParam) {
+          targetCandidatureId = Number(candidatureIdParam);
+      } else {
+          // Fallback: Fetch all candidatures and pick the latest one with a score
+          const { getMesCandidatures } = await import('../services/candidatureService');
+          const allCandidatures = await getMesCandidatures();
+          const evaluatedCandidatures = (allCandidatures || []).filter(c => c.statut === 'Évalué' || c.score !== null);
+          
+          if (evaluatedCandidatures && evaluatedCandidatures.length > 0) {
+              // Sort by date descending
+              evaluatedCandidatures.sort((a, b) => new Date(b.datePostulation).getTime() - new Date(a.datePostulation).getTime());
+              targetCandidatureId = evaluatedCandidatures[0]?.id || null;
+          }
+      }
+
+      if (targetCandidatureId) {
+          const data = await getCandidatureById(targetCandidatureId);
+          candidature.value = data;
+          score.value = data?.score ?? 0;
+          
+          if (data?.evaluationDetails) {
+              try {
+                  const details = JSON.parse(data.evaluationDetails);
+                  evalStats.value.tempsEcoule = details.Temps || 'N/A';
+                  evalStats.value.bonnesReponses = `${details.CorrectAnswers}/${details.TotalQuestions}`;
+                  evalStats.value.topPercent = details.TopPercent ? `Top ${details.TopPercent}%` : 'N/A';
+                  
+                  if (details.ScoreParCompetence) {
+                      competencies.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
+                          name: key,
+                          score: Number(val)
+                      }));
+                  }
+              } catch (e) {
+                  console.error("Error parsing evaluation details", e);
+              }
+          }
+      } else {
+          score.value = 0;
+      }
+
+      // Fetch Dashboard stats for charts
+      const dashData = await getCandidatDashboard();
+      
+      // Update Donut Chart: [En attente, Accepté, Refusé]
+      donutChartSeries.value = [dashData.enAttente, dashData.acceptees, dashData.refusees];
+      
+      // Update Line Chart (Progression par mois)
+      if (dashData.candidaturesParMois && dashData.candidaturesParMois.length > 0) {
+          const months = dashData.candidaturesParMois.map((c: any) => c.mois);
+          const counts = dashData.candidaturesParMois.map((c: any) => c.count);
+          
+          // @ts-ignore
+          lineChartOptions.value = {
+              ...lineChartOptions.value,
+              xaxis: {
+                  ...lineChartOptions.value.xaxis,
+                  categories: months
+              }
+          };
+          
+          lineChartSeries.value = [
+              { name: 'Candidatures (Activité)', data: counts }
+          ];
+      }
+  } catch (err) {
+      console.error("Error loading result data:", err);
+  }
 });
 
 const isSuccess = computed(() => score.value >= 70);
@@ -132,14 +213,10 @@ const isSuccess = computed(() => score.value >= 70);
 // --- Chart Data ---
 
 // 1. Line Area Chart
-const lineChartSeries = ref([
+const lineChartSeries = ref<any[]>([
     {
-        name: 'Score Actuel',
-        data: [65, 72, 68, 85, 92, 95]
-    },
-    {
-        name: 'Moyenne Candidats',
-        data: [50, 55, 60, 58, 62, 65]
+        name: 'Activité',
+        data: []
     }
 ]);
 
@@ -248,7 +325,7 @@ const radialChartOptions = ref({
 });
 
 // 3. Donut Chart (Evaluations)
-const donutChartSeries = ref([5, 12, 3]); // Active, Completed, Ended
+const donutChartSeries = ref([0, 0, 0]); // Active, Completed, Ended
 
 const donutChartOptions = ref({
     chart: {
@@ -304,13 +381,7 @@ const goToJobs = () => {
     router.push('/candidat/jobs');
 };
 
-const competencies = ref([
-    { name: 'Vue.js Framework', score: 92 },
-    { name: 'TypeScript & ES6', score: 88 },
-    { name: 'State Management (Pinia)', score: 85 },
-    { name: 'Component Design', score: 78 },
-    { name: 'Testing Principles', score: 95 }
-]);
+const competencies = ref<{name: string, score: number}[]>([]);
 </script>
 
 <style scoped>

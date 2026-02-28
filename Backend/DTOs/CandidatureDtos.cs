@@ -13,6 +13,8 @@ namespace Backend.DTOs
         public float? Note { get; set; }
         public string? Commentaire { get; set; }
 
+        public string? EvaluationDetails { get; set; }
+
         public int CandidatId { get; set; }
         public string? CandidatPrenom { get; set; }
 
@@ -65,6 +67,7 @@ namespace Backend.DTOs
                 Decision = entity.Decision,
                 Note = entity.Note,
                 Commentaire = entity.Commentaire,
+                EvaluationDetails = entity.EvaluationDetails,
                 CandidatId = entity.CandidatId,
                 CandidatPrenom = entity.Candidat?.Prenom,
                 OffreEmploiId = entity.OffreEmploiId,

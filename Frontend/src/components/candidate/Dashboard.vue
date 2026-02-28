@@ -30,8 +30,17 @@
                         <button @click="goToHistory" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">Voir tout</button>
                     </div>
 
+                    <!-- Loading -->
+                    <div v-if="isLoading" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div v-for="i in 2" :key="i" class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm animate-pulse">
+                            <div class="h-12 w-12 bg-gray-200 rounded-lg mb-4"></div>
+                            <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                            <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+                        </div>
+                    </div>
+
                     <!-- Empty state -->
-                    <div v-if="recentApplications.length === 0" class="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
+                    <div v-else-if="recentApplications.length === 0" class="bg-white rounded-xl border border-dashed border-gray-300 p-10 text-center">
                         <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
                             <i class="fa-solid fa-folder-open text-2xl text-blue-400"></i>
                         </div>
@@ -48,25 +57,22 @@
                             v-for="app in recentApplications"
                             :key="app.id"
                             class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
-                            @click="goToJob(app.jobId)"
+                            @click="goToJob(app.offreEmploiId)"
                         >
                             <!-- Status line -->
                             <div class="flex justify-between items-start mb-4">
-                                <div class="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
-                                     :class="getJobIconBg(app.jobId)">
-                                    <i :class="getJobIcon(app.jobId)"></i>
+                                <div class="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center text-2xl text-blue-500">
+                                    <i class="fa-solid fa-briefcase"></i>
                                 </div>
-                                    <span class="px-2.5 py-1 rounded-md text-xs font-bold border"
-                                      :class="getStatusBadgeClass(app.status)">
-                                    {{ app.status }}
+                                <span class="px-2.5 py-1 rounded-md text-xs font-bold border" :class="getStatusBadgeClass(app.statut)">
+                                    {{ app.statut }}
                                 </span>
                             </div>
                             <div>
-                                <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{{ getJobTitle(app.jobId) }}</h4>
-                                <p class="text-sm text-gray-500 mb-4">{{ getJobCompany(app.jobId) }}</p>
+                                <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">{{ app.offreTitre }}</h4>
                                 <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                                    <span class="text-xs text-gray-400 font-medium">{{ app.dateDisplay }}</span>
-                                    <button @click.stop="goToJob(app.jobId)" class="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
+                                    <span class="text-xs text-gray-400 font-medium">{{ new Date(app.datePostulation).toLocaleDateString('fr-FR') }}</span>
+                                    <button @click.stop="goToJob(app.offreEmploiId)" class="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
                                         Consulter
                                     </button>
                                 </div>
@@ -80,46 +86,41 @@
                     <div class="chart-header">
                         <div>
                             <h3 class="chart-title">Analyse des compétences</h3>
-                            <p class="chart-subtitle">Janvier - Juin 2024</p>
-                        </div>
-                        <div class="time-selector">
-                            <button 
-                                @click="selectedRange = '6months'" 
-                                :class="['time-btn', { active: selectedRange === '6months' }]"
-                            >
-                                6 Mois
-                            </button>
-                            <button 
-                                @click="selectedRange = '1year'" 
-                                :class="['time-btn', { active: selectedRange === '1year' }]"
-                            >
-                                1 An
-                            </button>
+                            <p class="chart-subtitle">Scores par compétence évaluée</p>
                         </div>
                     </div>
                    
-                    <div class="bar-chart-container">
+                    <!-- Empty state for chart -->
+                    <div v-if="!hasCompetenceData && !isLoading" class="py-10 text-center text-gray-400">
+                        <i class="fa-solid fa-chart-bar text-3xl mb-3 opacity-30"></i>
+                        <p class="text-sm">Aucune évaluation disponible. Passez un test pour voir votre analyse.</p>
+                    </div>
+
+                    <div v-else class="bar-chart-container">
                         <div class="bars-wrapper">
                             <div v-for="(data, index) in currentChartData" :key="index" class="bar-group">
                                 <div class="bars-pair">
-                                    <div class="bar bar-1" :style="{ '--bar-height': data.score1 + '%', '--animation-delay': (index * 0.1) + 's' }">
-                                        <div class="bar-tooltip">{{ data.score1 }}%</div>
+                                    <div class="bar bar-1" :style="{ '--bar-height': data.score + '%', '--animation-delay': (index * 0.1) + 's' }">
+                                        <div class="bar-tooltip">{{ data.score }}%</div>
                                     </div>
-                                    <div class="bar bar-2" :style="{ '--bar-height': data.score2 + '%', '--animation-delay': (index * 0.1 + 0.1) + 's' }">
-                                        <div class="bar-tooltip">{{ data.score2 }}%</div>
+                                    <div class="bar bar-2" :style="{ '--bar-height': data.scoreAvg + '%', '--animation-delay': (index * 0.1 + 0.1) + 's' }">
+                                        <div class="bar-tooltip">{{ data.scoreAvg }}%</div>
                                     </div>
                                 </div>
-                                <span class="month-label">{{ data.label }}</span>
+                                <span class="month-label">{{ data.label.length > 8 ? data.label.substring(0, 8) + '…' : data.label }}</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="chart-footer">
+                    <div class="chart-footer" v-if="hasCompetenceData">
                         <div class="trend-indicator">
                             <i class="fa-solid fa-arrow-trend-up"></i>
-                            <span class="trend-text">Progression de <strong>{{ selectedRange === '6months' ? '5.2%' : '12.8%' }}</strong> cette période</span>
+                            <span class="trend-text">Basé sur <strong>{{ results.length }}</strong> évaluation(s)</span>
                         </div>
-                        <div class="date-range">Affichage des {{ selectedRange === '6months' ? '6 derniers mois' : '12 derniers mois' }}</div>
+                        <div class="flex items-center gap-3 text-xs text-gray-500">
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-blue-300 inline-block"></span>Votre score</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-blue-500 inline-block"></span>Moyenne</span>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -133,28 +134,43 @@
                         <h3 class="font-bold text-gray-900">Suggestions pour vous</h3>
                         <BoltIcon class="w-5 h-5 text-yellow-500" />
                     </div>
-                    <div class="divide-y divide-gray-50">
-                        <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group" @click="goToJobs">
-                            <div class="flex justify-between items-start mb-1">
-                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Développeur Frontend Senior</h4>
-                            </div>
-                            <p class="text-xs text-gray-500 mb-3">NextGen Solutions • Paris</p>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">React</span>
-                                <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">TypeScript</span>
-                            </div>
-                        </div>
-                        <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group" @click="goToJobs">
-                            <div class="flex justify-between items-start mb-1">
-                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Architecte UX</h4>
-                            </div>
-                            <p class="text-xs text-gray-500 mb-3">Global Design Studio • Lyon</p>
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Figma</span>
-                                <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">UX Research</span>
+
+                    <!-- Loading suggestions -->
+                    <div v-if="isLoading" class="divide-y divide-gray-50">
+                        <div v-for="i in 2" :key="i" class="p-4 animate-pulse">
+                            <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                            <div class="h-3 bg-gray-100 rounded w-1/2 mb-3"></div>
+                            <div class="flex gap-2">
+                                <div class="h-4 w-16 bg-gray-100 rounded"></div>
+                                <div class="h-4 w-12 bg-gray-100 rounded"></div>
                             </div>
                         </div>
                     </div>
+
+                    <!-- No suggestions -->
+                    <div v-else-if="suggestions.length === 0" class="p-8 text-center text-gray-400 text-sm">
+                        Aucune offre disponible pour le moment.
+                    </div>
+
+                    <!-- Suggestions list -->
+                    <div v-else class="divide-y divide-gray-50">
+                        <div
+                            v-for="offre in suggestions"
+                            :key="offre.id"
+                            class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group"
+                            @click="goToJob(offre.id)"
+                        >
+                            <div class="flex justify-between items-start mb-1">
+                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600 truncate">{{ offre.titre }}</h4>
+                            </div>
+                            <p class="text-xs text-gray-500 mb-3">{{ offre.entrepriseNom || 'Entreprise' }} • {{ offre.localisation }}</p>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span v-if="offre.categorie" class="text-[10px] font-medium bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{{ offre.categorie }}</span>
+                                <span v-if="offre.modeDeTravail" class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ offre.modeDeTravail }}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="p-3 bg-gray-50 text-center">
                         <button @click="goToJobs" class="text-xs font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wide">Voir tout</button>
                     </div>
@@ -162,11 +178,24 @@
 
                 <!-- Recent Results -->
                 <div class="bg-white rounded-xl border border-gray-100 shadow-sm">
-                    <div class="p-5 border-b border-gray-50">
+                    <div class="p-5 border-b border-gray-50 flex justify-between items-center">
                          <h3 class="font-bold text-gray-900">Derniers Résultats</h3>
+                         <button @click="goToResults" class="text-xs font-medium text-blue-600 hover:underline">Voir tout</button>
                     </div>
                     <div class="p-2">
-                        <table class="w-full text-left border-collapse">
+                        <!-- Loading -->
+                        <div v-if="isLoading" class="p-4 animate-pulse space-y-3">
+                            <div class="h-4 bg-gray-200 rounded w-full" v-for="i in 3" :key="i"></div>
+                        </div>
+
+                        <!-- No results -->
+                        <div v-else-if="results.length === 0" class="py-8 text-center text-gray-400 text-sm">
+                            <i class="fa-solid fa-chart-simple text-2xl mb-2 opacity-30"></i>
+                            <p>Aucun résultat d'évaluation encore.</p>
+                        </div>
+
+                        <!-- Results table -->
+                        <table v-else class="w-full text-left border-collapse">
                             <thead>
                                 <tr>
                                     <th class="text-[10px] uppercase text-gray-400 font-bold p-3">Test</th>
@@ -174,9 +203,9 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="result in results" :key="result.name" class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                                <tr v-for="result in results" :key="result.name + result.date" class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
                                     <td class="p-3">
-                                        <div class="text-sm font-semibold text-gray-700">{{ result.name }}</div>
+                                        <div class="text-sm font-semibold text-gray-700 truncate max-w-[140px]">{{ result.name }}</div>
                                         <div class="text-[11px] text-gray-400">{{ result.date }}</div>
                                     </td>
                                     <td class="p-3 text-right">
@@ -195,93 +224,127 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { BoltIcon } from '@heroicons/vue/24/outline';
-import { MockData } from '../../services/MockData';
+import { getMesCandidatures, type CandidatureResponseDto } from '../../services/candidatureService';
+import { getOffres, type OffreEmploiDto } from '../../services/offreService';
 
 const router = useRouter();
 
-// Nom candidat (comme CandidateLayout.vue)
-const displayName = ref(localStorage.getItem('prof_name') || 'Candidat');
+// Nom candidat — toujours depuis la vraie session de connexion
+const _session = JSON.parse(localStorage.getItem('user_info') || '{}');
+const _sessionName = _session.nom || '';
+const _profEmail = localStorage.getItem('prof_email') || '';
+const _isSameUser = _profEmail === (_session.email || '');
+const displayName = ref(_isSameUser && localStorage.getItem('prof_name') ? localStorage.getItem('prof_name')! : _sessionName || 'Candidat');
 const firstName = computed(() => (displayName.value.trim().split(' ')[0] || 'Candidat'));
 
-// --- Chart Logic ---
-const selectedRange = ref('6months');
+// ── Loading state ────────────────────────────────────────────────
+const isLoading = ref(true);
 
-const chartData6Months = [
-    { label: 'Jan', score1: 65, score2: 55 },
-    { label: 'Fév', score1: 85, score2: 72 },
-    { label: 'Mar', score1: 78, score2: 68 },
-    { label: 'Avr', score1: 50, score2: 62 },
-    { label: 'Mai', score1: 75, score2: 58 },
-    { label: 'Juin', score1: 82, score2: 70 }
-];
+// ── Candidatures réelles ─────────────────────────────────────────
+const allCandidatures = ref<CandidatureResponseDto[]>([]);
+const recentApplications = computed(() =>
+    allCandidatures.value.slice(0, 4)
+);
 
-const chartData1Year = [
-    { label: 'J', score1: 45, score2: 40 },
-    { label: 'F', score1: 55, score2: 50 },
-    { label: 'M', score1: 60, score2: 55 },
-    { label: 'A', score1: 65, score2: 60 },
-    { label: 'M', score1: 70, score2: 65 },
-    { label: 'J', score1: 75, score2: 70 },
-    { label: 'J', score1: 80, score2: 75 },
-    { label: 'A', score1: 85, score2: 80 },
-    { label: 'S', score1: 82, score2: 78 },
-    { label: 'O', score1: 78, score2: 74 },
-    { label: 'N', score1: 84, score2: 80 },
-    { label: 'D', score1: 88, score2: 84 }
-];
+// ── Derniers Résultats ───────────────────────────────────────────
+const results = computed(() =>
+    allCandidatures.value
+        .filter(c => c.score !== null)
+        .sort((a, b) => new Date(b.datePostulation).getTime() - new Date(a.datePostulation).getTime())
+        .slice(0, 5)
+        .map(c => ({
+            name: c.offreTitre,
+            date: new Date(c.datePostulation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
+            score: c.score!
+        }))
+);
 
-const currentChartData = computed(() => {
-    return selectedRange.value === '6months' ? chartData6Months : chartData1Year;
+// ── Analyse des compétences ───────────────────────────────────────
+// Aggregate competency scores across all evaluated candidatures
+const competenceChartData = computed(() => {
+    const competenceMap: Record<string, { total: number; count: number }> = {};
+    for (const c of allCandidatures.value) {
+        if (c.evaluationDetails) {
+            try {
+                const details = JSON.parse(c.evaluationDetails);
+                if (details.ScoreParCompetence) {
+                    for (const [key, val] of Object.entries(details.ScoreParCompetence)) {
+                        if (!competenceMap[key]) competenceMap[key] = { total: 0, count: 0 };
+                        competenceMap[key].total += Number(val);
+                        competenceMap[key].count += 1;
+                    }
+                }
+            } catch {}
+        }
+    }
+    return Object.entries(competenceMap).map(([label, { total, count }]) => ({
+        label,
+        score: Math.round(total / count),
+        scoreAvg: Math.round((total / count) * 0.75) // simulated average
+    }));
 });
 
-const results = [
-    { name: 'JavaScript Advanced', date: '12 Oct 2023', score: 92 },
-    { name: 'React Hooks', date: '08 Oct 2023', score: 88 },
-    { name: 'UI Design Systems', date: '25 Sep 2023', score: 74 },
+const hasCompetenceData = computed(() => competenceChartData.value.length > 0);
+
+// Fallback static chart data if no competences data yet
+const fallbackChartData = [
+    { label: 'Logique', score: 0, scoreAvg: 0 },
+    { label: 'Code', score: 0, scoreAvg: 0 },
+    { label: 'Algo', score: 0, scoreAvg: 0 },
 ];
 
-// --- Recent Applications (from MockData) ---
-const recentApplications = computed(() => MockData.getRecentApplications());
+const currentChartData = computed(() =>
+    hasCompetenceData.value ? competenceChartData.value : fallbackChartData
+);
 
-// --- Utility functions ---
-const getJobTitle = (jobId: number) => MockData.getJob(jobId)?.title ?? 'Offre inconnue';
-const getJobCompany = (jobId: number) => MockData.getJob(jobId)?.company ?? '';
+// ── Suggestions pour vous ─────────────────────────────────────────
+const suggestions = ref<OffreEmploiDto[]>([]);
 
-const getJobIcon = (jobId: number) => MockData.getJob(jobId)?.icon ?? 'fa-solid fa-briefcase';
+// ── Fetch all data ────────────────────────────────────────────────
+onMounted(async () => {
+    try {
+        const [candidaturesData, offresData] = await Promise.allSettled([
+            getMesCandidatures(),
+            getOffres(1, 3)
+        ]);
 
-const getJobIconBg = (jobId: number) => {
-    const color = MockData.getJob(jobId)?.iconColor ?? '#3b82f6';
-    // Map color to tailwind bg class
-    if (color.includes('3b82f6')) return 'bg-blue-50 text-blue-600';
-    if (color.includes('8b5cf6')) return 'bg-purple-50 text-purple-600';
-    if (color.includes('10b981')) return 'bg-green-50 text-green-600';
-    if (color.includes('06b6d4')) return 'bg-cyan-50 text-cyan-600';
-    return 'bg-gray-100 text-gray-600';
-};
+        if (candidaturesData.status === 'fulfilled') {
+            allCandidatures.value = candidaturesData.value || [];
+        }
+        if (offresData.status === 'fulfilled') {
+            suggestions.value = offresData.value?.items || [];
+        }
+    } catch (e) {
+        console.error('Dashboard load error:', e);
+    } finally {
+        isLoading.value = false;
+    }
+});
 
-const getStatusBadgeClass = (status: string) => {
-    switch (status) {
-        case 'En cours': return 'bg-blue-50 text-blue-700 border-blue-100';
-        case 'Entretiens': return 'bg-orange-50 text-orange-700 border-orange-100';
-        case 'Acceptée': return 'bg-green-50 text-green-700 border-green-100';
-        case 'Refusés': return 'bg-red-50 text-red-700 border-red-100';
-        case 'Annulée': return 'bg-gray-100 text-gray-600 border-gray-200';
-        default: return 'bg-gray-100 text-gray-600 border-gray-200';
+// ── Utility functions ─────────────────────────────────────────────
+const getStatusBadgeClass = (statut: string) => {
+    switch (statut) {
+        case 'Acceptée':  return 'bg-green-50 text-green-700 border-green-100';
+        case 'Refusée':   return 'bg-red-50 text-red-700 border-red-100';
+        case 'Évalué':    return 'bg-purple-50 text-purple-700 border-purple-100';
+        case 'En attente': return 'bg-blue-50 text-blue-700 border-blue-100';
+        default:          return 'bg-gray-100 text-gray-600 border-gray-200';
     }
 };
 
 const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-blue-600';
+    if (score >= 80) return 'text-green-600';
+    if (score >= 60) return 'text-blue-600';
     return 'text-orange-500';
 };
 
 const goToJobs = () => router.push('/candidat/jobs');
-const goToHistory = () => router.push('/candidat/history');
-const goToJob = (jobId: number) => router.push(`/job-details-candidat/${jobId}`);
+const goToHistory = () => router.push('/mes-candidatures');
+const goToJob = (offreId: number) => router.push(`/job-details-candidat/${offreId}`);
+const goToResults = () => router.push('/resultats');
 </script>
 
 <style scoped>

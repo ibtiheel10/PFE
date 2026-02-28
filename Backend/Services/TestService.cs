@@ -105,11 +105,6 @@ namespace Backend.Services
                 ? (int)Math.Round((double)correct / total * 100)
                 : 0;
 
-            // Mise à jour de la candidature
-            candidature.Score = scorePercent;
-            candidature.Statut = "Évalué";
-            await _context.SaveChangesAsync();
-
             // Ranking — classement parmi tous les candidats du même test
             var allScores = await _context.Candidatures
                 .Where(c => c.OffreEmploiId == dto.OffreEmploiId && c.Score.HasValue)
@@ -139,11 +134,7 @@ namespace Backend.Services
                 ? $"{(int)duree.TotalMinutes}m {duree.Seconds}s"
                 : $"{duree.Seconds}s";
 
-            _logger.LogInformation(
-                "Evaluation completed for candidature {CandidatureId}: score {ScorePercent}%, top {TopPercent}%",
-                candidature.Id, scorePercent, topPercent);
-
-            return new EvaluationResultDto
+            var resultDto = new EvaluationResultDto
             {
                 TotalQuestions = total,
                 CorrectAnswers = correct,
@@ -154,6 +145,19 @@ namespace Backend.Services
                 ScoreParCompetence = scoreParCompetence,
                 Temps = tempsStr
             };
+
+            // Mise à jour de la candidature
+            candidature.Score = scorePercent;
+            candidature.Statut = "Évalué";
+            candidature.EvaluationDetails = JsonSerializer.Serialize(resultDto);
+            
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation(
+                "Evaluation completed for candidature {CandidatureId}: score {ScorePercent}%, top {TopPercent}%",
+                candidature.Id, scorePercent, topPercent);
+
+            return resultDto;
         }
     }
 }
