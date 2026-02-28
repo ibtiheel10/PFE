@@ -1,6 +1,5 @@
-using Backend.Data;
+using Backend.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Controllers
 {
@@ -8,93 +7,55 @@ namespace Backend.Controllers
     [Route("api/[controller]")]
     public class HealthController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly ISystemHealthService _healthService;
         private readonly ILogger<HealthController> _logger;
 
-        public HealthController(ApplicationDbContext context, ILogger<HealthController> logger)
+        public HealthController(ISystemHealthService healthService, ILogger<HealthController> logger)
         {
-            _context = context;
+            _healthService = healthService;
             _logger = logger;
         }
 
+        /// <summary>GET /api/health/status</summary>
         [HttpGet("status")]
-        public IActionResult GetStatus()
-        {
-            return Ok(new
-            {
-                status = "API is running",
-                timestamp = DateTime.UtcNow
-            });
-        }
+        public async Task<IActionResult> GetStatus()
+            => Ok(await _healthService.GetStatusAsync());
 
+        /// <summary>GET /api/health/database</summary>
         [HttpGet("database")]
         public async Task<IActionResult> TestDatabaseConnection()
         {
             try
             {
-                // Try to connect to the database
-                var canConnect = await _context.Database.CanConnectAsync();
-                
-                if (canConnect)
-                {
-                    return Ok(new
-                    {
-                        status = "success",
-                        message = "Database connection successful",
-                        database = _context.Database.GetDbConnection().Database,
-                        timestamp = DateTime.UtcNow
-                    });
-                }
-                else
-                {
-                    return StatusCode(500, new
-                    {
-                        status = "error",
-                        message = "Cannot connect to database",
-                        timestamp = DateTime.UtcNow
-                    });
-                }
+                var result = await _healthService.TestDatabaseConnectionAsync();
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Database connection test failed");
-                return StatusCode(500, new
-                {
-                    status = "error",
-                    message = "Database connection test failed",
-                    error = ex.Message,
-                    timestamp = DateTime.UtcNow
-                });
+                return StatusCode(500, new { status = "error", message = "Database connection test failed", error = ex.Message });
             }
         }
 
+        /// <summary>GET /api/health/database/info</summary>
         [HttpGet("database/info")]
-        public IActionResult GetDatabaseInfo()
+        public async Task<IActionResult> GetDatabaseInfo()
         {
             try
             {
-                var connection = _context.Database.GetDbConnection();
-                return Ok(new
-                {
-                    connectionString = _context.Database.GetConnectionString(),
-                    database = connection.Database,
-                    dataSource = connection.DataSource,
-                    serverVersion = connection.ServerVersion,
-                    state = connection.State.ToString(),
-                    timestamp = DateTime.UtcNow
-                });
+                var result = await _healthService.GetDatabaseInfoAsync();
+                return Ok(result);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to get database info");
-                return StatusCode(500, new
-                {
-                    status = "error",
-                    message = "Failed to get database info",
-                    error = ex.Message,
-                    timestamp = DateTime.UtcNow
-                });
+                return StatusCode(500, new { status = "error", message = "Failed to get database info", error = ex.Message });
             }
         }
+
+        /// <summary>GET /api/health/metrics — statistiques API (requêtes, erreurs, uptime)</summary>
+        [HttpGet("metrics")]
+        public IActionResult GetMetrics()
+            => Ok(_healthService.GetSystemMetrics());
     }
 }

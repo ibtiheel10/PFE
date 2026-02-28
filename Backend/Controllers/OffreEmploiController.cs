@@ -41,7 +41,10 @@ namespace Backend.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? categorie = null,
             [FromQuery] string? localisation = null,
-            [FromQuery] string? secteurEntreprise = null)
+            [FromQuery] string? secteurEntreprise = null,
+            [FromQuery] string? experience = null,
+            [FromQuery] string? typeDeContact = null,
+            [FromQuery] string? competences = null)
         {
             _logger.LogInformation("JobBoard query: page={Page}, pageSize={PageSize}, categorie={Categorie}, localisation={Localisation}, secteurEntreprise={Secteur}",
                 page, pageSize, categorie, localisation, secteurEntreprise);
@@ -71,6 +74,24 @@ namespace Backend.Controllers
                 var secteur = secteurEntreprise.Trim().ToLower();
                 query = query.Where(o => o.Entreprise != null &&
                                          o.Entreprise.Secteur.ToLower().Contains(secteur));
+            }
+
+            if (!string.IsNullOrWhiteSpace(experience))
+            {
+                var exp = experience.Trim().ToLower();
+                query = query.Where(o => o.ExperienceRequise != null && o.ExperienceRequise.ToLower().Contains(exp));
+            }
+
+            if (!string.IsNullOrWhiteSpace(typeDeContact))
+            {
+                var type = typeDeContact.Trim().ToLower();
+                query = query.Where(o => o.TypeDeContact != null && o.TypeDeContact.ToLower().Contains(type));
+            }
+
+            if (!string.IsNullOrWhiteSpace(competences))
+            {
+                var comp = competences.Trim().ToLower();
+                query = query.Where(o => o.Competences != null && o.Competences.ToLower().Contains(comp));
             }
 
             var totalCount = await query.CountAsync();
@@ -156,6 +177,9 @@ namespace Backend.Controllers
                 Salaire = dto.Salaire,
                 Localisation = dto.Localisation,
                 ExperienceRequise = dto.ExperienceRequise,
+                Competences = dto.Competences,
+                Icon = dto.Icon,
+                IconColor = dto.IconColor,
                 NbPost = dto.NbPost,
                 EntrepriseId = entrepriseId.Value
             };
@@ -201,6 +225,9 @@ namespace Backend.Controllers
             existing.Salaire = dto.Salaire;
             existing.Localisation = dto.Localisation;
             existing.ExperienceRequise = dto.ExperienceRequise;
+            existing.Competences = dto.Competences;
+            existing.Icon = dto.Icon;
+            existing.IconColor = dto.IconColor;
             existing.NbPost = dto.NbPost;
 
             _context.Entry(existing).State = EntityState.Modified;

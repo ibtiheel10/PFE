@@ -15,6 +15,9 @@ namespace Backend.Models
         public float? Salaire { get; set; }
         public string Localisation { get; set; } = null!;
         public string? ExperienceRequise { get; set; }
+        public string? Competences { get; set; }
+        public string? Icon { get; set; }
+        public string? IconColor { get; set; }
         public int NbPost { get; set; } = 1;
 
         // Relation avec Entreprise

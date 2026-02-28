@@ -31,7 +31,7 @@
                 placeholder="Ville ou région"
               />
             </div>
-            <button class="search-btn">
+            <button class="search-btn" @click="handleSearch">
               <i class="fa-solid fa-magnifying-glass"></i>
               Rechercher
             </button>
@@ -39,7 +39,7 @@
 
           <div class="hero-stats">
             <div class="hero-stat">
-              <strong>{{ MockData.jobs.length }}+</strong>
+              <strong>{{ totalCount }}+</strong>
               <span>Offres actives</span>
             </div>
             <div class="hero-stat-divider"></div>
@@ -66,7 +66,7 @@
                 <div>
                   <h2 class="results-heading">Offres disponibles</h2>
                   <p class="results-count">
-                    <strong>{{ filteredJobs.length }}</strong> résultat(s) trouvé(s)
+                    <strong>{{ totalCount }}</strong> résultat(s) trouvé(s)
                   </p>
                 </div>
               </div>
@@ -75,7 +75,7 @@
 
 
           <!-- Empty state -->
-          <div class="empty-state" v-if="paginatedJobs.length === 0">
+          <div class="empty-state" v-if="jobs.length === 0">
             <div class="empty-icon">
               <i class="fa-solid fa-briefcase"></i>
             </div>
@@ -89,7 +89,7 @@
           <!-- Job Cards -->
           <TransitionGroup name="job-list" tag="div" class="jobs-list">
             <div
-              v-for="(job, index) in paginatedJobs"
+              v-for="(job, index) in jobs"
               :key="job.id"
               class="job-card"
               :style="{ '--animation-order': index }"
@@ -201,8 +201,8 @@
 
           <!-- Results Summary -->
           <p class="results-info" v-if="totalPages > 0">
-            Affichage {{ (currentPage - 1) * itemsPerPage + 1 }}–{{ Math.min(currentPage * itemsPerPage, filteredJobs.length) }}
-            sur {{ filteredJobs.length }} résultats
+            Affichage {{ totalCount === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1 }}–{{ Math.min(currentPage * itemsPerPage, totalCount) }}
+            sur {{ totalCount }} résultats
           </p>
       </div>
 
@@ -213,43 +213,60 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { MockData } from '../services/MockData';
+import axios from 'axios';
 
 const router = useRouter();
 
 const searchQuery = ref('');
 const locationQuery = ref('');
+const jobs = ref<any[]>([]);
+const totalCount = ref(0);
 
 // --- Pagination State ---
 const currentPage = ref(1);
-const itemsPerPage = 5;
+const itemsPerPage = 5; // Has to match the pageSize sent to API
 
 // --- Filter Logic ---
-const filteredJobs = computed(() => {
-  let result = MockData.jobs;
-  if (searchQuery.value.trim()) {
-    const q = searchQuery.value.toLowerCase();
-    result = result.filter(j =>
-      j.title.toLowerCase().includes(q) || j.company.toLowerCase().includes(q)
-    );
-  }
-  if (locationQuery.value.trim()) {
-    const loc = locationQuery.value.toLowerCase();
-    result = result.filter(j =>
-      j.location.toLowerCase().includes(loc)
-    );
-  }
-  return result;
-});
+const fetchJobs = async () => {
+  try {
+    const params = new URLSearchParams();
+    params.append('page', currentPage.value.toString());
+    params.append('pageSize', itemsPerPage.toString());
+    
+    if (searchQuery.value) params.append('categorie', searchQuery.value); 
+    if (locationQuery.value) params.append('localisation', locationQuery.value);
 
-const totalPages = computed(() => Math.ceil(filteredJobs.value.length / itemsPerPage));
+    const res = await axios.get(`http://localhost:5243/api/OffreEmploi?${params.toString()}`);
+    
+    jobs.value = res.data.items.map((j: any) => ({
+      id: j.id,
+      title: j.titre,
+      company: j.entrepriseNom || 'Entreprise inconnue',
+      location: j.localisation || 'Non spécifié',
+      category: j.categorie || 'IT',
+      salary: j.salaire ? `${j.salaire} DZD` : '',
+      description: {
+        intro: j.description || 'Aucune description fournie.',
+        mission: '',
+        responsibilities: []
+      },
+      skills: j.competences ? j.competences.split(',').map((s: string) => s.trim()) : [],
+      icon: j.icon || 'fa-solid fa-briefcase',
+      iconColor: j.iconColor || '#3b82f6',
+      postedTime: new Date(j.datePublication).toLocaleDateString('fr-FR'),
+      tags: [],
+      mcqDuration: 0,
+    }));
+    totalCount.value = res.data.totalCount;
 
-const paginatedJobs = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage;
-  return filteredJobs.value.slice(start, start + itemsPerPage);
-});
+  } catch (error) {
+    console.error("Erreur de chargement des offres", error);
+  }
+};
+
+const totalPages = computed(() => Math.ceil(totalCount.value / itemsPerPage));
 
 // --- Smart pagination range ---
 const paginationRange = computed(() => {
@@ -269,9 +286,16 @@ const viewJob = (id: number) => {
   router.push(`/job-details-candidat/${id}`);
 };
 
+const handleSearch = () => {
+    currentPage.value = 1;
+    fetchJobs();
+};
+
 const clearFilters = () => {
   searchQuery.value = '';
+  locationQuery.value = '';
   currentPage.value = 1;
+  fetchJobs();
 };
 
 const prevPage = () => { if (currentPage.value > 1) currentPage.value--; };
@@ -279,6 +303,9 @@ const nextPage = () => { if (currentPage.value < totalPages.value) currentPage.v
 const goToPage = (page: number | string) => {
   if (typeof page === 'number') currentPage.value = page;
 };
+
+onMounted(fetchJobs);
+watch(currentPage, fetchJobs);
 </script>
 
 <style scoped>

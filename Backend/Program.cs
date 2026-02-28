@@ -1,4 +1,5 @@
 using Backend.Data;
+using Backend.Middleware;
 using Backend.Models;
 using Backend.Services;
 using Microsoft.AspNetCore.Identity;
@@ -20,6 +21,17 @@ builder.Services.AddControllers();
 
 // Email service
 builder.Services.AddScoped<IEmailService, EmailService>();
+
+// Business services
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ICandidateService, CandidateService>();
+builder.Services.AddScoped<ITestService, TestService>();
+builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<ICompanyService, CompanyService>();
+builder.Services.AddScoped<IActivityLogService, ActivityLogService>();
+builder.Services.AddScoped<ISystemHealthService, SystemHealthService>();
 
 // Swagger pour documentation API
 builder.Services.AddEndpointsApiExplorer();
@@ -145,6 +157,9 @@ app.UseSwaggerUI();
 app.UseCors("AllowFrontend");
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Activity logging middleware (auto-log API requests)
+app.UseMiddleware<ActivityLoggingMiddleware>();
 
 app.MapControllers();
 

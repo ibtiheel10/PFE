@@ -111,6 +111,20 @@
 
           <div class="field-row">
             <div class="field">
+              <label>Icône <span class="field-hint">(classe FontAwesome)</span></label>
+              <input v-model="form.icon" type="text" placeholder="Ex: fa-solid fa-code" />
+            </div>
+            <div class="field">
+              <label>Couleur Icône</label>
+              <div style="display: flex; gap: 10px; align-items: center;">
+                 <input v-model="form.iconColor" type="color" style="width: 50px; height: 42px; padding: 2px;" />
+                 <input v-model="form.iconColor" type="text" placeholder="#3b82f6" style="flex: 1;" />
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
               <label>Expérience Requise <span class="req">*</span></label>
               <select v-model="form.experience" required>
                 <option value="">Sélectionner</option>
@@ -231,7 +245,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { MockData } from '../services/MockData';
+import axios from 'axios';
 
 const router = useRouter();
 
@@ -256,6 +270,8 @@ const form = ref({
   mcqDuration:       20,
   mcqQuestionsCount: 15,
   mcqPassScore:      70,
+  icon:              'fa-solid fa-briefcase',
+  iconColor:         '#3b82f6',
 });
 
 // ── Validation per step ──
@@ -277,32 +293,40 @@ function nextStep(current: number) {
 }
 
 // ── Submit ──
-const submitPost = () => {
+const submitPost = async () => {
   publishing.value = true;
+  try {
+     const token = localStorage.getItem('userToken');
+     const config = { headers: { Authorization: `Bearer ${token}` } };
+     
+     const payload = {
+        titre: form.value.title,
+        categorie: form.value.category,
+        localisation: form.value.location,
+        typeDeContact: form.value.contractType,
+        experienceRequise: form.value.experience,
+        salaire: form.value.salary,
+        description: form.value.description,
+        competences: form.value.requirements,
+        icon: form.value.icon,
+        iconColor: form.value.iconColor,
+        nbPost: form.value.positions,
+        dateLimite: form.value.deadline ? new Date(form.value.deadline).toISOString() : null
+     };
 
-  MockData.addJob({
-    title:             form.value.title,
-    company:           form.value.company,
-    location:          form.value.location,
-    category:          form.value.category,
-    salary:            form.value.salary,
-    description:       form.value.description,
-    requirements:      form.value.requirements,
-    contractType:      form.value.contractType,
-    remote:            form.value.remote,
-    experience:        form.value.experience,
-    deadline:          form.value.deadline,
-    mcqDuration:       form.value.mcqDuration,
-    mcqQuestionsCount: form.value.mcqQuestionsCount,
-    mcqPassScore:      form.value.mcqPassScore,
-  });
+     await axios.post('http://localhost:5243/api/OffreEmploi', payload, config);
 
-  toastVisible.value = true;
-  setTimeout(() => {
-    toastVisible.value = false;
-    publishing.value   = false;
-    router.push('/employer-dashboard');
-  }, 1800);
+     toastVisible.value = true;
+     setTimeout(() => {
+        toastVisible.value = false;
+        publishing.value   = false;
+        router.push('/employer-dashboard');
+     }, 1800);
+  } catch (error) {
+     console.error(error);
+     alert("Erreur lors de la création de l'offre !");
+     publishing.value = false;
+  }
 };
 
 const saveDraft = () => {

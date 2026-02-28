@@ -18,6 +18,8 @@ namespace Backend.Data
         public DbSet<Candidature> Candidatures { get; set; } = null!;
         public DbSet<Questions> Questions { get; set; } = null!;
         public DbSet<OtpCode> OtpCodes { get; set; } = null!;
+        public DbSet<Notification> Notifications { get; set; } = null!;
+        public DbSet<ActivityLog> ActivityLogs { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -9,6 +9,8 @@ namespace Backend.DTOs
         public string Secteur { get; set; } = null!;
         public string Email { get; set; } = null!;
         public string Nom { get; set; } = null!;
+        public string? Taille { get; set; }
+        public string? Ville { get; set; }
     }
 
     public class EntrepriseUpdateDto
@@ -19,6 +21,9 @@ namespace Backend.DTOs
         
         [Required, StringLength(200)]
         public string Secteur { get; set; } = null!;
+
+        public string? Taille { get; set; }
+        public string? Ville { get; set; }
     }
 
     public static class EntrepriseMappingExtensions
@@ -30,7 +35,9 @@ namespace Backend.DTOs
                 Id = entity.Id,
                 Secteur = entity.Secteur,
                 Email = entity.ApplicationUser?.Email ?? string.Empty,
-                Nom = entity.ApplicationUser?.Nom ?? string.Empty
+                Nom = entity.ApplicationUser?.Nom ?? string.Empty,
+                Taille = entity.Taille,
+                Ville = entity.Ville
             };
         }
     }

@@ -142,7 +142,7 @@
                         <div>
                             <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total des utilisateurs</span>
                             <div class="flex items-baseline gap-2 mt-1">
-                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">12,840</span>
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ formatNumber(dashboardStats.totalUtilisateurs) }}</span>
                             </div>
                         </div>
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
@@ -163,7 +163,7 @@
                         <div>
                             <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entreprises</span>
                             <div class="flex items-baseline gap-2 mt-1">
-                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">452</span>
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ formatNumber(dashboardStats.totalEntreprises) }}</span>
                             </div>
                         </div>
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
@@ -184,7 +184,7 @@
                         <div>
                             <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tests passés</span>
                             <div class="flex items-baseline gap-2 mt-1">
-                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">1,205</span>
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ formatNumber(dashboardStats.totalTests) }}</span>
                             </div>
                         </div>
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
@@ -205,7 +205,7 @@
                         <div>
                             <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Revenu</span>
                             <div class="flex items-baseline gap-2 mt-1">
-                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">$84.3k</span>
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ formatCurrency(dashboardStats.revenuTotal) }}</span>
                             </div>
                         </div>
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
@@ -288,7 +288,7 @@
                         </svg>
 
                         <div class="absolute inset-0 flex flex-col items-center justify-center pt-8 pointer-events-none">
-                            <span class="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">12,840</span>
+                            <span class="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">{{ formatNumber(dashboardStats.totalUtilisateurs) }}</span>
                             <span class="text-sm text-gray-500 font-medium mt-1">Utilisateurs</span>
                         </div>
                     </div>
@@ -493,6 +493,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 import { 
     Squares2X2Icon, 
     UserGroupIcon, 
@@ -533,31 +534,33 @@ const navItems = [
 ];
 
 // --- Mock Data for Modules ---
-const users = ref([
-    { id: 1, name: 'Jean Dupont', email: 'jean.dupont@email.com', role: 'Candidat', status: 'Actif', joinDate: '12/01/2026' },
-    { id: 2, name: 'Entreprise Tech', email: 'contact@tech.com', role: 'Entreprise', status: 'En attente', joinDate: '15/01/2026' },
-    { id: 3, name: 'Marie Curie', email: 'marie.c@email.com', role: 'Candidat', status: 'Actif', joinDate: '20/01/2026' },
-    { id: 4, name: 'Dev Solutions', email: 'hr@devsol.tn', role: 'Entreprise', status: 'Suspendu', joinDate: '05/02/2026' },
-]);
-
-const companies = ref([
-    { id: 1, name: 'Focus Corp', sector: 'IT', size: '50-200', status: 'Vérifié', city: 'Tunis' },
-    { id: 2, name: 'Innovate SA', sector: 'Design', size: '10-50', status: 'En attente', city: 'Sousse' },
-    { id: 3, name: 'Global Health', sector: 'Santé', size: '500+', status: 'Vérifié', city: 'Sfax' },
-]);
-
-const logs = ref([
-    { id: 1, action: 'Connexion Admin', user: 'Alex Rivera', time: 'il y a 2 min', type: 'Auth' },
-    { id: 2, action: 'Suppression Poste #12', user: 'Sarah Meyer (RH)', time: 'il y a 15 min', type: 'Action' },
-    { id: 3, action: 'Nouvelle Inscription', user: 'Candidat #88', time: 'il y a 1h', type: 'Event' },
-    { id: 4, action: 'Échec de paiement', user: 'Innovate SA', time: 'il y a 3h', type: 'Error' },
-]);
+const users = ref<any[]>([]);
+const companies = ref<any[]>([]);
+const logs = ref<any[]>([]);
 
 const notifications = ref([
     { id: 1, title: 'Nouvelle entreprise inscrite', desc: 'Innovate SA attend votre validation.', time: 'À l\'instant' },
     { id: 2, title: 'Alerte Système', desc: 'Pic de trafic détecté sur le serveur principal.', time: 'il y a 5 min' },
     { id: 3, title: 'Rapport mensuel', desc: 'Le rapport de Janvier est disponible.', time: 'il y a 1h' },
 ]);
+
+const dashboardStats = ref({
+    totalUtilisateurs: 0,
+    totalCandidats: 0,
+    totalEntreprises: 0,
+    totalOffres: 0,
+    totalCandidatures: 0,
+    totalTests: 0,
+    revenuTotal: 0
+});
+
+// --- Formatting Helpers ---
+const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('fr-FR').format(num || 0);
+};
+const formatCurrency = (num: number) => {
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(num || 0);
+};
 
 // --- Methods ---
 
@@ -595,16 +598,72 @@ const toggleDarkMode = () => {
     localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light');
 };
 
+const fetchAdminData = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) return;
+
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        
+        const [statsRes, usersRes, companiesRes, logsRes] = await Promise.all([
+            axios.get('http://localhost:5243/api/admin/dashboard/stats', config),
+            axios.get('http://localhost:5243/api/admin/users', config),
+            axios.get('http://localhost:5243/api/admin/entreprises', config),
+            axios.get('http://localhost:5243/api/admin/logs', config)
+        ]);
+
+        dashboardStats.value = statsRes.data;
+        
+        users.value = usersRes.data.map((u: any) => ({
+            id: u.id,
+            name: u.nom || 'Utilisateur',
+            email: u.email,
+            role: (u.roles && u.roles.length > 0) ? u.roles[0] : 'Inconnu',
+            status: u.estActif ? 'Actif' : 'Suspendu',
+            joinDate: 'N/A' // Could be mapped if available in backend
+        }));
+
+        companies.value = companiesRes.data.map((c: any) => ({
+            id: c.id,
+            name: c.nom || 'Sans nom',
+            sector: c.secteur,
+            size: c.taille || 'Non précisé',
+            status: c.estActif ? 'Vérifié' : 'En attente',
+            city: c.ville || 'Non précisé'
+        }));
+
+        logs.value = logsRes.data.map((l: any) => ({
+            id: l.id,
+            action: l.action,
+            user: l.userId || 'Système',
+            time: new Date(l.dateAction).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            type: l.action?.toLowerCase().includes('login') ? 'Auth' : 
+                  l.action?.toLowerCase().includes('delete') ? 'Error' : 'Action'
+        }));
+
+    } catch (e) {
+        console.error("Failed to fetch admin data", e);
+    }
+};
+
 onMounted(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
         isDarkMode.value = true;
     }
+    fetchAdminData();
 });
 
 
-const handleLogout = () => {
-    if(confirm('Voulez-vous vraiment vous déconnecter ?')) router.push('/');
+const handleLogout = async () => {
+    if(confirm('Voulez-vous vraiment vous déconnecter ?')) {
+        try {
+            await axios.post('http://localhost:5243/api/auth/logout');
+        } catch (e) { console.error(e); }
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userRole');
+        router.push('/');
+    }
 };
 
 </script>

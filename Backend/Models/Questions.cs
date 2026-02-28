@@ -10,6 +10,7 @@ namespace Backend.Models
         public string Reponses { get; set; } = null!;
         public DateTime? DateEvaluation { get; set; }
         public string NiveauDifficulte { get; set; } = null!;
+        public string? Competence { get; set; }
 
         // Relation d'agrégation avec OffreEmploi
         public int OffreEmploiId { get; set; }

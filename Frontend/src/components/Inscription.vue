@@ -81,15 +81,23 @@
           <!-- FORM -->
           <form>
 
-            <label>{{ selectedRole === 'entreprise' ? "Nom de l'entreprise" : "Nom complet" }}</label>
-            <input
-              type="text"
-              v-model="fullname"
-              class="form-control"
-              :placeholder="selectedRole === 'entreprise' ? 'Nom de l\'entreprise' : 'Jean Dupont'"
-              required />
-
-            <div v-if="selectedRole === 'entreprise'">
+            <template v-if="selectedRole === 'candidat'">
+              <div style="display: flex; gap: 10px; width: 100%;">
+                <div style="flex: 1;">
+                  <label>Prénom</label>
+                  <input type="text" v-model="prenom" class="form-control" placeholder="Jean" required />
+                </div>
+                <div style="flex: 1;">
+                  <label>Nom de famille</label>
+                  <input type="text" v-model="fullname" class="form-control" placeholder="Dupont" required />
+                </div>
+              </div>
+              <label>Date de naissance</label>
+              <input type="date" v-model="dateNaissance" class="form-control" required />
+            </template>
+            <template v-else>
+              <label>Nom de l'entreprise</label>
+              <input type="text" v-model="fullname" class="form-control" placeholder="Nom de l'entreprise" required />
               <label>Secteur d'activité</label>
               <input
                 type="text"
@@ -97,7 +105,7 @@
                 class="form-control"
                 placeholder="Ex: Technologie, Finance, Santé"
                 required />
-            </div>
+            </template>
 
             <label>{{ selectedRole === 'entreprise' ? 'Adresse e-mail professionnelle' : 'Adresse e-mail' }}</label>
             <input
@@ -249,6 +257,7 @@
     import { ref, computed } from "vue";
     import { useRouter } from "vue-router";
     import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
+    import axios from "axios";
     import Navbar from './Navbar.vue';
     import { register } from '../services/authService';
 
@@ -257,6 +266,8 @@
     const selectedRole = ref<'candidat' | 'entreprise'>('candidat');
 
     const fullname = ref("");
+    const prenom = ref("");
+    const dateNaissance = ref("");
     const sector = ref("");
     const email = ref("");
     const password = ref("");
@@ -344,11 +355,17 @@
 
     const isPasswordValid = computed(() => passwordError.value === null);
 
+    const isCandidatValid = computed(() => {
+      if (selectedRole.value !== 'candidat') return true;
+      return prenom.value.length > 1 && dateNaissance.value.length > 0;
+    });
+
     const canSubmit = computed(() => {
       const isSectorValid = selectedRole.value === 'entreprise' ? sector.value.length > 2 : true;
       return (
         fullname.value.length > 2 &&
         isSectorValid &&
+        isCandidatValid.value &&
         isEmailValid.value &&
         isPasswordValid.value &&
         confirmPasswordError.value === null &&

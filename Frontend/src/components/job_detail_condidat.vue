@@ -92,14 +92,14 @@
             <!-- Status badge -->
             <div v-if="myApplication" class="application-status-row">
               <span class="status-label">Statut :</span>
-              <span class="status-chip" :class="getStatusClass(myApplication.status)">
-                <i :class="getStatusIcon(myApplication.status)"></i>
-                {{ myApplication.status }}
+              <span class="status-chip" :class="getStatusClass(myApplication.statut)">
+                <i :class="getStatusIcon(myApplication.statut)"></i>
+                {{ myApplication.statut }}
               </span>
             </div>
-            <!-- Cancel (only En cours) -->
+            <!-- Cancel (only En attente or En cours) -->
             <button
-              v-if="myApplication && myApplication.status === 'En cours'"
+              v-if="myApplication && (myApplication.statut === 'En attente' || myApplication.statut === 'En cours')"
               @click="confirmCancel = true"
               class="btn-cancel"
             >
@@ -307,6 +307,7 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { MockData, CURRENT_CANDIDATE, type Job } from '../services/MockData';
+import axios from 'axios';
 
 const route  = useRoute();
 
@@ -315,19 +316,30 @@ const job           = ref<Job | undefined>(undefined);
 const confirmCancel = ref(false);
 const toastMsg      = ref('');
 const toastEmoji    = ref('');
+const myApplication = ref<any>(undefined);
 
-onMounted(() => {
+const fetchMyApplications = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) return;
+        const resp = await axios.get('http://localhost:5243/api/candidature/mes-candidatures', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const applications = resp.data;
+        myApplication.value = applications.find((app: any) => app.offreEmploiId === job.value?.id) || null;
+    } catch (e) {
+        console.error("Failed to fetch applications", e);
+    }
+}
+
+onMounted(async () => {
   const id = Number(route.params.id);
   job.value = MockData.getJob(id) || MockData.jobs[0];
+  await fetchMyApplications();
 });
 
 // ── Computed ───────────────────────────────────────────────────────
-const alreadyApplied = computed(() =>
-  job.value ? MockData.hasApplied(job.value.id) : false
-);
-const myApplication = computed(() =>
-  job.value ? MockData.getMyApplication(job.value.id) : undefined
-);
+const alreadyApplied = computed(() => !!myApplication.value);
 const applicantsCount = computed(() =>
   job.value ? MockData.getApplicantsCount(job.value.id) : 0
 );
@@ -365,30 +377,48 @@ const recruitmentSteps = computed(() => [
 ]);
 
 // ── Apply ─────────────────────────────────────────────────────────
-const applyToJob = () => {
+const applyToJob = async () => {
   if (!job.value) return;
-  const success = MockData.apply(job.value.id, CURRENT_CANDIDATE);
-  if (success) showToast('✅', 'Candidature envoyée avec succès !');
+  try {
+      const token = localStorage.getItem('userToken');
+      const resp = await axios.post('http://localhost:5243/api/candidature', {
+          offreEmploiId: job.value.id
+      }, {
+          headers: { Authorization: `Bearer ${token}` }
+      });
+      myApplication.value = resp.data;
+      showToast('✅', 'Candidature envoyée avec succès !');
+  } catch (e: any) {
+      alert(e.response?.data?.message || "Erreur lors de la candidature.");
+  }
 };
 
 // ── Cancel ────────────────────────────────────────────────────────
-const doCancel = () => {
-  if (myApplication.value) {
-    MockData.cancelApplication(myApplication.value.id);
-    confirmCancel.value = false;
-    showToast('❌', 'Candidature annulée.');
+const doCancel = async () => {
+  if (myApplication.value && myApplication.value.id) {
+    try {
+        const token = localStorage.getItem('userToken');
+        await axios.delete(`http://localhost:5243/api/candidature/${myApplication.value.id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        myApplication.value = null;
+        confirmCancel.value = false;
+        showToast('❌', 'Candidature annulée.');
+    } catch (e: any) {
+        alert("Erreur lors de l'annulation.");
+    }
   }
 };
 
 // ── Status helpers ────────────────────────────────────────────────
 const getStatusClass = (status: string) => {
-  if (status === 'Entretiens') return 'status-orange';
-  if (status === 'Refusés')   return 'status-red';
+  if (status === 'Entretiens' || status === 'En cours') return 'status-orange';
+  if (status === 'Refusés' || status === 'Refusée')   return 'status-red';
   return 'status-blue';
 };
 const getStatusIcon = (status: string) => {
-  if (status === 'Entretiens') return 'fa-solid fa-calendar-check';
-  if (status === 'Refusés')   return 'fa-solid fa-circle-xmark';
+  if (status === 'Entretiens' || status === 'En cours') return 'fa-solid fa-calendar-check';
+  if (status === 'Refusés' || status === 'Refusée')   return 'fa-solid fa-circle-xmark';
   return 'fa-solid fa-clock';
 };
 

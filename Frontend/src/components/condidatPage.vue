@@ -326,6 +326,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 import { 
     Squares2X2Icon, 
     BriefcaseIcon, 
@@ -410,7 +411,10 @@ const toggleProfileMenu = () => {
     showProfileMenu.value = !showProfileMenu.value;
 };
 
-const handleLogout = () => {
+const handleLogout = async () => {
+    try {
+        await axios.post('http://localhost:5243/api/auth/logout');
+    } catch (e) { console.error(e); }
     localStorage.removeItem('userToken');
     localStorage.removeItem('userRole');
     router.push('/login');
