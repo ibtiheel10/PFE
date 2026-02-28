@@ -128,12 +128,20 @@
                  Rester connecté
                 </label>
               </div>
+
+              <!-- Message d'erreur API -->
+              <div v-if="errorMessage" class="api-error">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>{{ errorMessage }}</span>
+              </div>
+
               <button
               class="login-btn"
               type="button"
-
+              :disabled="isLoading"
               @click="handleLogin">
-              Se connecter
+              <span v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> Connexion...</span>
+              <span v-else>Se connecter</span>
               </button>
             </form>
 
@@ -202,139 +210,146 @@
 
 
 <script setup lang="ts">
-import { ref,computed } from "vue";
+import { ref, computed } from "vue";
 import { useRouter } from "vue-router";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
 import Navbar from './Navbar.vue';
 import OtpModal from './OtpModal.vue';
+import { login, verifyOtp } from '../services/authService';
 
 const router = useRouter();
 
 const selectedRole = ref<'candidat' | 'entreprise'>('candidat');
-
+const email = ref<string>("");
 const password = ref<string>("");
 const showPassword = ref<boolean>(false);
-
-const togglePassword = (): void => {
-  showPassword.value = !showPassword.value;
-};
-
 const showOtpModal = ref(false);
 const showForgotPassword = ref(false);
-const toggleForgotPassword = () => {
-    showForgotPassword.value = !showForgotPassword.value;
-};
+
+// ─── États de l'UI ────────────────────────────────────────────────────────────
+const isLoading = ref(false);
+const errorMessage = ref<string | null>(null);
+
+// ─── Validation ──────────────────────────────────────────────────────────────
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const professionalEmailRegex = /^[^\s@]+@(?!(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|live\.com|aol\.com))[^\s@]+\.[^\s@]+$/i;
+
+const isEmailValid = computed<boolean>(() => {
+  if (selectedRole.value === 'entreprise') return professionalEmailRegex.test(email.value);
+  return emailRegex.test(email.value);
+});
+
+const emailValidationMessage = computed<string>(() => {
+  if (selectedRole.value === 'entreprise') {
+    return isEmailValid.value ? 'E-mail professionnel valide' : 'Veuillez utiliser un e-mail professionnel (ex: pas de Gmail, Yahoo)';
+  }
+  return isEmailValid.value ? 'Adresse e-mail valide' : 'Veuillez entrer une adresse e-mail valide.';
+});
+
+const passwordError = computed(() => {
+  if (!password.value) return "Le mot de passe est obligatoire.";
+  if (password.value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
+  if (!/[A-Z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre majuscule.";
+  if (!/[a-z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre minuscule.";
+  if (!/[0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un chiffre.";
+  if (!/[^A-Za-z0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un caractère spécial (@, #, $, %, etc.).";
+  return null;
+});
+
+const validateEmail = (): void => {};
+
+const togglePassword = (): void => { showPassword.value = !showPassword.value; };
+const toggleForgotPassword = () => { showForgotPassword.value = !showForgotPassword.value; };
 
 const handleResetPassword = () => {
-    alert(`Un lien de réinitialisation a été envoyé à ${email.value}`);
-    showForgotPassword.value = false;
+  alert(`Un lien de réinitialisation a été envoyé à ${email.value}`);
+  showForgotPassword.value = false;
 };
 
-const handleSocialLogin = (provider: string) => {
-    const width = 500;
-    const height = 600;
-    const left = (window.screen.width / 2) - (width / 2);
-    const top = (window.screen.height / 2) - (height / 2);
+// ─── Login Étape 1 : Envoyer les credentials → déclenche l'OTP ───────────────
+const handleLogin = async () => {
+  errorMessage.value = null;
 
-    const popup = window.open(
-    '',
-    'Social Login',
-    `width=${width},height=${height},top=${top},left=${left}`
-    );
+  if (!isEmailValid.value || passwordError.value) {
+    errorMessage.value = "Veuillez corriger les erreurs du formulaire.";
+    return;
+  }
 
-    if (popup) {
-    popup.document.write(`
-        <html>
-        <head>
-            <title>Connexion avec ${provider}</title>
-            <style>
-            body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0a0e1a; color: #e2e8f0; }
-            .loader { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-            h2 { color: #f1f5f9; }
-            </style>
-        </head>
-        <body>
-            <h2>Connexion avec ${provider}...</h2>
-            <div class="loader"></div>
-            <p>Veuillez patienter pendant l'authentification.</p>
-        </body>
-        </html>
-    `);
-
-    setTimeout(() => {
-        popup.close();
-        localStorage.setItem('userToken', 'mock-social-token-' + Date.now());
-        localStorage.setItem('userRole', 'candidat');
-        localStorage.setItem('user_info', JSON.stringify({ name: 'User ' + provider, role: 'candidat' }));
-        
-        alert(`Authentification avec ${provider} réussie !`);
-        router.push('/dashboard');
-    }, 2000);
-    }
-};
-
-const email = ref<string>("");
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const professionalEmailRegex = /^[^\s@]+@(?!(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|live\.com|aol\.com))[^\s@]+\.[^\s@]+$/i;
-    
-    const passwordError = computed(() => {
-      if (!password.value) return "Le mot de passe est obligatoire.";
-      if (password.value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
-      if (!/[A-Z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre majuscule.";
-      if (!/[a-z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre minuscule.";
-      if (!/[0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un chiffre.";
-      if (!/[^A-Za-z0-9]/.test(password.value)) return "Le mot de passe doit contenir au moins un caractère spécial (@, #, $, %, etc.).";
-      return null;
-    });
-
-    const isEmailValid = computed<boolean>(() => {
-      if (selectedRole.value === 'entreprise') {
-         return professionalEmailRegex.test(email.value);
-      }
-      return emailRegex.test(email.value);
-    });
-
-    const emailValidationMessage = computed<string>(() => {
-      if (selectedRole.value === 'entreprise') {
-        return isEmailValid.value ? 'E-mail professionnel valide' : 'Veuillez utiliser un e-mail professionnel (ex: pas de Gmail, Yahoo)';
-      }
-      return isEmailValid.value ? 'Adresse e-mail valide' : 'Veuillez entrer une adresse e-mail valide.';
-    });
-    
-    const validateEmail = (): void => {
-    };
-
-
-    const handleLogin = () => {
-        alert('Login Clicked');
-        // Au lieu de rediriger directement, on ouvre le modal OTP
-        // showOtpModal.value = true;
-        
-        // Passer directement à la connexion pour le test
-        completeLogin("123456");
-    };
-
-    const completeLogin = (otpCode: string) => {
-        console.log("OTP Verified:", otpCode);
-        localStorage.setItem('userToken', 'mock-login-token-' + Date.now());
-        
-        if (email.value === 'admin@skillvia.com') {
-          localStorage.setItem('userRole', 'admin');
-          showOtpModal.value = false;
-          router.push('/admin/dashboard');
+  isLoading.value = true;
+  try {
+    await login({ email: email.value, password: password.value });
+    // Le backend a envoyé l'OTP → on ouvre le modal de vérification
+    showOtpModal.value = true;
+  } catch (err: any) {
+    if (!err.response) {
+      errorMessage.value = "Erreur de connexion au serveur.";
+    } else if (err.response.data?.errors) {
+      const errors = err.response.data.errors;
+      if (Array.isArray(errors)) {
+        errorMessage.value = errors.join(' ');
+      } else if (typeof errors === 'object' && errors !== null) {
+        const firstErrorKey = Object.keys(errors)[0];
+        if (firstErrorKey) {
+          const errArray = (errors as Record<string, string[]>)[firstErrorKey];
+          errorMessage.value = (errArray && errArray.length > 0) ? (errArray[0] || "Identifiants invalides.") : "Identifiants invalides.";
         } else {
-          localStorage.setItem('userRole', selectedRole.value);
-          showOtpModal.value = false;
-          if (selectedRole.value === 'entreprise') {
-             router.push('/dashboard-entreprise');
-          } else {
-             router.push('/dashboard');
-          }
+          errorMessage.value = "Identifiants invalides.";
         }
-    };
+      } else {
+        errorMessage.value = err.response.data?.title || "Identifiants invalides.";
+      }
+    } else {
+      errorMessage.value = err.response.data?.message || err.response.data?.title || "Identifiants incorrects.";
+    }
+  } finally {
+    isLoading.value = false;
+  }
+};
 
+// ─── Login Étape 2 : Vérifier le code OTP → récupérer le JWT ─────────────────
+const completeLogin = async (otpCode: string) => {
+  errorMessage.value = null;
+  isLoading.value = true;
+  try {
+    const authData = await verifyOtp({ email: email.value, otpCode });
+    showOtpModal.value = false;
+
+    // Redirection selon le rôle retourné par le serveur
+    const role = authData.role.toLowerCase();
+    if (role === 'admin') {
+      router.push('/admin/dashboard');
+    } else if (role === 'entreprise') {
+      router.push('/dashboard-entreprise');
+    } else {
+      router.push('/dashboard');
+    }
+  } catch (err: any) {
+    errorMessage.value = err.response?.data?.message ?? "Code OTP invalide ou expiré.";
+  } finally {
+    isLoading.value = false;
+  }
+};
+
+// ─── Social Login (mock conservé) ────────────────────────────────────────────
+const handleSocialLogin = (provider: string) => {
+  const width = 500, height = 600;
+  const left = (window.screen.width / 2) - (width / 2);
+  const top = (window.screen.height / 2) - (height / 2);
+  const popup = window.open('', 'Social Login', `width=${width},height=${height},top=${top},left=${left}`);
+  if (popup) {
+    popup.document.write(`<html><head><title>Connexion avec ${provider}</title>
+      <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0a0e1a;color:#e2e8f0;}
+      .loader{border:4px solid rgba(255,255,255,0.1);border-top:4px solid #3b82f6;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;}
+      @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style></head>
+      <body><h2>Connexion avec ${provider}...</h2><div class="loader"></div></body></html>`);
+    setTimeout(() => {
+      popup.close();
+      localStorage.setItem('userToken', 'mock-social-token-' + Date.now());
+      localStorage.setItem('userRole', 'candidat');
+      router.push('/dashboard');
+    }, 2000);
+  }
+};
 </script>
 
 
@@ -729,6 +744,20 @@ form input.form-control:focus {
   justify-content: space-between;
   align-items: center;
   margin-top: 10px;
+}
+
+.api-error {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
 }
 
 .login-btn {

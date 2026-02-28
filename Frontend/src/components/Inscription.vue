@@ -200,11 +200,22 @@
               </span>
             </label>
 
+            <!-- Messages API -->
+            <div v-if="errorMessage" class="api-msg api-error">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span>{{ errorMessage }}</span>
+            </div>
+            <div v-if="successMessage" class="api-msg api-success">
+              <i class="fa-solid fa-circle-check"></i>
+              <span>{{ successMessage }}</span>
+            </div>
+
             <button
               class="login-btn"
               :disabled="!canSubmit"
               @click.prevent="handleSignup">
-              Créer mon compte →
+              <span v-if="isLoading"><i class="fa-solid fa-spinner fa-spin"></i> Création en cours...</span>
+              <span v-else>Créer mon compte →</span>
             </button>
           </form>
 
@@ -239,21 +250,27 @@
     import { useRouter } from "vue-router";
     import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
     import Navbar from './Navbar.vue';
-    
+    import { register } from '../services/authService';
+
     const router = useRouter();
-    
+
     const selectedRole = ref<'candidat' | 'entreprise'>('candidat');
-    
+
     const fullname = ref("");
     const sector = ref("");
     const email = ref("");
     const password = ref("");
     const confirmPassword = ref("");
     const acceptedTerms = ref(false);
-    
+
     const showPassword = ref(false);
     const showConfirmPassword = ref(false);
-    
+
+    // ─── États de l'UI ────────────────────────────────────────────────────────
+    const isLoading = ref(false);
+    const errorMessage = ref<string | null>(null);
+    const successMessage = ref<string | null>(null);
+
     const togglePassword = () => showPassword.value = !showPassword.value;
     const toggleConfirmPassword = () => showConfirmPassword.value = !showConfirmPassword.value;
 
@@ -261,16 +278,13 @@
       const length = 12;
       const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
       let retVal = "";
-      
       retVal += "ABCDEFGHIJKLMNOPQRSTUVWXYZ".charAt(Math.floor(Math.random() * 26));
       retVal += "abcdefghijklmnopqrstuvwxyz".charAt(Math.floor(Math.random() * 26));
       retVal += "0123456789".charAt(Math.floor(Math.random() * 10));
       retVal += "!@#$%^&*".charAt(Math.floor(Math.random() * 8));
-
       for (let i = 0, n = charset.length; i < length - 4; ++i) {
         retVal += charset.charAt(Math.floor(Math.random() * n));
       }
-      
       password.value = retVal.split('').sort(function(){return 0.5-Math.random()}).join('');
       confirmPassword.value = password.value;
       showPassword.value = true;
@@ -278,56 +292,30 @@
     };
 
     const handleSocialLogin = (provider: string) => {
-      const width = 500;
-      const height = 600;
+      const width = 500, height = 600;
       const left = (window.screen.width / 2) - (width / 2);
       const top = (window.screen.height / 2) - (height / 2);
-      
-      const popup = window.open(
-        '',
-        'Social Login',
-        `width=${width},height=${height},top=${top},left=${left}`
-      );
-      
+      const popup = window.open('', 'Social Login', `width=${width},height=${height},top=${top},left=${left}`);
       if (popup) {
-        popup.document.write(`
-          <html>
-            <head>
-              <title>Connexion avec ${provider}</title>
-              <style>
-                body { font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #0a0e1a; color: #e2e8f0; }
-                .loader { border: 4px solid rgba(255,255,255,0.1); border-top: 4px solid #3b82f6; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
-                @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-                h2 { color: #f1f5f9; }
-              </style>
-            </head>
-            <body>
-              <h2>Connexion avec ${provider}...</h2>
-              <div class="loader"></div>
-              <p>Veuillez patienter pendant l'authentification.</p>
-            </body>
-          </html>
-        `);
-        
+        popup.document.write(`<html><head><title>Connexion avec ${provider}</title>
+          <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0a0e1a;color:#e2e8f0;}
+          .loader{border:4px solid rgba(255,255,255,0.1);border-top:4px solid #3b82f6;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;}
+          @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style></head>
+          <body><h2>Connexion avec ${provider}...</h2><div class="loader"></div></body></html>`);
         setTimeout(() => {
           popup.close();
           localStorage.setItem('userToken', 'mock-social-token-' + Date.now());
           localStorage.setItem('userRole', 'candidat');
-          localStorage.setItem('user_info', JSON.stringify({ name: 'User ' + provider, role: 'candidat' }));
-          
-          alert(`Authentification avec ${provider} réussie !`);
           router.push('/dashboard');
         }, 2000);
       }
     };
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const professionalEmailRegex = /^[^\s@]+@(?!(gmail\.com|yahoo\.com|hotmail\.com|outlook\.com|live\.com|aol\.com))[^\s@]+\.[^\s@]+$/i;
-    
+
     const isEmailValid = computed(() => {
-      if (selectedRole.value === 'entreprise') {
-         return professionalEmailRegex.test(email.value);
-      }
+      if (selectedRole.value === 'entreprise') return professionalEmailRegex.test(email.value);
       return emailRegex.test(email.value);
     });
 
@@ -337,7 +325,7 @@
       }
       return isEmailValid.value ? 'Adresse e-mail valide' : 'Veuillez entrer une adresse e-mail valide.';
     });
-    
+
     const passwordError = computed(() => {
       if (!password.value) return "Le mot de passe est obligatoire.";
       if (password.value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
@@ -353,39 +341,75 @@
         if (confirmPassword.value !== password.value) return "Les mots de passe ne correspondent pas.";
         return null;
     });
-    
+
     const isPasswordValid = computed(() => passwordError.value === null);
-    
+
     const canSubmit = computed(() => {
       const isSectorValid = selectedRole.value === 'entreprise' ? sector.value.length > 2 : true;
-      
       return (
         fullname.value.length > 2 &&
         isSectorValid &&
         isEmailValid.value &&
         isPasswordValid.value &&
         confirmPasswordError.value === null &&
-        acceptedTerms.value
+        acceptedTerms.value &&
+        !isLoading.value
       );
     });
 
-    const handleSignup = () => {
+    // ─── Inscription : appel API réel ─────────────────────────────────────────
+    const handleSignup = async () => {
       if (!acceptedTerms.value) {
-        alert("Veuillez accepter les conditions d'utilisation.");
+        errorMessage.value = "Veuillez accepter les conditions d'utilisation.";
         return;
       }
-      localStorage.setItem('userToken', 'mock-signup-token-' + Date.now());
-      localStorage.setItem('userRole', selectedRole.value);
-      
-      const userInfo = { 
-          name: fullname.value, 
-          role: selectedRole.value,
-          ...(selectedRole.value === 'entreprise' && { sector: sector.value })
-      };
-      localStorage.setItem('user_info', JSON.stringify(userInfo));
 
-      alert(`Compte créé avec succès pour ${fullname.value} !`);
-      router.push('/login');
+      errorMessage.value = null;
+      successMessage.value = null;
+      isLoading.value = true;
+
+      try {
+        // Adapter le rôle au format attendu par le backend ('Candidat' | 'Entreprise')
+        const roleForApi = selectedRole.value === 'entreprise' ? 'Entreprise' : 'Candidat';
+
+        await register({
+          nom: fullname.value,
+          email: email.value,
+          password: password.value,
+          role: roleForApi,
+          ...(roleForApi === 'Candidat'
+            ? { prenom: '' }
+            : { secteur: sector.value }),
+        });
+
+        successMessage.value = `Compte créé avec succès pour ${fullname.value} ! Redirection vers la connexion...`;
+        setTimeout(() => router.push('/login'), 2000);
+
+      } catch (err: any) {
+        if (!err.response) {
+          errorMessage.value = "Erreur de connexion au serveur (CORS ou serveur hors ligne).";
+        } else if (err.response.data?.errors) {
+          // Gestion des erreurs de validation ou d'identité ASP.NET
+          const errors = err.response.data.errors;
+          if (Array.isArray(errors)) {
+            errorMessage.value = errors.join(' ');
+          } else if (typeof errors === 'object' && errors !== null) {
+            const firstErrorKey = Object.keys(errors)[0];
+            if (firstErrorKey) {
+              const errArray = (errors as Record<string, string[]>)[firstErrorKey];
+              errorMessage.value = (errArray && errArray.length > 0) ? (errArray[0] || "Données d'inscription invalides.") : "Données d'inscription invalides.";
+            } else {
+              errorMessage.value = "Données d'inscription invalides.";
+            }
+          } else {
+            errorMessage.value = err.response.data?.title || "Données d'inscription invalides.";
+          }
+        } else {
+          errorMessage.value = err.response.data?.message || err.response.data?.title || "Une erreur est survenue lors de la création du compte.";
+        }
+      } finally {
+        isLoading.value = false;
+      }
     };
     </script>
 <style scoped>
@@ -855,7 +879,31 @@ form label {
   box-shadow: none;
 }
 
-/* PASSWORD TOOLS */
+/* API messages */
+.api-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.api-error {
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #ef4444;
+}
+
+.api-success {
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #10b981;
+}
+
+
 .password-tools {
   display: flex;
   justify-content: flex-end;
