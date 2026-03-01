@@ -7,7 +7,7 @@
             <div class="absolute bottom-0 left-0 w-48 h-48 bg-white opacity-5 rounded-full -ml-10 -mb-10 pointer-events-none"></div>
             
             <div class="relative z-10 max-w-2xl">
-                <h2 class="text-3xl font-bold mb-2">Bon retour, {{ firstName }} 👋</h2>
+                <h2 class="text-3xl font-bold mb-2">Bon retour, {{ firstName }}</h2>
                 <p class="text-blue-100 text-lg mb-6">Maximisez vos chances de réussite aujourd'hui. Consultez l'état de vos candidatures et préparez vos prochains défis.</p>
                 <div class="flex gap-4">
                     <button @click="goToJobs" class="bg-white text-blue-700 px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-blue-50 transition shadow-sm">

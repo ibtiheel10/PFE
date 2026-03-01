@@ -388,7 +388,7 @@
         // Adapter le rôle au format attendu par le backend ('Candidat' | 'Entreprise')
         const roleForApi = selectedRole.value === 'entreprise' ? 'Entreprise' : 'Candidat';
 
-        await register({
+        const res = await register({
           nom: fullname.value,
           email: email.value,
           password: password.value,
@@ -398,14 +398,19 @@
             : { secteur: sector.value }),
         });
 
-        successMessage.value = `Compte créé avec succès pour ${fullname.value} ! Redirection vers la connexion...`;
-        setTimeout(() => router.push('/login'), 2000);
+        // ✅ Vérification email requise — rediriger vers la page OTP
+        if (res.requiresVerification) {
+          router.push({ path: '/verify-email', query: { email: res.email } });
+          return;
+        }
+
+        // Fallback (ne devrait pas arriver dans le nouveau flow)
+        successMessage.value = `Compte créé pour ${fullname.value} !`;
 
       } catch (err: any) {
         if (!err.response) {
           errorMessage.value = "Erreur de connexion au serveur (CORS ou serveur hors ligne).";
         } else if (err.response.data?.errors) {
-          // Gestion des erreurs de validation ou d'identité ASP.NET
           const errors = err.response.data.errors;
           if (Array.isArray(errors)) {
             errorMessage.value = errors.join(' ');
@@ -427,6 +432,7 @@
         isLoading.value = false;
       }
     };
+    
     </script>
 <style scoped>
 /* ==================== DARK THEME ==================== */

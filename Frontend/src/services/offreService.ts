@@ -29,3 +29,8 @@ export const getOffres = async (page = 1, pageSize = 6): Promise<PagedOffresDto>
     });
     return response.data;
 };
+
+export const getMesOffres = async (): Promise<OffreEmploiDto[]> => {
+    const response = await api.get<OffreEmploiDto[]>('/OffreEmploi/mes-offres');
+    return response.data;
+};

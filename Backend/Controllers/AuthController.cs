@@ -115,17 +115,45 @@ namespace Backend.Controllers
 
             _logger.LogInformation("User {UserId} registered successfully with role {Role}", user.Id, dto.Role);
 
-            // Générer le token JWT
-            var token = await GenerateJwtToken(user);
+            // ── Envoyer un OTP de vérification (même mécanisme que le login) ──────
+            var emailKey = dto.Email.ToLower();
+            var otpCode = GenerateOtpCode();
 
-            return Ok(new AuthResponseDto
+            // Supprimer tout ancien code OTP pour cet email
+            var existingOtp = await _context.OtpCodes.FirstOrDefaultAsync(o => o.Email == emailKey);
+            if (existingOtp != null)
+                _context.OtpCodes.Remove(existingOtp);
+
+            _context.OtpCodes.Add(new OtpCode
             {
-                Token = token,
-                Email = user.Email!,
-                Nom = user.Nom,
-                Role = dto.Role
+                Email = emailKey,
+                Code = otpCode,
+                Expiry = DateTime.UtcNow.AddMinutes(10)
+            });
+            await _context.SaveChangesAsync();
+
+            // Envoyer le code OTP par email
+            try
+            {
+                var emailBody = GenerateOtpEmailBody(otpCode, user.Nom);
+                await _emailService.SendEmailAsync(dto.Email, "Bienvenue sur Skillvia — Vérifiez votre compte", emailBody);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending verification email to {Email}", dto.Email);
+                return StatusCode(500, new { message = "Erreur lors de l'envoi de l'email de vérification.", details = ex.Message });
+            }
+
+            var maskedEmail = MaskEmail(dto.Email);
+
+            return Ok(new
+            {
+                requiresVerification = true,
+                email = dto.Email,
+                message = $"Un code de vérification a été envoyé à {maskedEmail}. Vérifiez votre email pour activer votre compte."
             });
         }
+
 
         // ──────────────────────────────────────────────
         //  POST /api/auth/login  (Étape 1 : vérifier les identifiants + envoyer OTP)

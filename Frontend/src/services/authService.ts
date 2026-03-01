@@ -35,6 +35,12 @@ export interface RegisterPayload {
     dateNaissance?: string;
 }
 
+export interface RegisterResponse {
+    requiresVerification: boolean;
+    email: string;
+    message: string;
+}
+
 // ─── Helpers localStorage ─────────────────────────────────────────────────────
 
 export const saveSession = (data: AuthResponse) => {
@@ -88,11 +94,10 @@ export const resendOtp = async (email: string): Promise<{ message: string }> => 
 
 /**
  * Inscription : crée un compte Candidat ou Entreprise.
- * Sauvegarde automatiquement la session dans le localStorage.
+ * Ne retourne PAS de JWT — redirige vers /verify-email pour valider l'OTP.
  */
-export const register = async (payload: RegisterPayload): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/register', payload);
-    saveSession(response.data);
+export const register = async (payload: RegisterPayload): Promise<RegisterResponse> => {
+    const response = await api.post<RegisterResponse>('/auth/register', payload);
     return response.data;
 };
 
@@ -102,3 +107,4 @@ export const register = async (payload: RegisterPayload): Promise<AuthResponse> 
 export const logout = () => {
     clearSession();
 };
+

@@ -97,9 +97,9 @@
             <!-- Profile -->
             <div class="relative">
                 <button @click="toggleProfileMenu" class="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full border border-transparent hover:border-gray-200 transition-all">
-                    <img src="https://i.pravatar.cc/150?u=sarah" alt="User" class="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm" />
+                    <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`" alt="User" class="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm" />
                     <div class="hidden md:flex flex-col items-start">
-                        <span class="text-sm font-bold text-gray-700 leading-none">Sarah Meyer</span>
+                        <span class="text-sm font-bold text-gray-700 leading-none">{{ userName }}</span>
                         <span class="text-[11px] font-medium text-blue-600 mt-1">RH Manager</span>
                     </div>
                     <ChevronDownIcon class="w-4 h-4 text-gray-400" />
@@ -109,10 +109,10 @@
                 <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
                     <div v-if="showProfileMenu" class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
                         <div class="px-4 py-3 border-b border-gray-50">
-                            <p class="text-sm font-bold text-gray-900">Sarah Meyer</p>
-                            <p class="text-xs text-gray-500 truncate">sarah.meyer@skillvia.com</p>
+                            <p class="text-sm font-bold text-gray-900">{{ userName }}</p>
+                            <p class="text-xs text-gray-500 truncate">{{ userEmail }}</p>
                         </div>
-                        <a href="#" @click.prevent="openEditProfile" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                        <a href="#" @click.prevent="showEditProfile = true; showProfileMenu = false;" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
                             <UserCircleIcon class="w-4 h-4" /> Edit Profil
                         </a>
                         <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
@@ -148,9 +148,9 @@
                             </div>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">Total Revenue</span>
+                            <span class="stat-label">Total Postes</span>
                             <div class="stat-value-row">
-                                <span class="stat-num">12</span>
+                                <span class="stat-num">{{ dashboardData?.totalOffres || 0 }}</span>
                                 <span class="stat-unit">Postes</span>
                             </div>
                             <p class="stat-description">En hausse ce mois-ci</p>
@@ -164,9 +164,9 @@
                             </div>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">Nouveaux clients</span>
+                            <span class="stat-label">Candidatures</span>
                             <div class="stat-value-row">
-                                <span class="stat-num">1,234</span>
+                                <span class="stat-num">{{ dashboardData?.totalCandidatures || 0 }}</span>
                             </div>
                             <p class="stat-description">En baisse de 20 % sur cette période</p>
                         </div>
@@ -179,9 +179,9 @@
                             </div>
                         </div>
                         <div class="stat-content">
-                            <span class="stat-label">Comptes actifs</span>
+                            <span class="stat-label">Offres Actives</span>
                             <div class="stat-value-row">
-                                <span class="stat-num">45,678</span>
+                                <span class="stat-num">{{ dashboardData?.offresActives || 0 }}</span>
                             </div>
                             <p class="stat-description">Forte fidélisation des utilisateurs</p>
                         </div>
@@ -216,8 +216,8 @@
                         <div class="card chart-card animate-fade-in-up" style="animation-delay: 0.5s">
                             <div class="card-header-modern">
                                 <div>
-                                    <h3>Total Visitors</h3>
-                                    <p class="chart-subtitle-modern">Total for the last 3 months</p>
+                                    <h3>Candidatures</h3>
+                                    <p class="chart-subtitle-modern">Évolution des candidatures par mois</p>
                                 </div>
                                 <div class="time-period-tabs">
                                     <button 
@@ -278,7 +278,7 @@
                         <div class="card jobs-card">
                            <div class="card-header">
                                 <h3>Mes Postes Actifs</h3>
-                                <span class="badge-total">{{ MockData.jobs.length }} TOTAL</span>
+                                <span class="badge-total">{{ employerJobs.length }} TOTAL</span>
                            </div>
                            
                            <div class="jobs-list">
@@ -432,13 +432,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { MockData } from '../services/MockData';
 import Top5Candidates from './top_5_condidat.vue';
 import ListeCondidat from './liste_condidat.vue';
 import ListePosteEntreprise from './liste_poste_entreprise.vue';
+import { getEntrepriseDashboard } from '../services/dashboardService';
+import type { EntrepriseDashboardDto } from '../services/dashboardService';
+import { getMesOffres } from '../services/offreService';
+import type { OffreEmploiDto } from '../services/offreService';
 import { 
     Squares2X2Icon, 
     BriefcaseIcon, 
@@ -451,6 +454,11 @@ import {
     TrashIcon,
     PencilSquareIcon
 } from '@heroicons/vue/24/outline';
+
+// Auth info
+const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+const userName = ref(userInfo.nom || 'Entreprise Inconnue');
+const userEmail = ref(userInfo.email || 'entreprise@example.com');
 
 // State
 const activeNav = ref('Tableau de bord');
@@ -466,9 +474,32 @@ const showRenameModal = ref(false);
 const jobToDelete = ref<number | null>(null);
 const jobToRename = ref<any>(null);
 const newJobTitle = ref('');
+
+// Profile Edit Modal
 const showEditProfile = ref(false);
-const editName = ref('Sarah Meyer');
-const editUsername = ref('@sarahmeyer');
+const editName = ref(userName.value);
+const editUsername = ref(userEmail.value);
+
+// --- Dynamic Data State ---
+const dashboardData = ref<EntrepriseDashboardDto | null>(null);
+const employerJobs = ref<OffreEmploiDto[]>([]);
+const isLoadingData = ref(true);
+
+onMounted(async () => {
+    try {
+        isLoadingData.value = true;
+        const [dashRes, jobsRes] = await Promise.all([
+            getEntrepriseDashboard(),
+            getMesOffres()
+        ]);
+        dashboardData.value = dashRes;
+        employerJobs.value = jobsRes;
+    } catch (e) {
+        console.error("Erreur de chargement du dashboard :", e);
+    } finally {
+        isLoadingData.value = false;
+    }
+});
 
 const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
 const toggleProfileMenu = () => {
@@ -482,11 +513,6 @@ const handleLogout = async () => {
     localStorage.removeItem('userToken');
     localStorage.removeItem('userRole');
     router.push('/');
-};
-
-const openEditProfile = () => {
-    showProfileMenu.value = false;
-    showEditProfile.value = true;
 };
 
 const saveProfile = () => {
@@ -507,7 +533,8 @@ const deleteJob = (id: number) => {
 
 const confirmDeleteJob = () => {
     if (jobToDelete.value !== null) {
-        MockData.deleteJob(jobToDelete.value);
+        // TODO: Call API to delete job
+        console.log("Delete job API pending for id:", jobToDelete.value);
         showDeleteConfirm.value = false;
         jobToDelete.value = null;
     }
@@ -522,7 +549,8 @@ const renameJob = (job: any) => {
 
 const confirmRenameJob = () => {
     if (jobToRename.value && newJobTitle.value.trim() !== '') {
-        MockData.updateJobTitle(jobToRename.value.id, newJobTitle.value.trim());
+        // TODO: Call API to rename job
+        console.log("Rename job API pending for id:", jobToRename.value.id);
         showRenameModal.value = false;
         jobToRename.value = null;
     }
@@ -548,35 +576,45 @@ const toggleNotifications = () => {
 };
 
 const recentApplications = computed(() => {
-    return MockData.applications.slice(-5).reverse().map(app => ({
-        id: app.id,
-        candidateName: app.candidateName,
-        jobTitle: MockData.getJob(app.jobId)?.title || 'Poste inconnu',
-        time: 'À l\'instant'
+    // Si nous avions un endpoint "notifications", nous l'utiliserions. 
+    // Pour l'instant, on peut mapper les meilleurs candidats
+    if (!dashboardData.value || !dashboardData.value.meilleursCandidats) return [];
+    return dashboardData.value.meilleursCandidats.map((c) => ({
+        id: c.candidatId,
+        candidateName: c.prenom || 'Candidat inconnu',
+        jobTitle: 'Candidature récente',
+        time: 'Récemment'
     }));
 });
 
 const chartPaths = computed(() => {
-    let points = [];
-    let labels = [];
+    let points = [0, 0, 0, 0, 0, 0, 0];
+    let labels = ['', '', '', '', '', '', ''];
     
-    if (activePeriod.value === 'Last 7 days') {
-        points = [180, 150, 170, 140, 120, 110, 90];
-        labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    } else if (activePeriod.value === 'Last 30 days') {
-        points = [160, 140, 150, 130, 110, 120, 100, 90, 110, 95, 80, 70, 85, 75, 90];
-        labels = ['1 fév', '5 fév', '10 fév', '15 fév', '20 fév', '25 fév', '30 fév'];
-    } else {
-        points = [180, 160, 170, 150, 140, 130, 120, 110, 100, 90, 80, 70];
-        labels = ['Nov', 'Déc', 'Jan'];
+    if (dashboardData.value && dashboardData.value.candidaturesParMois) {
+        const parMois = dashboardData.value.candidaturesParMois;
+        // Prendre les 7 derniers mois s'ils existent (ou moins)
+        const recent = parMois.slice(-7);
+        points = recent.map(m => m.count);
+        labels = recent.map(m => m.mois);
+        
+        // Si vide, mettre des valeurs par défaut pour l'UI
+        if (points.length === 0) {
+            points = [0, 0, 0, 0, 0, 0, 0];
+            labels = ['-6m', '-5m', '-4m', '-3m', '-2m', '-1m', 'Ce mois'];
+        }
     }
 
     const width = 700;
-    const step = width / (points.length - 1);
+    const step = width / (Math.max(points.length - 1, 1));
     
-    let linePath = `M0,${points[0]}`;
+    // Scale points to max height 180 (for a 200px height viewBox)
+    const maxVal = Math.max(...points, 10);
+    const scaleY = (val: number) => 200 - ((val / maxVal) * 180);
+
+    let linePath = `M0,${scaleY(points[0] || 0)}`;
     points.forEach((p, i) => {
-        if (i > 0) linePath += ` L${i * step},${p}`;
+        if (i > 0) linePath += ` L${i * step},${scaleY(p)}`;
     });
     
     const areaPath = `${linePath} L${width},200 L0,200 Z`;
@@ -586,7 +624,7 @@ const chartPaths = computed(() => {
         area: areaPath,
         labels: labels,
         lastX: (points.length - 1) * step,
-        lastY: points[points.length - 1]
+        lastY: scaleY(points[points.length - 1] || 0)
     };
 });
 
@@ -597,83 +635,36 @@ const navItems = [
     { name: 'Candidats', icon: UsersIcon },
 ];
 
-
-
 // --- Data Connection & Filtering ---
-const allCandidates = computed(() => {
-    // Group applications by jobId to determine ranks
-    const appsByJob: Record<string, any[]> = {};
-    MockData.applications.forEach((app: any) => {
-        const jobIdStr = String(app.jobId);
-        if (!appsByJob[jobIdStr]) appsByJob[jobIdStr] = [];
-        appsByJob[jobIdStr].push(app);
-    });
-
-    // Sort each group by score
-    Object.keys(appsByJob).forEach(jobId => {
-        const apps = appsByJob[jobId];
-        if (apps) {
-            apps.sort((a, b) => (b.score || 0) - (a.score || 0));
-        }
-    });
-
-    return MockData.applications.map((app: any) => {
-        const job = MockData.getJob(app.jobId);
-        const jobApps = appsByJob[String(app.jobId)] || [];
-        const rank = jobApps.findIndex((a: any) => a.id === app.id) + 1;
+const candidatesSource = computed(() => {
+    if (!dashboardData.value || !dashboardData.value.meilleursCandidats) return [];
+    return dashboardData.value.meilleursCandidats.map(c => {
+        let status = c.statut || 'NOUVEAU';
+        let statusClass = 'new';
+        if (status.toLowerCase().includes('rejet')) statusClass = 'rejected';
+        else if (status.toLowerCase().includes('accept')) statusClass = 'interview';
+        else if (status.toLowerCase().includes('attente')) statusClass = 'evaluated';
         
-        let status = 'REJETÉ';
-        let statusClass = 'rejected';
-        
-        if (job) {
-            const threshold = (job as any).mcqPassScore || 70;
-            const appScore = app.score || 0;
-            if (rank <= 5 && appScore >= threshold) {
-                status = 'ENTRETIEN';
-                statusClass = 'interview';
-            } else if (appScore >= threshold) {
-                status = 'AU COURS';
-                statusClass = 'evaluated';
-            }
-        }
-
         return {
-            id: app.id,
-            name: app.candidateName,
-            time: app.date,
-            role: job?.title || 'Unknown Position',
-            score: app.score || 0,
-            status: status,
+            id: c.candidatId,
+            name: c.prenom || 'Candidat inconnu',
+            time: 'Enregistré',
+            role: 'Candidat Évalué',
+            score: c.score || 0,
+            status: status.toUpperCase(),
             statusClass: statusClass,
-            avatar: `https://i.pravatar.cc/150?u=${app.candidateName.replace(/\s/g, '')}`
+            avatar: `https://i.pravatar.cc/150?u=${c.candidatId}`
         };
     });
 });
 
-// Fallback to initial data if MockData is empty for demo purposes
-const staticCandidates = ref([
-    { name: 'Marc Dubois', time: 'il y a 2 heures', role: 'Développeur Senior', score: 94, status: 'À INTERVIEWER', statusClass: 'interview', avatar: 'https://i.pravatar.cc/150?u=marc' },
-    { name: 'Léa Rousseau', time: 'il y a 5 heures', role: 'Product Designer', score: 89, status: 'ÉVALUÉ', statusClass: 'evaluated', avatar: 'https://i.pravatar.cc/150?u=lea' },
-    { name: 'Thomas Petit', time: 'Hier', role: 'Data Analyst', score: 82, status: 'À INTERVIEWER', statusClass: 'interview', avatar: 'https://i.pravatar.cc/150?u=thomas' },
-    { name: 'Julie Martin', time: 'Hier', role: 'Marketing Manager', score: 76, status: 'NOUVEAU', statusClass: 'new', avatar: 'https://i.pravatar.cc/150?u=julie' },
-    { name: 'Pierre Leroy', time: 'Il y a 2 jours', role: 'Développeur Frontend', score: 65, status: 'REJETÉ', statusClass: 'rejected', avatar: 'https://i.pravatar.cc/150?u=pierre' },
-    { name: 'Sophie Bernard', time: 'Il y a 3 jours', role: 'Ux Researcher', score: 91, status: 'SHORTLISTÉ', statusClass: 'shortlisted', avatar: 'https://i.pravatar.cc/150?u=sophie' },
-    { name: 'Lucas Moreau', time: 'Il y a 4 jours', role: 'DevOps Engineer', score: 88, status: 'À INTERVIEWER', statusClass: 'interview', avatar: 'https://i.pravatar.cc/150?u=lucas' },
-    { name: 'Emma Simon', time: 'Il y a 5 jours', role: 'Product Owner', score: 72, status: 'ÉVALUÉ', statusClass: 'evaluated', avatar: 'https://i.pravatar.cc/150?u=emma' },
-    { name: 'Hugo Laurent', time: 'Il y a 1 semaine', role: 'Data Scientist', score: 95, status: 'SHORTLISTÉ', statusClass: 'shortlisted', avatar: 'https://i.pravatar.cc/150?u=hugo' },
-    { name: 'Chloé Michel', time: 'Il y a 1 semaine', role: 'HR Assistant', score: 60, status: 'REJETÉ', statusClass: 'rejected', avatar: 'https://i.pravatar.cc/150?u=chloe' },
-    { name: 'Alexandre David', time: 'Il y a 2 semaines', role: 'Backend Developer', score: 84, status: 'NOUVEAU', statusClass: 'new', avatar: 'https://i.pravatar.cc/150?u=alex' }
-]);
-const candidatesSource = computed(() => {
-    return MockData.applications.length > 0 ? allCandidates.value : staticCandidates.value;
-});
 const displayJobs = computed(() => {
-    let list = MockData.jobs.map(j => ({
+    let list = employerJobs.value.map(j => ({
         id: j.id,
-        title: j.title,
-        applicants: MockData.getApplicantsCount(j.id),
-        daysLeft: j.daysLeft || 0,
-        progress: Math.floor(Math.random() * 100),
+        title: j.titre || j.categorie, // Utiliser le titre ou la catégorie
+        applicants: 0, // Idéalement, retourné par le backend
+        daysLeft: j.dateLimite ? Math.max(0, Math.floor((new Date(j.dateLimite).getTime() - new Date().getTime()) / (1000 * 3600 * 24))) : 30,
+        progress: 100,
         quality: 'ÉLEVÉE',
         status: 'ACTIVE'
     }));

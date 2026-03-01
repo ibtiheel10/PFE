@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 
 import Login from '@/components/Login.vue'
 import Inscription from '@/components/Inscription.vue'
+import VerifyEmail from '@/components/VerifyEmail.vue'
 import Home from '@/components/Home.vue'
 import Result from '@/components/Result.vue'
 
@@ -25,6 +26,8 @@ import JobDetailCondidat from '@/components/job_detail_condidat.vue'
 import CandidateLayout from '@/layouts/CandidateLayout.vue'
 import CandidateDashboard from '@/components/candidate/Dashboard.vue'
 import CandidateHistory from '@/components/candidate/History.vue'
+import CandidateEvaluations from '@/components/evaluations_candidat.vue'
+import EvaluationSession from '@/components/candidate/EvaluationSession.vue'
 
 // ─── Route Meta type augmentation ─────────────────────────────────────────────
 declare module 'vue-router' {
@@ -53,6 +56,11 @@ const routes: RouteRecordRaw[] = [
     name: 'Inscription',
     component: Inscription,
     alias: '/register'
+  },
+  {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: VerifyEmail
   },
   {
     path: '/login-entreprise',
@@ -132,6 +140,12 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, role: 'candidat' }
       },
       {
+        path: 'evaluations', // Becomes /candidat/evaluations
+        name: 'CandidateEvaluations',
+        component: CandidateEvaluations,
+        meta: { requiresAuth: true, role: 'candidat' }
+      },
+      {
         path: '/historique-candidatures',
         name: 'HistoriqueCandidatures',
         component: CandidateHistory,
@@ -156,6 +170,22 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, role: 'candidat' }
       }
     ]
+  },
+
+  // ──────────────────────────────────────────────
+  // FULL-SCREEN ASSESSMENTS (role = candidat)
+  // ──────────────────────────────────────────────
+  {
+    path: '/candidat/evaluation-session/:id',
+    name: 'EvaluationSession',
+    component: EvaluationSession,
+    meta: { requiresAuth: true, role: 'candidat' }
+  },
+  {
+    path: '/candidat/evaluation-result/:id',
+    name: 'EvaluationResult',
+    component: () => import('@/components/candidate/EvaluationResult.vue'),
+    meta: { requiresAuth: true, role: 'candidat' }
   },
 
   // ──────────────────────────────────────────────

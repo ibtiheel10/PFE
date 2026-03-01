@@ -298,7 +298,8 @@ import {
     ChevronDownIcon,
     UserCircleIcon,
     Cog6ToothIcon,
-    ArrowRightOnRectangleIcon
+    ArrowRightOnRectangleIcon,
+    ClipboardDocumentCheckIcon
 } from '@heroicons/vue/24/outline';
 import { MockData } from '../services/MockData';
 
@@ -366,6 +367,7 @@ const navItems = [
     { name: 'Tableau de bord', icon: Squares2X2Icon, path: '/dashboard', sub: 'Vue d\'ensemble' },
     { name: 'Offres d\'emploi',  icon: BriefcaseIcon,  path: '/candidat/jobs',      sub: 'Parcourez les offres' },
     { name: 'Mes Candidatures', icon: ClockIcon,       path: '/mes-candidatures',   sub: 'Historique & statuts' },
+    { name: 'Évaluations',      icon: ClipboardDocumentCheckIcon, path: '/candidat/evaluations', sub: 'Vos tests techniques' },
     { name: 'Résultats',        icon: ChartBarIcon,    path: '/resultats',   sub: 'Scores & évaluations' },
 ];
 
