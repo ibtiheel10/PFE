@@ -29,10 +29,14 @@ api.interceptors.response.use(
         const status = error.response?.status;
 
         if (status === 401) {
-            // Token expiré ou invalide → redirection vers login
-            localStorage.removeItem('userToken');
-            localStorage.removeItem('userRole');
-            window.location.href = '/login';
+            const requestUrl = error.config?.url ?? '';
+            const isLoginRequest = requestUrl.includes('/auth/login') || requestUrl.includes('/auth/verify-otp');
+            if (!isLoginRequest) {
+                // Token expiré ou invalide → redirection vers login (sauf pendant la connexion elle-même)
+                localStorage.removeItem('userToken');
+                localStorage.removeItem('userRole');
+                window.location.href = '/login';
+            }
         } else if (status === 403) {
             console.error('Accès interdit : vous n\'avez pas les droits nécessaires.');
         } else if (status === 500) {
