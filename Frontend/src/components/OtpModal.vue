@@ -2,25 +2,22 @@
   <div v-if="show" class="otp-overlay" @click.self="$emit('close')">
     <div class="otp-modal animate-in">
       <div class="otp-content">
-        <h2 class="title">Verify your login</h2>
+        <div class="icon-container">
+          <div class="icon-circle">
+            <i class="fa-solid fa-envelope-circle-check"></i>
+          </div>
+        </div>
+
+        <h2 class="title">Vérifiez votre email</h2>
         <p class="description">
-          Enter the verification code we sent to your email address: <span class="email-display">{{ email }}</span>.
+          Un code à 6 chiffres a été envoyé à<br/>
+          <span class="email-display">{{ email }}</span>
         </p>
 
         <div class="code-section">
-          <div class="label-row">
-            <label>Verification code</label>
-            <button class="resend-btn" @click="handleResend" :disabled="resendCooldown > 0">
-              <i class="fa-solid fa-rotate"></i>
-              {{ resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend Code' }}
-            </button>
-          </div>
-
           <div class="otp-inputs">
-            <div class="input-group">
+            <template v-for="(_, i) in 6" :key="i">
               <input
-                v-for="(_, i) in 3"
-                :key="i"
                 ref="otpFields"
                 type="text"
                 maxlength="1"
@@ -28,35 +25,28 @@
                 @input="handleInput($event, i)"
                 @keydown.delete="handleDelete(i)"
                 placeholder=""
+                class="otp-box"
               />
-            </div>
-            <span class="divider-dash">—</span>
-            <div class="input-group">
-              <input
-                v-for="(_, i) in 3"
-                :key="i + 3"
-                ref="otpFields"
-                type="text"
-                maxlength="1"
-                v-model="otp[i + 3]"
-                @input="handleInput($event, i + 3)"
-                @keydown.delete="handleDelete(i + 3)"
-                placeholder=""
-              />
-            </div>
+              <span v-if="i === 2" class="divider-dash">—</span>
+            </template>
           </div>
         </div>
 
-        <a href="#" class="no-access-link" @click.prevent="">I no longer have access to this email address.</a>
+        <button class="verify-btn" :disabled="!isComplete" @click="handleVerify">
+          Vérifier mon compte <span class="arrow">&rarr;</span>
+        </button>
 
-        <div class="footer-section">
-          <button class="verify-btn" :disabled="!isComplete" @click="handleVerify">
-            Verify
+        <div class="resend-section">
+          <span class="trouble-text">Vous n'avez pas reçu le code ?</span>
+          <button class="resend-link" @click="handleResend" :disabled="resendCooldown > 0">
+            <i class="fa-solid fa-rotate"></i>
+            {{ resendCooldown > 0 ? `Renvoyer dans ${resendCooldown}s` : 'Renvoyer le code' }}
           </button>
-          <p class="trouble-text">
-            Having trouble signing in? <a href="#" class="support-link" @click.prevent="">Contact support</a>
-          </p>
         </div>
+
+        <button class="back-link" @click="$emit('close')">
+          <i class="fa-solid fa-arrow-left"></i> Retour à la connexion
+        </button>
       </div>
     </div>
   </div>
@@ -105,7 +95,7 @@ const handleResend = () => {
     resendCooldown.value--;
     if (resendCooldown.value <= 0) clearInterval(timer);
   }, 1000);
-  alert("Vérification code renvoyé !");
+  alert("Code de vérification renvoyé !");
 };
 
 const handleVerify = () => {
@@ -136,8 +126,8 @@ watch(() => props.show, (newVal) => {
 .otp-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,15 +136,40 @@ watch(() => props.show, (newVal) => {
 
 .otp-modal {
   width: 440px;
-  background: #121212;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
+  background: #171923; /* Dark background matching image */
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  border-radius: 20px;
   overflow: hidden;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  padding: 40px;
+  box-sizing: border-box;
 }
 
 .otp-content {
-  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.icon-container {
+  margin-bottom: 24px;
+}
+
+.icon-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #5A7BFC;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(90, 123, 252, 0.2);
+}
+
+.icon-circle i {
+  font-size: 24px;
+  color: #ffffff;
 }
 
 .title {
@@ -162,137 +177,88 @@ watch(() => props.show, (newVal) => {
   font-size: 24px;
   font-weight: 700;
   margin-bottom: 12px;
+  margin-top: 0;
 }
 
 .description {
   color: #9ca3af;
-  font-size: 15px;
-  line-height: 1.5;
+  font-size: 14px;
+  line-height: 1.6;
   margin-bottom: 32px;
 }
 
 .email-display {
-  color: #e5e7eb;
+  color: #6a92ff;
   font-weight: 500;
 }
 
 .code-section {
-  margin-bottom: 24px;
-}
-
-.label-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.label-row label {
-  color: #ffffff;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.resend-btn {
-  background: #1f1f1f;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  font-size: 13px;
-  font-weight: 600;
-  padding: 6px 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s;
-}
-
-.resend-btn:hover:not(:disabled) {
-  background: #2a2a2a;
-  border-color: rgba(255, 255, 255, 0.3);
-}
-
-.resend-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  margin-bottom: 32px;
+  width: 100%;
 }
 
 .otp-inputs {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
 }
 
-.input-group {
-  display: flex;
-  gap: 4px;
-  background: #1f1f1f;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  padding: 4px;
-}
-
-.input-group input {
-  width: 50px;
-  height: 60px;
-  background: transparent;
-  border: none;
-  border-radius: 8px;
+.otp-box {
+  width: 48px;
+  height: 56px;
+  background: #1f2231; /* Subtle dark color for boxes */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
   color: #ffffff;
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   text-align: center;
   outline: none;
   transition: all 0.2s;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
-.input-group input:focus {
-  background: rgba(255, 255, 255, 0.05);
+.otp-box:focus {
+  background: #252837;
+  border-color: #5A7BFC;
+  box-shadow: 0 0 0 2px rgba(90, 123, 252, 0.2);
 }
 
 .divider-dash {
   color: #4b5563;
-  font-size: 20px;
-  font-weight: 300;
-}
-
-.no-access-link {
-  color: #9ca3af;
-  font-size: 14px;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  transition: color 0.2s;
-}
-
-.no-access-link:hover {
-  color: #ffffff;
-}
-
-.footer-section {
-  margin-top: 48px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 24px;
-  text-align: center;
+  font-size: 18px;
+  margin: 0 4px;
 }
 
 .verify-btn {
   width: 100%;
-  padding: 14px;
-  background: #d1d5db;
-  color: #111827;
+  padding: 16px;
+  background: #5A7BFC;
+  color: #ffffff;
   border: none;
   border-radius: 12px;
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.arrow {
+  transition: transform 0.2s;
 }
 
 .verify-btn:hover:not(:disabled) {
-  background: #e5e7eb;
-  transform: translateY(-1px);
+  background: #4A6AE0;
+}
+
+.verify-btn:hover:not(:disabled) .arrow {
+  transform: translateX(4px);
 }
 
 .verify-btn:disabled {
@@ -300,25 +266,61 @@ watch(() => props.show, (newVal) => {
   cursor: not-allowed;
 }
 
+.resend-section {
+  font-size: 13px;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .trouble-text {
-  color: #9ca3af;
-  font-size: 14px;
+  color: #6b7280;
 }
 
-.support-link {
-  color: #9ca3af;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  font-weight: 500;
+.resend-link {
+  background: none;
+  border: none;
+  color: #e5e7eb;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
 }
 
-.support-link:hover {
+.resend-link:hover:not(:disabled) {
+  color: #ffffff;
+}
+
+.resend-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.back-link {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color 0.2s;
+}
+
+.back-link:hover {
   color: #ffffff;
 }
 
 /* Animation */
 .animate-in {
-  animation: modalIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 @keyframes modalIn {

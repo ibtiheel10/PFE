@@ -68,25 +68,26 @@
           </button>
       </div>
 
-            <form v-if="!showForgotPassword">
+            <form v-if="!showForgotPassword" @submit.prevent="handleLogin">
               <label>{{ selectedRole === 'entreprise' ? 'Adresse e-mail professionnelle' : 'Adresse e-mail' }}</label>
               <input
               type="email"
               v-model="email"
-              class="form-control"
+              :class="['form-control', submitAttempted && !email ? 'input-error' : (email ? (isEmailValid ? 'input-valid' : 'input-error') : '')]"
               :placeholder="selectedRole === 'entreprise' ? 'contact@votreentreprise.com' : 'nom@exemple.com'"
-              @input="validateEmail"/>
+              @input="onEmailInput"/>
 
               <p
-              v-if="email"
+              v-if="submitAttempted && !email"
+              class="helper error">
+              <i class="fa-solid fa-circle-exclamation"></i>
+              <span>L'adresse e-mail est requise.</span>
+              </p>
+              <p
+              v-else-if="email"
               :class="['helper', isEmailValid ? 'valid' : 'error']">
-              <i
-              :class="isEmailValid 
-              ? 'fa-solid fa-circle-check' 
-              : 'fa-solid fa-circle-exclamation'"></i>
-             <span>
-               {{ emailValidationMessage }}
-             </span>
+              <i :class="isEmailValid ? 'fa-solid fa-circle-check' : 'fa-solid fa-circle-exclamation'"></i>
+             <span>{{ emailValidationMessage }}</span>
              </p>
 
               <div class="password-row">
@@ -104,10 +105,11 @@
                 autocomplete="new-password"
                 required
                 :class="{
-                  'input-error': password && passwordError,
+                  'input-error': (submitAttempted && !password) || (password && passwordError),
                   'input-valid': password && !passwordError
                 }"
                 placeholder="Mot de passe"
+                @input="onPasswordInput"
               />
 
               <span class="eye" @mousedown.prevent @click="togglePassword">
@@ -115,8 +117,12 @@
                 <EyeIcon v-else class="icon" />
               </span>
            </div>
-          <div v-if="password" class="password-feedback">
-              <p v-if="passwordError" class="helper error">
+          <div class="password-feedback">
+              <p v-if="submitAttempted && !password" class="helper error">
+                  <i class="fa-solid fa-circle-exclamation"></i>
+                  <span>Le mot de passe est requis.</span>
+              </p>
+              <p v-else-if="password && passwordError" class="helper error">
                   <i class="fa-solid fa-circle-exclamation"></i>
                   <span>{{ passwordError }}</span>
               </p>
@@ -229,6 +235,7 @@ const showForgotPassword = ref(false);
 // ─── États de l'UI ────────────────────────────────────────────────────────────
 const isLoading = ref(false);
 const errorMessage = ref<string | null>(null);
+const submitAttempted = ref(false);
 
 // ─── Validation ──────────────────────────────────────────────────────────────
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -247,7 +254,7 @@ const emailValidationMessage = computed<string>(() => {
 });
 
 const passwordError = computed(() => {
-  if (!password.value) return "Le mot de passe est obligatoire.";
+  if (!password.value) return null;
   if (password.value.length < 8) return "Le mot de passe doit contenir au moins 8 caractères.";
   if (!/[A-Z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre majuscule.";
   if (!/[a-z]/.test(password.value)) return "Le mot de passe doit contenir au moins une lettre minuscule.";
@@ -256,7 +263,9 @@ const passwordError = computed(() => {
   return null;
 });
 
-const validateEmail = (): void => {};
+// Clear API error when user corrects a field
+const onEmailInput = (): void => { errorMessage.value = null; };
+const onPasswordInput = (): void => { errorMessage.value = null; };
 
 const togglePassword = (): void => { showPassword.value = !showPassword.value; };
 const toggleForgotPassword = () => { showForgotPassword.value = !showForgotPassword.value; };
@@ -269,9 +278,10 @@ const handleResetPassword = () => {
 // ─── Login Étape 1 : Envoyer les credentials → déclenche l'OTP ───────────────
 const handleLogin = async () => {
   errorMessage.value = null;
+  submitAttempted.value = true;
 
-  if (!isEmailValid.value || passwordError.value) {
-    errorMessage.value = "Veuillez corriger les erreurs du formulaire.";
+  // Validation des champs
+  if (!email.value || !password.value || !isEmailValid.value || passwordError.value) {
     return;
   }
 
@@ -282,24 +292,16 @@ const handleLogin = async () => {
     showOtpModal.value = true;
   } catch (err: any) {
     if (!err.response) {
-      errorMessage.value = "Erreur de connexion au serveur.";
-    } else if (err.response.data?.errors) {
-      const errors = err.response.data.errors;
-      if (Array.isArray(errors)) {
-        errorMessage.value = errors.join(' ');
-      } else if (typeof errors === 'object' && errors !== null) {
-        const firstErrorKey = Object.keys(errors)[0];
-        if (firstErrorKey) {
-          const errArray = (errors as Record<string, string[]>)[firstErrorKey];
-          errorMessage.value = (errArray && errArray.length > 0) ? (errArray[0] || "Identifiants invalides.") : "Identifiants invalides.";
-        } else {
-          errorMessage.value = "Identifiants invalides.";
-        }
-      } else {
-        errorMessage.value = err.response.data?.title || "Identifiants invalides.";
-      }
+      // Erreur réseau / serveur inaccessible
+      errorMessage.value = "Impossible de contacter le serveur. Veuillez vérifier votre connexion et réessayer.";
+    } else if (err.response.status === 401 || err.response.status === 403) {
+      // Identifiants incorrects — message sécurisé sans détail
+      errorMessage.value = "Identifiants incorrects. Veuillez vérifier votre e-mail et votre mot de passe.";
+    } else if (err.response.status >= 500) {
+      // Erreur serveur
+      errorMessage.value = "Une erreur est survenue côté serveur. Veuillez réessayer dans quelques instants.";
     } else {
-      errorMessage.value = err.response.data?.message || err.response.data?.title || "Identifiants incorrects.";
+      errorMessage.value = "Une erreur inattendue s'est produite. Veuillez réessayer.";
     }
   } finally {
     isLoading.value = false;
