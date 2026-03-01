@@ -397,7 +397,7 @@ const doCancel = async () => {
   if (myApplication.value && myApplication.value.id) {
     try {
         const token = localStorage.getItem('userToken');
-        await axios.delete(`http://localhost:5243/api/candidature/${myApplication.value.id}`, {
+        await axios.delete(`http://localhost:5173/api/candidature/${myApplication.value.id}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         myApplication.value = null;

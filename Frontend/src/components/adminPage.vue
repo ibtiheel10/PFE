@@ -606,10 +606,10 @@ const fetchAdminData = async () => {
         const config = { headers: { Authorization: `Bearer ${token}` } };
         
         const [statsRes, usersRes, companiesRes, logsRes] = await Promise.all([
-            axios.get('http://localhost:5243/api/admin/dashboard/stats', config),
-            axios.get('http://localhost:5243/api/admin/users', config),
-            axios.get('http://localhost:5243/api/admin/entreprises', config),
-            axios.get('http://localhost:5243/api/admin/logs', config)
+            axios.get('http://localhost:5173/api/admin/dashboard/stats', config),
+            axios.get('http://localhost:5173/api/admin/users', config),
+            axios.get('http://localhost:5173/api/admin/entreprises', config),
+            axios.get('http://localhost:5173/api/admin/logs', config)
         ]);
 
         dashboardStats.value = statsRes.data;

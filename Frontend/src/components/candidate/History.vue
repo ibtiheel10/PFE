@@ -146,7 +146,7 @@ const fetchApplications = async () => {
     try {
         const token = localStorage.getItem('userToken');
         if (!token) return;
-        const resp = await axios.get('http://localhost:5243/api/candidature/mes-candidatures', {
+        const resp = await axios.get('http://localhost:5173/api/candidature/mes-candidatures', {
             headers: { Authorization: `Bearer ${token}` }
         });
         allMyApplications.value = resp.data.map((app: any) => ({
@@ -237,7 +237,7 @@ const showToast = (msg: string) => {
 const handleCancel = async (appId: number) => {
     try {
         const token = localStorage.getItem('userToken');
-        await axios.delete(`http://localhost:5243/api/candidature/${appId}`, {
+        await axios.delete(`http://localhost:5173/api/candidature/${appId}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         showToast('Candidature annulée avec succès.');

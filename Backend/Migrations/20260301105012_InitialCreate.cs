@@ -239,6 +239,8 @@ namespace Backend.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Secteur = table.Column<string>(type: "text", nullable: false),
+                    Taille = table.Column<string>(type: "text", nullable: true),
+                    Ville = table.Column<string>(type: "text", nullable: true),
                     ApplicationUserId = table.Column<string>(type: "text", nullable: false)
                 },
                 constraints: table =>
@@ -291,6 +293,9 @@ namespace Backend.Migrations
                     Salaire = table.Column<float>(type: "real", nullable: true),
                     Localisation = table.Column<string>(type: "text", nullable: false),
                     ExperienceRequise = table.Column<string>(type: "text", nullable: true),
+                    Competences = table.Column<string>(type: "text", nullable: true),
+                    Icon = table.Column<string>(type: "text", nullable: true),
+                    IconColor = table.Column<string>(type: "text", nullable: true),
                     NbPost = table.Column<int>(type: "integer", nullable: false),
                     EntrepriseId = table.Column<int>(type: "integer", nullable: false)
                 },
@@ -317,6 +322,7 @@ namespace Backend.Migrations
                     Decision = table.Column<string>(type: "text", nullable: true),
                     Note = table.Column<float>(type: "real", nullable: true),
                     Commentaire = table.Column<string>(type: "text", nullable: true),
+                    EvaluationDetails = table.Column<string>(type: "text", nullable: true),
                     CandidatId = table.Column<int>(type: "integer", nullable: false),
                     OffreEmploiId = table.Column<int>(type: "integer", nullable: false)
                 },

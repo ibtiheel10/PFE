@@ -314,7 +314,7 @@ const submitPost = async () => {
         dateLimite: form.value.deadline ? new Date(form.value.deadline).toISOString() : null
      };
 
-     await axios.post('http://localhost:5243/api/OffreEmploi', payload, config);
+     await axios.post('http://localhost:5173/api/OffreEmploi', payload, config);
 
      toastVisible.value = true;
      setTimeout(() => {

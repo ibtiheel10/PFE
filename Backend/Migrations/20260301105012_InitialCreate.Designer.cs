@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260226113912_InitialCreate")]
+    [Migration("20260301105012_InitialCreate")]
     partial class InitialCreate
     {
         /// <inheritdoc />
@@ -193,6 +193,9 @@ namespace Backend.Migrations
                     b.Property<string>("Decision")
                         .HasColumnType("text");
 
+                    b.Property<string>("EvaluationDetails")
+                        .HasColumnType("text");
+
                     b.Property<float?>("Note")
                         .HasColumnType("real");
 
@@ -229,6 +232,12 @@ namespace Backend.Migrations
 
                     b.Property<string>("Secteur")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Taille")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Ville")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -283,6 +292,9 @@ namespace Backend.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Competences")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("DateLimite")
                         .HasColumnType("timestamp with time zone");
 
@@ -297,6 +309,12 @@ namespace Backend.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("ExperienceRequise")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Icon")
+                        .HasColumnType("text");
+
+                    b.Property<string>("IconColor")
                         .HasColumnType("text");
 
                     b.Property<string>("Localisation")

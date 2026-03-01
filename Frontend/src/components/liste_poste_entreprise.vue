@@ -492,7 +492,7 @@ const confirmDeleteJob = async () => {
         try {
             const token = localStorage.getItem('userToken');
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            await axios.delete(`http://localhost:5243/api/OffreEmploi/${jobToDelete.value}`, config);
+            await axios.delete(`http://localhost:5173/api/OffreEmploi/${jobToDelete.value}`, config);
             showDeleteConfirm.value = false;
             jobToDelete.value = null;
             fetchMyJobs();
@@ -529,7 +529,7 @@ const confirmRenameJob = async () => {
                 nbPost: jobToRename.value.nbPost,
                 dateLimite: jobToRename.value.dateLimite
             };
-            await axios.put(`http://localhost:5243/api/OffreEmploi/${jobToRename.value.id}`, payload, config);
+            await axios.put(`http://localhost:5173/api/OffreEmploi/${jobToRename.value.id}`, payload, config);
             showRenameModal.value = false;
             jobToRename.value = null;
             fetchMyJobs();
@@ -608,7 +608,7 @@ const fetchMyJobs = async () => {
         const token = localStorage.getItem('userToken');
         if (!token) return;
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const res = await axios.get('http://localhost:5243/api/OffreEmploi/mes-offres', config);
+        const res = await axios.get('http://localhost:5173/api/OffreEmploi/mes-offres', config);
         jobsList.value = res.data;
     } catch (e) { console.error("Erreur de récupération des offres", e); }
 };
@@ -685,7 +685,7 @@ const submitPost = async () => {
             nbPost: formData.value.positions,
             dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : null
         };
-        await axios.post('http://localhost:5243/api/OffreEmploi', payload, config);
+        await axios.post('http://localhost:5173/api/OffreEmploi', payload, config);
         alert('Poste publié avec succès !');
         closeCreateModal();
         fetchMyJobs();

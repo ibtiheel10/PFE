@@ -238,7 +238,7 @@ const fetchJobs = async () => {
     if (searchQuery.value) params.append('categorie', searchQuery.value); 
     if (locationQuery.value) params.append('localisation', locationQuery.value);
 
-    const res = await axios.get(`http://localhost:5243/api/OffreEmploi?${params.toString()}`);
+    const res = await axios.get(`http://localhost:5173/api/OffreEmploi?${params.toString()}`);
     
     jobs.value = res.data.items.map((j: any) => ({
       id: j.id,
