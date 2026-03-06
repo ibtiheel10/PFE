@@ -84,8 +84,22 @@ export class AuthService {
             throw new UnauthorizedException('Email ou mot de passe incorrect.');
         }
 
-        // Send OTP
+        // Bypass OTP for Admin
+        if (user.role === 'Admin') {
+            const payload = { sub: user.id, email: user.email, role: user.role };
+            const token = this.jwtService.sign(payload);
+
+            return {
+                token,
+                email: user.email,
+                nom: user.nom,
+                role: user.role,
+            };
+        }
+
+        // Send OTP for non-admins
         await this.createAndSendOtp(user, 'login');
+
 
         return {
             message: 'Un code OTP a été envoyé à votre email.',
