@@ -281,7 +281,7 @@
                         </svg>
                         
                         <div class="absolute top-1/4 left-1/3 bg-gray-900 text-white text-xs py-1 px-3 rounded shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity transform -translate-y-2">
-                            {{ chartData.lastVisits }}
+                            {{ dashboardStats.traficData ? dashboardStats.traficData.values[dashboardStats.traficData.values.length - 1] : 0 }} visites
                         </div>
                     </div>
                 </div>
@@ -309,8 +309,8 @@
                              <circle cx="100" cy="100" r="80" fill="none" stroke="#F3F4F6" stroke-width="12" class="dark:stroke-gray-700"/>
                              <circle cx="100" cy="100" r="55" fill="none" stroke="#F3F4F6" stroke-width="12" class="dark:stroke-gray-700"/>
 
-                            <circle cx="100" cy="100" r="80" fill="none" stroke="url(#gradientCandidate)" stroke-width="12" stroke-linecap="round" stroke-dasharray="350, 600" class="drop-shadow-sm transition-all duration-1000 ease-out" />
-                             <circle cx="100" cy="100" r="55" fill="none" stroke="url(#gradientCompany)" stroke-width="12" stroke-linecap="round" stroke-dasharray="120, 400" class="transition-all duration-1000 ease-out delay-200" />
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="url(#gradientCandidate)" stroke-width="12" stroke-linecap="round" :stroke-dasharray="(dashboardStats.demographie ? dashboardStats.demographie.candidatsPct / 100 * 502 : 0) + ', 600'" class="drop-shadow-sm transition-all duration-1000 ease-out" />
+                             <circle cx="100" cy="100" r="55" fill="none" stroke="url(#gradientCompany)" stroke-width="12" stroke-linecap="round" :stroke-dasharray="(dashboardStats.demographie ? dashboardStats.demographie.entreprisesPct / 100 * 345 : 0) + ', 400'" class="transition-all duration-1000 ease-out delay-200" />
                         </svg>
 
                         <div class="absolute inset-0 flex flex-col items-center justify-center pt-8 pointer-events-none">
@@ -354,10 +354,11 @@
                     <div>
                         <div class="flex justify-between items-end mb-2">
                              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Temps de réponse API</span>
-                             <span class="text-sm font-bold text-gray-900 dark:text-white">124ms</span>
+                             <span class="text-sm font-bold text-gray-900 dark:text-white">{{ dashboardStats.santeAcquise?.apiResponseTime || 0 }}ms</span>
                         </div>
                         <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
-                            <div class="h-full bg-emerald-500 rounded-full" style="width: 65%"></div>
+                             <!-- Visual representation capping at 500ms for 100% -->
+                            <div class="h-full bg-emerald-500 rounded-full transition-all duration-1000" :style="{ width: Math.min(((dashboardStats.santeAcquise?.apiResponseTime || 0) / 500) * 100, 100) + '%' }"></div>
                         </div>
                     </div>
 
@@ -365,10 +366,10 @@
                      <div>
                         <div class="flex justify-between items-end mb-2">
                              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Charge CPU</span>
-                             <span class="text-sm font-bold text-gray-900 dark:text-white">42%</span>
+                             <span class="text-sm font-bold text-gray-900 dark:text-white">{{ dashboardStats.santeAcquise?.cpuLoad || 0 }}%</span>
                         </div>
                         <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
-                            <div class="h-full bg-blue-500 rounded-full" style="width: 42%"></div>
+                            <div class="h-full bg-blue-500 rounded-full transition-all duration-1000 delay-100" :style="{ width: (dashboardStats.santeAcquise?.cpuLoad || 0) + '%' }"></div>
                         </div>
                     </div>
 
@@ -376,10 +377,10 @@
                      <div>
                         <div class="flex justify-between items-end mb-2">
                              <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Disponibilité BDD</span>
-                             <span class="text-sm font-bold text-gray-900 dark:text-white">99.98%</span>
+                             <span class="text-sm font-bold text-gray-900 dark:text-white">{{ dashboardStats.santeAcquise?.bddUptime || 0 }}%</span>
                         </div>
                         <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
-                            <div class="h-full bg-emerald-500 rounded-full" style="width: 99%"></div>
+                            <div class="h-full bg-emerald-500 rounded-full transition-all duration-1000 delay-200" :style="{ width: (dashboardStats.santeAcquise?.bddUptime || 0) + '%' }"></div>
                         </div>
                     </div>
                 </div>
@@ -659,7 +660,10 @@ const dashboardStats = ref({
     totalOffres: 0,
     totalCandidatures: 0,
     totalTests: 0,
-    revenuTotal: 0
+    revenuTotal: 0,
+    demographie: null as any,
+    santeAcquise: null as any,
+    traficData: null as any
 });
 
 // --- Formatting Helpers ---
@@ -680,25 +684,43 @@ const toggleNotifications = () => {
 const toggleProfileMenu = () => showProfileMenu.value = !showProfileMenu.value;
 
 const chartData = computed(() => {
-    if (activePeriod.value === 'Cette semaine') {
-        return {
-            path: "M0,250 C100,200 200,280 300,150 S500,50 600,100 S700,150 800,50",
-            fill: "M0,250 C100,200 200,280 300,150 S500,50 600,100 S700,150 800,50 V300 H0 Z",
-            lastVisits: '3,402 Visites'
-        };
-    } else if (activePeriod.value === 'Ce mois') {
-        return {
-            path: "M0,200 C150,220 300,100 450,180 S600,80 800,120",
-            fill: "M0,200 C150,220 300,100 450,180 S600,80 800,120 V300 H0 Z",
-            lastVisits: '14,250 Visites'
-        };
-    } else {
-        return {
-            path: "M0,150 C200,100 400,200 600,150 S800,50 800,50",
-            fill: "M0,150 C200,100 400,200 600,150 S800,50 800,50 V300 H0 Z",
-            lastVisits: '42,800 Visites'
-        };
+    // Determine a multiplier based on period to fake different data scales for the UI showcasing
+    const multiplier = activePeriod.value === 'Cette semaine' ? 1 
+                      : activePeriod.value === 'Ce mois' ? 4 
+                      : 12;
+
+    const baseValues = dashboardStats.value.traficData ? dashboardStats.value.traficData.values : [0,0,0,0,0,0,0];
+    const maxVal = Math.max(...baseValues, 100);
+    
+    // SVG Dimensions are 800x300. Map points to this space.
+    // X goes from 0 to 800. Y is inverted (0 is top, 300 is bottom).
+    const points = baseValues.map((val: number, i: number) => {
+        const x = (i / (baseValues.length - 1)) * 800;
+        // Apply multiplier to simulate data, keep within bounds
+        const simVal = (val / maxVal) * 250; 
+        // Small random jitter offset based on multiplier for visual variety between tabs
+        const jitter = multiplier > 1 ? (Math.random() * 40 - 20) : 0;
+        let y = 300 - Math.min(Math.max(simVal + jitter, 20), 280); 
+        return { x, y: Math.round(y) };
+    });
+
+    // Create a smooth bezier curve path using the points
+    let pathStr = `M${points[0].x},${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        // Control points for a basic horizontal bezier easing
+        const cp1x = (p1.x + p2.x) / 2;
+        pathStr += ` C${cp1x},${p1.y} ${cp1x},${p2.y} ${p2.x},${p2.y}`;
     }
+
+    const totalCalculatedVisits = baseValues.reduce((a: number, b: number) => a + b, 0) * multiplier;
+
+    return {
+        path: pathStr,
+        fill: `${pathStr} V300 H0 Z`,
+        lastVisits: `${new Intl.NumberFormat('fr-FR').format(totalCalculatedVisits)} Visites`
+    };
 });
 
 const toggleDarkMode = () => {
