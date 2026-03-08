@@ -356,13 +356,13 @@
 
     const isCandidatValid = computed(() => {
       if (selectedRole.value !== 'candidat') return true;
-      return prenom.value.length > 1 && dateNaissance.value.length > 0;
+      return prenom.value.trim().length >= 2 && dateNaissance.value.length > 0;
     });
 
     const canSubmit = computed(() => {
-      const isSectorValid = selectedRole.value === 'entreprise' ? sector.value.length > 2 : true;
+      const isSectorValid = selectedRole.value === 'entreprise' ? sector.value.trim().length >= 2 : true;
       return (
-        fullname.value.length > 2 &&
+        fullname.value.trim().length >= 2 &&
         isSectorValid &&
         isCandidatValid.value &&
         isEmailValid.value &&
@@ -408,6 +408,7 @@
         successMessage.value = `Compte créé pour ${fullname.value} !`;
 
       } catch (err: any) {
+        console.error("Signup error detail:", err);
         if (!err.response) {
           errorMessage.value = "Erreur de connexion au serveur (CORS ou serveur hors ligne).";
         } else if (err.response.data?.errors) {

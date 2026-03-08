@@ -117,13 +117,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getCandidatureById, type CandidatureResponseDto } from '../services/candidatureService';
-import { getCandidatDashboard } from '../services/dashboardService';
+import { getCandidatureById, getMesStats, type CandidatureResponse } from '../services/candidatureService';
 
 const route = useRoute();
 const router = useRouter();
 const score = ref(0);
-const candidature = ref<CandidatureResponseDto | null>(null);
+const candidature = ref<CandidatureResponse | null>(null);
 
 // Parsed evaluation details
 const evalStats = ref({
@@ -142,13 +141,10 @@ onMounted(async () => {
           targetCandidatureId = Number(candidatureIdParam);
       } else {
           // Fallback: Fetch all candidatures and pick the latest one with a score
-          const { getMesCandidatures } = await import('../services/candidatureService');
-          const allCandidatures = await getMesCandidatures();
+          const allCandidatures = await (await import('../services/candidatureService')).getMesCandidatures();
           const evaluatedCandidatures = (allCandidatures || []).filter(c => c.statut === 'Évalué' || c.score !== null);
           
           if (evaluatedCandidatures && evaluatedCandidatures.length > 0) {
-              // Sort by date descending
-              evaluatedCandidatures.sort((a, b) => new Date(b.datePostulation).getTime() - new Date(a.datePostulation).getTime());
               targetCandidatureId = evaluatedCandidatures[0]?.id || null;
           }
       }
@@ -175,32 +171,30 @@ onMounted(async () => {
                   console.error("Error parsing evaluation details", e);
               }
           }
-      } else {
-          score.value = 0;
       }
 
-      // Fetch Dashboard stats for charts
-      const dashData = await getCandidatDashboard();
+      // Fetch Stats for charts
+      const resStats = await getMesStats();
       
       // Update Donut Chart: [En attente, Accepté, Refusé]
-      donutChartSeries.value = [dashData.enAttente, dashData.acceptees, dashData.refusees];
+      donutChartSeries.value = [resStats.stats.enAttente, resStats.stats.acceptées, resStats.stats.refusées];
       
-      // Update Line Chart (Progression par mois)
-      if (dashData.candidaturesParMois && dashData.candidaturesParMois.length > 0) {
-          const months = dashData.candidaturesParMois.map((c: any) => c.mois);
-          const counts = dashData.candidaturesParMois.map((c: any) => c.count);
+      // Update Line Chart (Progression)
+      if (resStats.progression && resStats.progression.length > 0) {
+          const dates = resStats.progression.map(p => new Date(p.date).toLocaleDateString());
+          const scores = resStats.progression.map(p => p.score);
           
           // @ts-ignore
           lineChartOptions.value = {
               ...lineChartOptions.value,
               xaxis: {
                   ...lineChartOptions.value.xaxis,
-                  categories: months
+                  categories: dates
               }
           };
           
           lineChartSeries.value = [
-              { name: 'Candidatures (Activité)', data: counts }
+              { name: 'Évolution Score', data: scores }
           ];
       }
   } catch (err) {

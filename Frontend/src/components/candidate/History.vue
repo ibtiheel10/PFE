@@ -48,21 +48,21 @@
                     <div class="card-content">
                         <!-- Company Logo -->
                         <div class="company-logo">
-                            <div class="logo-icon" :style="{ background: getJobIconColor(app.jobId) }">
-                                <i :class="getJobIcon(app.jobId)" style="color: white; font-size: 20px;"></i>
+                            <div class="logo-icon" :style="{ background: getJobIconColor(app) }">
+                                <i :class="getJobIcon(app)" style="color: white; font-size: 20px;"></i>
                             </div>
                         </div>
 
                         <!-- Main Info -->
                         <div class="info-section">
                             <div class="flex justify-between items-start mb-1">
-                                <h3 class="job-title">{{ getJobTitle(app.jobId) }}</h3>
+                                <h3 class="job-title">{{ getJobTitle(app) }}</h3>
                                 <span class="mobile-status" :class="getStatusBadgeClass(app.status)">
                                     {{ app.status }}
                                 </span>
                             </div>
                             <p class="company-name">
-                                <i class="fa-regular fa-building"></i> {{ getJobCompany(app.jobId) }}
+                                <i class="fa-regular fa-building"></i> {{ getJobCompany(app) }}
                             </p>
                             <div class="meta-tags mt-2">
                                 <span class="tag">Postulé le {{ app.dateDisplay }}</span>
@@ -131,8 +131,20 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { MockData } from '../../services/MockData';
-import axios from 'axios';
+import { getMesCandidatures, deleteCandidature } from '../../services/candidatureService';
+
+// Fallback visual meta helpers si besoin, car l'API /candidatures ne renvoie peut-être pas les icônes.
+const getVisualMeta = (categorie: string) => {
+    if (!categorie) return { icon: 'fa-solid fa-briefcase', iconColor: '#64748b' };
+    const cat = categorie.toLowerCase();
+    if (cat.includes('it') || cat.includes('dev') || cat.includes('tech'))
+        return { icon: 'fa-solid fa-code', iconColor: '#3b82f6' };
+    if (cat.includes('design') || cat.includes('ux'))
+        return { icon: 'fa-solid fa-palette', iconColor: '#ec4899' };
+    if (cat.includes('marketing') || cat.includes('com'))
+        return { icon: 'fa-solid fa-bullhorn', iconColor: '#f59e0b' };
+    return { icon: 'fa-solid fa-briefcase', iconColor: '#64748b' };
+};
 
 const router = useRouter();
 
@@ -144,14 +156,14 @@ const allMyApplications = ref<any[]>([]);
 
 const fetchApplications = async () => {
     try {
-        const token = localStorage.getItem('userToken');
-        if (!token) return;
-        const resp = await axios.get('http://localhost:5173/api/candidature/mes-candidatures', {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        allMyApplications.value = resp.data.map((app: any) => ({
+        const candidatures = await getMesCandidatures();
+        
+        allMyApplications.value = candidatures.map((app) => ({
             id: app.id,
-            jobId: app.offreEmploiId,
+            jobId: app.offre.id,
+            jobTitle: app.offre.TitreDePost,
+            company: 'Skillvia Partner',
+            category: app.offre.Categorie,
             status: app.statut === 'En attente' ? 'En cours' : app.statut,
             date: app.datePostulation,
             dateDisplay: new Date(app.datePostulation).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -194,15 +206,17 @@ const getCount = (tabId: string) => {
     return allMyApplications.value.filter(app => app.status === tabId).length;
 };
 
-const getJobTitle = (jobId: number) => MockData.getJob(jobId)?.title ?? 'Offre inconnue';
-const getJobCompany = (jobId: number) => MockData.getJob(jobId)?.company ?? '';
-const getJobIcon = (jobId: number) => MockData.getJob(jobId)?.icon ?? 'fa-solid fa-briefcase';
-const getJobIconColor = (jobId: number) => MockData.getJob(jobId)?.iconColor ?? '#3b82f6';
+// Utils d'affichage mis à jour pour lire directement la candidature re-mappée
+const getJobTitle = (app: any) => app.jobTitle ?? 'Offre inconnue';
+const getJobCompany = (app: any) => app.company ?? 'Skillvia Partner';
+const getJobIcon = (app: any) => getVisualMeta(app.category).icon;
+const getJobIconColor = (app: any) => getVisualMeta(app.category).iconColor;
 
 const getStatusLineColor = (status: string) => {
     switch (status) {
         case 'Entretiens': return 'bg-orange-500';
         case 'Acceptée': return 'bg-green-500';
+        case 'Refusée': 
         case 'Refusés': return 'bg-red-500';
         case 'Annulée': return 'bg-gray-400';
         default: return 'bg-blue-500';
@@ -213,6 +227,7 @@ const getStatusBadgeClass = (status: string) => {
     switch (status) {
         case 'Entretiens': return 'status-interview';
         case 'Acceptée': return 'status-accepted';
+        case 'Refusée':
         case 'Refusés': return 'status-rejected';
         case 'Annulée': return 'status-cancelled';
         default: return 'status-review';
@@ -223,6 +238,7 @@ const getStatusIcon = (status: string) => {
     switch (status) {
         case 'Entretiens': return 'fa-solid fa-calendar-check';
         case 'Acceptée': return 'fa-solid fa-circle-check';
+        case 'Refusée':
         case 'Refusés': return 'fa-solid fa-circle-xmark';
         case 'Annulée': return 'fa-solid fa-ban';
         default: return 'fa-solid fa-clock';
@@ -236,14 +252,17 @@ const showToast = (msg: string) => {
 
 const handleCancel = async (appId: number) => {
     try {
-        const token = localStorage.getItem('userToken');
-        await axios.delete(`http://localhost:5173/api/candidature/${appId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
+        await deleteCandidature(appId);
         showToast('Candidature annulée avec succès.');
-        allMyApplications.value = allMyApplications.value.filter(a => a.id !== appId);
+        
+        // Mettre à jour le statut au lieu de supprimer
+        const appToUpdate = allMyApplications.value.find(a => a.id === appId);
+        if (appToUpdate) {
+            appToUpdate.status = 'Annulée';
+        }
     } catch (e: any) {
-        alert("Erreur lors de l'annulation.");
+        console.error(e);
+        alert(e.response?.data?.message || "Erreur lors de l'annulation.");
     }
 };
 </script>

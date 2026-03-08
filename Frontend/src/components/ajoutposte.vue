@@ -86,7 +86,7 @@
           <div class="field-row">
             <div class="field">
               <label>Localisation <span class="req">*</span></label>
-              <input v-model="form.location" type="text" placeholder="Ex : Alger, Algérie" required />
+              <input v-model="form.location" type="text" placeholder="Ex : Tunis, Tunisie" required />
             </div>
             <div class="field">
               <label>Mode de Travail</label>

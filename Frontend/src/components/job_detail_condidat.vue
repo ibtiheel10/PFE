@@ -21,7 +21,7 @@
             Offres
           </router-link>
           <span class="bc-sep">›</span>
-          <span class="bc-current" v-if="job">{{ job.title }}</span>
+          <span class="bc-current" v-if="job">{{ job.TitreDePost }}</span>
         </nav>
 
         <!-- Right actions -->
@@ -45,30 +45,30 @@
             <i :class="job.icon" :style="{ color: job.iconColor, fontSize: '2rem' }"></i>
           </div>
           <!-- Info -->
-          <div class="hero-info">
+            <div class="hero-info">
             <div class="hero-badges">
-              <span class="badge badge-category">{{ job.category }}</span>
-              <span v-for="tag in job.tags" :key="tag" class="badge badge-tag">{{ tag }}</span>
-              <span v-if="job.daysLeft !== undefined" class="badge" :class="job.daysLeft <= 3 ? 'badge-urgent' : 'badge-time'">
-                <i class="fa-regular fa-clock"></i> {{ job.daysLeft }} j restants
+              <span class="badge badge-category">{{ job.Categorie }}</span>
+              <span class="badge badge-tag">{{ job.TypeDeContrat }}</span>
+              <span class="badge badge-time">
+                <i class="fa-regular fa-clock"></i> Expire le {{ job.DateLimite ? new Date(job.DateLimite).toLocaleDateString() : 'N/A' }}
               </span>
             </div>
-            <h1 class="hero-title">{{ job.title }}</h1>
+            <h1 class="hero-title">{{ job.TitreDePost }}</h1>
             <div class="hero-meta">
               <span class="meta-item">
-                <i class="fa-regular fa-building"></i> {{ job.company }}
+                <i class="fa-regular fa-building"></i> Skillvia Partner
               </span>
               <span class="meta-sep">·</span>
               <span class="meta-item">
-                <i class="fa-solid fa-location-dot"></i> {{ job.location }}
+                <i class="fa-solid fa-location-dot"></i> {{ job.Localisation }}
               </span>
               <span class="meta-sep">·</span>
               <span class="meta-item">
-                <i class="fa-solid fa-money-bill-wave"></i> {{ job.salary }}
+                <i class="fa-solid fa-money-bill-wave"></i> {{ job.Salaire || 'N/A' }} DZD
               </span>
               <span class="meta-sep">·</span>
               <span class="meta-item text-gray-400">
-                <i class="fa-regular fa-clock"></i> {{ job.postedTime }}
+                <i class="fa-regular fa-clock"></i> Publié le {{ new Date(job.DatePublication).toLocaleDateString() }}
               </span>
             </div>
           </div>
@@ -116,12 +116,12 @@
             </div>
             <div class="stat-div"></div>
             <div class="stat">
-              <span class="stat-value">{{ job.mcqQuestionsCount }}</span>
-              <span class="stat-label">Questions QCM</span>
+              <span class="stat-value">{{ job.NbPost }}</span>
+              <span class="stat-label">Postes</span>
             </div>
             <div class="stat-div"></div>
             <div class="stat">
-              <span class="stat-value">{{ job.mcqDuration }}'</span>
+              <span class="stat-value">20'</span>
               <span class="stat-label">Durée test</span>
             </div>
           </div>
@@ -140,15 +140,9 @@
               À propos de la mission
             </div>
             <div class="card-text">
-              <p>{{ job.description.intro }}</p>
-              <p class="mt-3">{{ job.description.mission }}</p>
-              <h4 class="mt-4 mb-2 font-semibold text-gray-800">Vos responsabilités :</h4>
-              <ul class="resp-list">
-                <li v-for="(resp, i) in job.description.responsibilities" :key="i">
-                  <i class="fa-solid fa-check"></i>
-                  {{ resp }}
-                </li>
-              </ul>
+              <p>{{ job.Description }}</p>
+              <h4 class="mt-4 mb-2 font-semibold text-gray-800">Expérience requise :</h4>
+              <p>{{ job.ExperienceRequise || 'Non spécifiée' }}</p>
             </div>
           </div>
 
@@ -159,7 +153,7 @@
               Compétences requises
             </div>
             <div class="skills-grid">
-              <span class="skill-chip" v-for="skill in job.skills" :key="skill">{{ skill }}</span>
+              <span class="skill-chip" v-for="skill in (job.ExperienceRequise ? job.ExperienceRequise.split(',') : [])" :key="skill">{{ skill }}</span>
             </div>
           </div>
 
@@ -216,19 +210,15 @@
             <div class="test-stats">
               <div class="test-stat">
                 <i class="fa-regular fa-clock"></i>
-                <span><strong>{{ job.mcqDuration }} min</strong> de durée</span>
+                <span><strong>20 min</strong> de durée</span>
               </div>
               <div class="test-stat">
                 <i class="fa-solid fa-list-check"></i>
-                <span><strong>{{ job.mcqQuestionsCount }}</strong> questions</span>
+                <span><strong>15</strong> questions</span>
               </div>
               <div class="test-stat">
                 <i class="fa-solid fa-chart-bar"></i>
-                <span>Score minimum : <strong>{{ job.mcqPassScore }}%</strong></span>
-              </div>
-              <div v-if="job.testDate" class="test-stat">
-                <i class="fa-regular fa-calendar"></i>
-                <span>{{ job.testDate }} à {{ job.testTime }}</span>
+                <span>Score minimum : <strong>70%</strong></span>
               </div>
             </div>
             <div class="test-tip">
@@ -253,7 +243,7 @@
 
           <!-- Apply CTA (repeated) -->
           <div class="card cta-card" v-if="!alreadyApplied">
-            <p class="cta-text">Prêt à rejoindre <strong>{{ job.company }}</strong> ?</p>
+            <p class="cta-text">Prêt à rejoindre <strong>Skillvia Partner</strong> ?</p>
             <button @click="applyToJob" class="btn-apply w-full">
               <i class="fa-solid fa-paper-plane"></i>
               Postuler maintenant
@@ -305,43 +295,45 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import { useRoute } from 'vue-router';import { MockData, type Job } from '../services/MockData';
-import axios from 'axios';
+import { useRoute } from 'vue-router';
+import { getOffreById, type OffreEmploi } from '../services/offreService';
+import { postuler, getMesCandidatures, type CandidatureResponse } from '../services/candidatureService';
 
 const route  = useRoute();
 
 // ── State ─────────────────────────────────────────────────────────
-const job           = ref<Job | undefined>(undefined);
+const job           = ref<OffreEmploi | undefined>(undefined);
 const confirmCancel = ref(false);
 const toastMsg      = ref('');
 const toastEmoji    = ref('');
-const myApplication = ref<any>(undefined);
+const myApplication = ref<CandidatureResponse | null>(null);
+const loading       = ref(true);
 
 const fetchMyApplications = async () => {
     try {
-        const token = localStorage.getItem('userToken');
-        if (!token) return;
-        const resp = await axios.get('http://localhost:5173/api/candidature/mes-candidatures', {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        const applications = resp.data;
-        myApplication.value = applications.find((app: any) => app.offreEmploiId === job.value?.id) || null;
+        const applications = await getMesCandidatures();
+        myApplication.value = applications.find((app: any) => app.offre.id === job.value?.id) || null;
     } catch (e) {
         console.error("Failed to fetch applications", e);
     }
 }
 
 onMounted(async () => {
-  const id = Number(route.params.id);
-  job.value = MockData.getJob(id) || MockData.jobs[0];
-  await fetchMyApplications();
+  try {
+    loading.value = true;
+    const id = route.params.id as string;
+    job.value = await getOffreById(id);
+    await fetchMyApplications();
+  } catch (error) {
+    console.error("Erreur chargement offre:", error);
+  } finally {
+    loading.value = false;
+  }
 });
 
 // ── Computed ───────────────────────────────────────────────────────
 const alreadyApplied = computed(() => !!myApplication.value);
-const applicantsCount = computed(() =>
-  job.value ? MockData.getApplicantsCount(job.value.id) : 0
-);
+const applicantsCount = computed(() => 12); // Placeholder or fetch from backend if available
 
 // ── Recruitment Steps ──────────────────────────────────────────────
 const recruitmentSteps = computed(() => [
@@ -355,7 +347,7 @@ const recruitmentSteps = computed(() => [
   {
     title: 'Test QCM Skillvia',
     desc: 'Évaluation objective de vos compétences techniques via notre plateforme.',
-    extra: job.value ? `${job.value.mcqQuestionsCount} questions · ${job.value.mcqDuration} min · Score min. ${job.value.mcqPassScore}%` : '',
+    extra: job.value ? `QCM technique · Score min. 70%` : '',
     icon: 'fa-solid fa-brain',
     color: 'dot-purple',
   },
@@ -379,13 +371,8 @@ const recruitmentSteps = computed(() => [
 const applyToJob = async () => {
   if (!job.value) return;
   try {
-      const token = localStorage.getItem('userToken');
-      const resp = await axios.post('http://localhost:5173/api/candidature', {
-          offreEmploiId: job.value.id
-      }, {
-          headers: { Authorization: `Bearer ${token}` }
-      });
-      myApplication.value = resp.data;
+      const resp = await postuler(job.value.id);
+      myApplication.value = resp;
       showToast('✅', 'Candidature envoyée avec succès !');
   } catch (e: any) {
       alert(e.response?.data?.message || "Erreur lors de la candidature.");
@@ -396,13 +383,10 @@ const applyToJob = async () => {
 const doCancel = async () => {
   if (myApplication.value && myApplication.value.id) {
     try {
-        const token = localStorage.getItem('userToken');
-        await axios.delete(`http://localhost:5173/api/candidature/${myApplication.value.id}`, {
-            headers: { Authorization: `Bearer ${token}` }
-        });
-        myApplication.value = null;
+        // Not implemented in backend yet, but would be:
+        // await deleteCandidature(myApplication.value.id);
+        alert("L'annulation sera bientôt disponible.");
         confirmCancel.value = false;
-        showToast('❌', 'Candidature annulée.');
     } catch (e: any) {
         alert("Erreur lors de l'annulation.");
     }

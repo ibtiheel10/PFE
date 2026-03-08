@@ -1,27 +1,81 @@
 import api from './axios';
 
 // Interfaces
-export interface CandidatureResponseDto {
+export interface CandidatureResponse {
     id: number;
     datePostulation: string;
     statut: string;
     score: number | null;
     decision: string | null;
-    note: number | null;
-    commentaire: string | null;
-    evaluationDetails: string | null; // JSON String
-    candidatId: number;
-    candidatPrenom: string | null;
-    offreEmploiId: number;
-    offreTitre: string;
+    tempsEcoule?: string;
+    nbReponsesCorrectes?: number;
+    totalQuestions?: number;
+    rapidite?: string;
+    evaluationDetails?: string;
+    offre: {
+        id: string;
+        TitreDePost: string;
+        Categorie: string;
+        Localisation: string;
+    };
 }
 
-export const getMesCandidatures = async (): Promise<CandidatureResponseDto[]> => {
-    const response = await api.get<CandidatureResponseDto[]>('/Candidature/mes-candidatures');
+export interface CandidatureStats {
+    progression: { date: string; score: number }[];
+    stats: {
+        total: number;
+        enAttente: number;
+        acceptées: number;
+        refusées: number;
+        reussis: number;
+        echoues: number;
+        moyenne: number;
+    };
+}
+
+/**
+ * Postule à une offre d'emploi (UUID).
+ */
+export const postuler = async (offreId: string): Promise<CandidatureResponse> => {
+    const response = await api.post<CandidatureResponse>('/candidatures/apply/' + offreId);
     return response.data;
 };
 
-export const getCandidatureById = async (id: number): Promise<CandidatureResponseDto> => {
-    const response = await api.get<CandidatureResponseDto>(`/Candidature/${id}`);
+/**
+ * Récupère toutes les candidatures du candidat connecté.
+ */
+export const getMesCandidatures = async (): Promise<CandidatureResponse[]> => {
+    const response = await api.get<CandidatureResponse[]>('/candidatures/my-applications');
+    return response.data;
+};
+
+/**
+ * Récupère les statistiques de résultats pour les graphiques.
+ */
+export const getMesStats = async (): Promise<CandidatureStats> => {
+    const response = await api.get<CandidatureStats>('/candidatures/stats');
+    return response.data;
+};
+
+/**
+ * Récupère une candidature par son ID.
+ */
+export const getCandidatureById = async (id: number): Promise<CandidatureResponse> => {
+    const response = await api.get<CandidatureResponse>(`/candidatures/${id}`);
+    return response.data;
+};
+
+/**
+ * Annule une candidature.
+ */
+export const deleteCandidature = async (id: number): Promise<void> => {
+    await api.delete(`/candidatures/${id}`);
+};
+
+/**
+ * Récupère le détail d'un résultat spécifique.
+ */
+export const getResultById = async (id: number): Promise<CandidatureResponse> => {
+    const response = await api.get<CandidatureResponse>(`/candidatures/${id}/result`);
     return response.data;
 };

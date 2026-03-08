@@ -440,8 +440,7 @@ import ListeCondidat from './liste_condidat.vue';
 import ListePosteEntreprise from './liste_poste_entreprise.vue';
 import { getEntrepriseDashboard } from '../services/dashboardService';
 import type { EntrepriseDashboardDto } from '../services/dashboardService';
-import { getMesOffres } from '../services/offreService';
-import type { OffreEmploiDto } from '../services/offreService';
+import { getMesOffres, type OffreEmploiResponse } from '../services/entrepriseService';
 import { 
     Squares2X2Icon, 
     BriefcaseIcon, 
@@ -482,7 +481,7 @@ const editUsername = ref(userEmail.value);
 
 // --- Dynamic Data State ---
 const dashboardData = ref<EntrepriseDashboardDto | null>(null);
-const employerJobs = ref<OffreEmploiDto[]>([]);
+const employerJobs = ref<OffreEmploiResponse[]>([]);
 const isLoadingData = ref(true);
 
 onMounted(async () => {

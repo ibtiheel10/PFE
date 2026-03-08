@@ -57,7 +57,7 @@
                             v-for="app in recentApplications"
                             :key="app.id"
                             class="bg-white p-5 rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow cursor-pointer group"
-                            @click="goToJob(app.offreEmploiId)"
+                            @click="goToJob(app.offre?.id)"
                         >
                             <!-- Status line -->
                             <div class="flex justify-between items-start mb-4">
@@ -69,10 +69,10 @@
                                 </span>
                             </div>
                             <div>
-                                <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">{{ app.offreTitre }}</h4>
+                                <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors truncate">{{ app.offre?.TitreDePost }}</h4>
                                 <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
                                     <span class="text-xs text-gray-400 font-medium">{{ new Date(app.datePostulation).toLocaleDateString('fr-FR') }}</span>
-                                    <button @click.stop="goToJob(app.offreEmploiId)" class="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
+                                    <button @click.stop="goToJob(app.offre?.id)" class="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg hover:bg-blue-700 transition">
                                         Consulter
                                     </button>
                                 </div>
@@ -161,12 +161,12 @@
                             @click="goToJob(offre.id)"
                         >
                             <div class="flex justify-between items-start mb-1">
-                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600 truncate">{{ offre.titre }}</h4>
+                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600 truncate">{{ offre.TitreDePost }}</h4>
                             </div>
-                            <p class="text-xs text-gray-500 mb-3">{{ offre.entrepriseNom || 'Entreprise' }} • {{ offre.localisation }}</p>
+                            <p class="text-xs text-gray-500 mb-3">Skillvia Partner • {{ offre.Localisation }}</p>
                             <div class="flex items-center gap-2 flex-wrap">
-                                <span v-if="offre.categorie" class="text-[10px] font-medium bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{{ offre.categorie }}</span>
-                                <span v-if="offre.modeDeTravail" class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ offre.modeDeTravail }}</span>
+                                <span v-if="offre.Categorie" class="text-[10px] font-medium bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{{ offre.Categorie }}</span>
+                                <span v-if="offre.ModeDeTravail" class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ offre.ModeDeTravail }}</span>
                             </div>
                         </div>
                     </div>
@@ -227,8 +227,8 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { BoltIcon } from '@heroicons/vue/24/outline';
-import { getMesCandidatures, type CandidatureResponseDto } from '../../services/candidatureService';
-import { getOffres, type OffreEmploiDto } from '../../services/offreService';
+import { getMesCandidatures, type CandidatureResponse } from '../../services/candidatureService';
+import { getOffres, type OffreEmploi } from '../../services/offreService';
 
 const router = useRouter();
 
@@ -244,7 +244,7 @@ const firstName = computed(() => (displayName.value.trim().split(' ')[0] || 'Can
 const isLoading = ref(true);
 
 // ── Candidatures réelles ─────────────────────────────────────────
-const allCandidatures = ref<CandidatureResponseDto[]>([]);
+const allCandidatures = ref<CandidatureResponse[]>([]);
 const recentApplications = computed(() =>
     allCandidatures.value.slice(0, 4)
 );
@@ -256,7 +256,7 @@ const results = computed(() =>
         .sort((a, b) => new Date(b.datePostulation).getTime() - new Date(a.datePostulation).getTime())
         .slice(0, 5)
         .map(c => ({
-            name: c.offreTitre,
+            name: c.offre?.TitreDePost || 'Offre',
             date: new Date(c.datePostulation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
             score: c.score!
         }))
@@ -301,21 +301,22 @@ const currentChartData = computed(() =>
 );
 
 // ── Suggestions pour vous ─────────────────────────────────────────
-const suggestions = ref<OffreEmploiDto[]>([]);
+const suggestions = ref<OffreEmploi[]>([]);
 
 // ── Fetch all data ────────────────────────────────────────────────
 onMounted(async () => {
     try {
         const [candidaturesData, offresData] = await Promise.allSettled([
             getMesCandidatures(),
-            getOffres(1, 3)
+            getOffres()
         ]);
 
         if (candidaturesData.status === 'fulfilled') {
             allCandidatures.value = candidaturesData.value || [];
         }
         if (offresData.status === 'fulfilled') {
-            suggestions.value = offresData.value?.items || [];
+            // Limiter à 3 suggestions
+            suggestions.value = (offresData.value || []).slice(0, 3);
         }
     } catch (e) {
         console.error('Dashboard load error:', e);
@@ -343,7 +344,7 @@ const getScoreColor = (score: number) => {
 
 const goToJobs = () => router.push('/candidat/jobs');
 const goToHistory = () => router.push('/mes-candidatures');
-const goToJob = (offreId: number) => router.push(`/job-details-candidat/${offreId}`);
+const goToJob = (offreId: string | number) => router.push(`/job-details-candidat/${offreId}`);
 const goToResults = () => router.push('/resultats');
 </script>
 

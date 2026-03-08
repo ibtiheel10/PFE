@@ -6,7 +6,7 @@
       <section class="hero-banner">
         <div class="hero-inner">
           <p class="hero-eyebrow">
-            <i class="fa-solid fa-circle-check"></i> Plateforme de recrutement #1 en Algérie
+            <i class="fa-solid fa-circle-check"></i> Plateforme de recrutement #1 en Tunisie
           </p>
           <h1 class="hero-title">Trouvez l'offre qui vous correspond</h1>
           <p class="hero-subtitle">
@@ -107,27 +107,27 @@
               <div class="job-content">
                 <div class="job-header-row">
                   <div>
-                    <h3 class="job-title">{{ job.title }}</h3>
+                    <h3 class="job-title">{{ job.TitreDePost }}</h3>
                     <div class="job-meta">
                       <span class="meta-item">
                         <i class="fa-solid fa-building"></i>
-                        {{ job.company }}
+                        Skillvia Partner
                       </span>
                       <span class="meta-divider">·</span>
                       <span class="meta-item">
                         <i class="fa-solid fa-location-dot"></i>
-                        {{ job.location }}
+                        {{ job.Localisation }}
                       </span>
                       <span class="meta-divider">·</span>
                       <span class="meta-item">
                         <i class="fa-solid fa-clock"></i>
-                        Publié récemment
+                        Publié le {{ new Date(job.DatePublication).toLocaleDateString() }}
                       </span>
                     </div>
                   </div>
                   <div class="card-badges">
-                    <span class="job-category" :class="`category-${job.category.toLowerCase()}`">
-                      {{ job.category }}
+                    <span class="job-category" :class="`category-${job.Categorie.toLowerCase()}`">
+                      {{ job.Categorie }}
                     </span>
                     <span class="badge-new" v-if="index < 2">
                       <i class="fa-solid fa-bolt"></i> Nouveau
@@ -135,14 +135,11 @@
                   </div>
                 </div>
 
-                <p class="job-description">{{ job.description.intro }}</p>
+                <p class="job-description">{{ job.Description }}</p>
 
                 <div class="job-skills">
-                  <span v-for="skill in job.skills.slice(0, 4)" :key="skill" class="skill-tag">
+                  <span v-for="skill in (job.ExperienceRequise ? job.ExperienceRequise.split(',') : [])" :key="skill" class="skill-tag">
                     {{ skill }}
-                  </span>
-                  <span v-if="job.skills.length > 4" class="skill-tag more">
-                    +{{ job.skills.length - 4 }}
                   </span>
                 </div>
 
@@ -150,11 +147,11 @@
                   <div class="footer-left-group">
                     <div class="mcq-badge">
                       <i class="fa-solid fa-list-check"></i>
-                      {{ job.mcqDuration }} min QCM
+                      {{ job.TypeDeContrat }}
                     </div>
-                    <div class="salary-badge" v-if="job.salary">
+                    <div class="salary-badge" v-if="job.Salaire">
                       <i class="fa-solid fa-money-bill-wave"></i>
-                      {{ job.salary }}
+                      {{ job.Salaire }} DZD
                     </div>
                   </div>
                   <button class="job-btn" @click.stop="viewJob(job.id)">
@@ -215,54 +212,50 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import { getOffres, type OffreEmploi } from '../services/offreService';
 
 const router = useRouter();
 
 const searchQuery = ref('');
 const locationQuery = ref('');
-const jobs = ref<any[]>([]);
+const jobs = ref<OffreEmploi[]>([]);
 const totalCount = ref(0);
+const loading = ref(false);
 
 // --- Pagination State ---
 const currentPage = ref(1);
-const itemsPerPage = 5; // Has to match the pageSize sent to API
+const itemsPerPage = 6; 
 
 // --- Filter Logic ---
 const fetchJobs = async () => {
   try {
-    const params = new URLSearchParams();
-    params.append('page', currentPage.value.toString());
-    params.append('pageSize', itemsPerPage.toString());
+    loading.value = true;
+    const allJobs = await getOffres();
     
-    if (searchQuery.value) params.append('categorie', searchQuery.value); 
-    if (locationQuery.value) params.append('localisation', locationQuery.value);
+    // Simple client-side filtering for now as the backend getOffres() returns all
+    let filtered = allJobs;
+    if (searchQuery.value) {
+      const q = searchQuery.value.toLowerCase();
+      filtered = filtered.filter(j => 
+        j.TitreDePost.toLowerCase().includes(q) || 
+        j.Categorie.toLowerCase().includes(q)
+      );
+    }
+    if (locationQuery.value) {
+      const l = locationQuery.value.toLowerCase();
+      filtered = filtered.filter(j => j.Localisation.toLowerCase().includes(l));
+    }
 
-    const res = await axios.get(`http://localhost:5173/api/OffreEmploi?${params.toString()}`);
+    totalCount.value = filtered.length;
     
-    jobs.value = res.data.items.map((j: any) => ({
-      id: j.id,
-      title: j.titre,
-      company: j.entrepriseNom || 'Entreprise inconnue',
-      location: j.localisation || 'Non spécifié',
-      category: j.categorie || 'IT',
-      salary: j.salaire ? `${j.salaire} DZD` : '',
-      description: {
-        intro: j.description || 'Aucune description fournie.',
-        mission: '',
-        responsibilities: []
-      },
-      skills: j.competences ? j.competences.split(',').map((s: string) => s.trim()) : [],
-      icon: j.icon || 'fa-solid fa-briefcase',
-      iconColor: j.iconColor || '#3b82f6',
-      postedTime: new Date(j.datePublication).toLocaleDateString('fr-FR'),
-      tags: [],
-      mcqDuration: 0,
-    }));
-    totalCount.value = res.data.totalCount;
+    // Pagination
+    const start = (currentPage.value - 1) * itemsPerPage;
+    jobs.value = filtered.slice(start, start + itemsPerPage);
 
   } catch (error) {
     console.error("Erreur de chargement des offres", error);
+  } finally {
+    loading.value = false;
   }
 };
 
@@ -282,7 +275,7 @@ const paginationRange = computed(() => {
 });
 
 // --- Actions ---
-const viewJob = (id: number) => {
+const viewJob = (id: string) => {
   router.push(`/job-details-candidat/${id}`);
 };
 

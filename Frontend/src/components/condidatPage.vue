@@ -132,19 +132,19 @@
                 <div class="banner-decoration banner-decoration-1"></div>
                 <div class="banner-decoration banner-decoration-2"></div>
                 
-                <div class="relative z-10 max-w-2xl">
-                    <h2 class="text-3xl font-bold mb-2 animate-slide-in">Bon retour, Alexandre ! 👋</h2>
-                    <p class="text-blue-100 text-lg mb-6 animate-slide-in-delay">Vous avez 2 entretiens à venir et 3 nouvelles offres correspondant à votre profil.</p>
+                <div class="relative z-10 max-w-2xl" v-if="profile">
+                    <h2 class="text-3xl font-bold mb-2 animate-slide-in">Bon retour, {{ profile.prenom }} ! 👋</h2>
+                    <p class="text-blue-100 text-lg mb-6 animate-slide-in-delay" v-if="dashboard">Vous avez {{ dashboard.recentApplications.length }} candidatures récentes et {{ dashboard.suggestions.length }} suggestions d'offres.</p>
                      <div class="flex gap-4 animate-slide-in-delay-2">
                         <button @click="goToJobs" class="btn-primary">
                             <span>Explorer les offres</span>
                             <i class="fa-solid fa-arrow-right btn-icon"></i>
                         </button>
-                        <button class="btn-secondary">
-                            <span>Voir mon agenda</span>
-                            <i class="fa-solid fa-calendar btn-icon"></i>
-                        </button>
                     </div>
+                </div>
+                <div v-else class="relative z-10 animate-pulse">
+                    <div class="h-10 w-64 bg-blue-400/30 rounded-lg mb-4"></div>
+                    <div class="h-6 w-96 bg-blue-400/20 rounded-lg"></div>
                 </div>
             </div>
 
@@ -160,43 +160,32 @@
                             <h3 class="text-lg font-bold text-gray-800">Candidatures récentes</h3>
                             <button @click="goToJobs" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">Voir tout</button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                             <!-- Card 1 with Hover Animation -->
-                            <div class="application-card" @click="openApplication('Product Designer')">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5" v-if="dashboard && dashboard.recentApplications.length > 0">
+                             <!-- Loop through real applications -->
+                            <div v-for="app in dashboard.recentApplications" :key="app.id" class="application-card" @click="openApplication(app.offre.TitreDePost)">
                                 <div class="flex justify-between items-start mb-4">
                                      <div class="card-icon card-icon-teal">
-                                        <!-- Logo Placeholder -->
                                         <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" /></svg>
                                      </div>
-                                     <span class="status-badge status-badge-orange">Test Technique</span>
+                                     <span class="status-badge" :class="app.statut === 'En attente' ? 'status-badge-orange' : 'status-badge-blue'">{{ app.statut }}</span>
                                 </div>
                                 <div>
-                                    <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors card-title">Product Designer</h4>
-                                    <p class="text-sm text-gray-500 mb-4">Tech Solutions SA • Paris</p>
+                                    <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors card-title">{{ app.offre.TitreDePost }}</h4>
+                                    <p class="text-sm text-gray-500 mb-4">{{ app.offre.Categorie }} • {{ app.offre.Localisation }}</p>
                                     <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                                        <span class="text-xs text-gray-400 font-medium">Mis à jour il y a 2j</span>
-                                        <button @click.stop="startTest" class="action-btn action-btn-primary">Continuer</button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Card 2 with Hover Animation -->
-                            <div class="application-card" @click="openApplication('Fullstack Developer')">
-                                <div class="flex justify-between items-start mb-4">
-                                     <div class="card-icon card-icon-purple">
-                                       <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
-                                     </div>
-                                     <span class="status-badge status-badge-blue">Entretien RH</span>
-                                </div>
-                                <div>
-                                    <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors card-title">Fullstack Developer</h4>
-                                    <p class="text-sm text-gray-500 mb-4">Innovate Corp • Remote</p>
-                                    <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
-                                        <span class="text-xs text-gray-400 font-medium">Demain à 14:00</span>
+                                        <span class="text-xs text-gray-400 font-medium">Postulé le {{ new Date(app.datePostulation).toLocaleDateString() }}</span>
                                         <button @click.stop="openDetails" class="action-btn action-btn-secondary">Détails</button>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                        <div v-else-if="!loading" class="bg-white p-12 rounded-xl border border-dashed border-gray-300 text-center">
+                            <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <BriefcaseIcon class="w-8 h-8 text-gray-300" />
+                            </div>
+                            <h4 class="text-gray-900 font-bold mb-1">Aucune candidature récente</h4>
+                            <p class="text-gray-500 text-sm mb-6">Commencez à postuler pour voir vos suivis ici.</p>
+                            <button @click="goToJobs" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold text-sm shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition">Explorer les offres</button>
                         </div>
                     </section>
 
@@ -214,20 +203,24 @@
                         </div>
                         
                         <!-- Custom CSS Chart -->
-                        <div class="h-64 flex items-end justify-between px-4 pb-2 gap-4">
-                            <div v-for="(bar, index) in chartData" :key="index" class="flex flex-col items-center gap-2 group w-full h-full justify-end">
-                                <div class="relative w-full max-w-[40px] bg-gray-100 rounded-t-lg overflow-hidden flex items-end transition-all duration-500 hover:scale-105" :style="{ height: bar.height + '%' }">
+                        <div class="h-64 flex items-end justify-between px-4 pb-2 gap-4" v-if="dashboard && dashboard.skillsAnalysis.length > 0">
+                            <div v-for="(skill, index) in dashboard.skillsAnalysis" :key="index" class="flex flex-col items-center gap-2 group w-full h-full justify-end">
+                                <div class="relative w-full max-w-[40px] bg-gray-100 rounded-t-lg overflow-hidden flex items-end transition-all duration-500 hover:scale-105" style="height: 100%">
                                     <div class="w-full bg-gradient-to-t from-blue-600 to-blue-400 transition-all duration-1000 ease-out relative group-hover:to-blue-300"
-                                         :style="{ height: bar.fill + '%' }"
+                                         :style="{ height: skill.score + '%' }"
                                     ></div>
                                     
                                     <!-- Tooltip -->
                                     <div class="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-900 text-white text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                        {{ bar.fill }}%
+                                        {{ skill.score }}%
                                     </div>
                                 </div>
-                                <span class="text-xs font-medium text-gray-500 group-hover:text-blue-600 transition-colors">{{ bar.label }}</span>
+                                <span class="text-xs font-medium text-gray-500 group-hover:text-blue-600 transition-colors truncate w-full text-center">{{ skill.category }}</span>
                             </div>
+                        </div>
+                        <div v-else-if="!loading" class="h-64 flex flex-col items-center justify-center text-gray-400 border border-dashed border-gray-200 rounded-lg">
+                             <ChartBarIcon class="w-10 h-10 mb-2 opacity-20" />
+                             <p class="text-sm">Passez un test pour voir votre analyse</p>
                         </div>
                     </section>
                 </div>
@@ -241,29 +234,21 @@
                             <h3 class="font-bold text-gray-900">Suggestions pour vous</h3>
                             <BoltIcon class="w-5 h-5 text-yellow-500" />
                         </div>
-                        <div class="divide-y divide-gray-50">
-                            <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
+                        <div class="divide-y divide-gray-50" v-if="dashboard && dashboard.suggestions.length > 0">
+                            <div v-for="suggestion in dashboard.suggestions" :key="suggestion.id" class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group" @click="router.push(`/job/${suggestion.id}`)">
                                 <div class="flex justify-between items-start mb-1">
-                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Développeur Frontend Senior</h4>
-
+                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">{{ suggestion.TitreDePost }}</h4>
                                 </div>
-                                <p class="text-xs text-gray-500 mb-3">NextGen Solutions • Paris</p>
+                                <p class="text-xs text-gray-500 mb-3">{{ suggestion.Categorie }} • {{ suggestion.Localisation }}</p>
                                 <div class="flex items-center gap-2">
-                                     <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">React</span>
-                                     <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">TypeScript</span>
+                                     <span class="text-[10px] font-medium bg-blue-50 text-blue-600 px-2 py-0.5 rounded">{{ suggestion.ModeDeTravail }}</span>
+                                     <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{{ suggestion.TypeDeContrat }}</span>
                                 </div>
                             </div>
-                             <div class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group">
-                                <div class="flex justify-between items-start mb-1">
-                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">Architecte UX</h4>
-
-                                </div>
-                                <p class="text-xs text-gray-500 mb-3">Global Design Studio • Lyon</p>
-                                <div class="flex items-center gap-2">
-                                     <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Figma</span>
-                                     <span class="text-[10px] font-medium bg-gray-100 text-gray-600 px-2 py-0.5 rounded">Recherche Utilisateur</span>
-                                </div>
-                            </div>
+                        </div>
+                        <div v-else-if="!loading" class="p-8 text-center text-gray-400 text-sm">
+                            <BoltIcon class="w-8 h-8 mx-auto mb-2 opacity-20" />
+                            Aucune suggestion disponible.
                         </div>
                         <div class="p-3 bg-gray-50 text-center">
                             <button @click="goToJobs" class="text-xs font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wide">Voir tout</button>
@@ -283,15 +268,20 @@
                                         <th class="text-[10px] uppercase text-gray-400 font-bold p-3 text-right">Score</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr v-for="result in results" :key="result.name" class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                                <tbody v-if="dashboard && dashboard.recentResults.length > 0">
+                                    <tr v-for="result in dashboard.recentResults" :key="result.id" class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer" @click="router.push(`/result/${result.id}`)">
                                         <td class="p-3">
-                                            <div class="text-sm font-semibold text-gray-700">{{ result.name }}</div>
-                                            <div class="text-[11px] text-gray-400">{{ result.date }}</div>
+                                            <div class="text-sm font-semibold text-gray-700">{{ result.offre.TitreDePost }}</div>
+                                            <div class="text-[11px] text-gray-400">{{ new Date(result.datePostulation).toLocaleDateString() }}</div>
                                         </td>
                                         <td class="p-3 text-right">
-                                            <span class="font-bold text-sm" :class="getScoreColor(result.score)">{{ result.score }}%</span>
+                                            <span class="font-bold text-sm" :class="getScoreColor(result.score || 0)">{{ result.score || 0 }}%</span>
                                         </td>
+                                    </tr>
+                                </tbody>
+                                <tbody v-else-if="!loading">
+                                    <tr>
+                                        <td colspan="2" class="p-8 text-center text-gray-400 text-sm">Aucun résultat</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -324,9 +314,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { getDashboardData, getMonProfil, type DashboardData, type CandidatProfile } from '../services/candidatService';
 import { 
     Squares2X2Icon, 
     BriefcaseIcon, 
@@ -350,6 +341,10 @@ const hasNotifications = ref(true);
 const showProfileMenu = ref(false);
 const isSidebarCollapsed = ref(false);
 
+const dashboard = ref<DashboardData | null>(null);
+const profile = ref<CandidatProfile | null>(null);
+const loading = ref(true);
+
 const toggleSidebar = () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value;
 };
@@ -360,6 +355,22 @@ const navItems = [
     { name: 'Historique des Candidatures', icon: ClockIcon },
     { name: 'Résultats', icon: ChartBarIcon }
 ];
+
+onMounted(async () => {
+    try {
+        loading.value = true;
+        const [dashData, profileData] = await Promise.all([
+            getDashboardData(),
+            getMonProfil()
+        ]);
+        dashboard.value = dashData;
+        profile.value = profileData;
+    } catch (error) {
+        console.error("Erreur lors du chargement du dashboard:", error);
+    } finally {
+        loading.value = false;
+    }
+});
 
 const handleNav = (itemName: string) => {
     if (itemName === 'Offres') {
@@ -372,23 +383,8 @@ const handleNav = (itemName: string) => {
 };
 
 const goToJobs = () => {
-    router.push('/history');
+    router.push('/jobs');
 };
-
-const chartData = [
-  { label: 'Jan', height: 100, fill: 65, isActive: false },
-  { label: 'Fév', height: 100, fill: 72, isActive: false },
-  { label: 'Mar', height: 100, fill: 85, isActive: false },
-  { label: 'Avr', height: 100, fill: 60, isActive: false },
-  { label: 'Mai', height: 100, fill: 90, isActive: false },
-  { label: 'Juin', height: 100, fill: 95, isActive: true } // Active month
-];
-
-const results = [
-    { name: 'JavaScript Advanced', date: '12 Oct 2023', score: 92 },
-    { name: 'React Hooks', date: '08 Oct 2023', score: 88 },
-    { name: 'UI Design Systems', date: '25 Sep 2023', score: 74 },
-];
 
 const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-600';
@@ -399,7 +395,6 @@ const getScoreColor = (score: number) => {
 const handleSearch = () => {
     if (searchQuery.value) {
         console.log('Searching for:', searchQuery.value);
-        // Implement search logic here
     }
 };
 
@@ -424,9 +419,7 @@ const openApplication = (title: string) => {
     alert('Ouverture de la candidature: ' + title);
 };
 
-const startTest = () => {
-    alert('Redirection vers le module de test...');
-};
+
 
 const openDetails = () => {
     alert('Affichage des détails du rendez-vous');

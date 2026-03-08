@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
 import { CandidatService } from './candidat.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -24,5 +24,19 @@ export class CandidatController {
     @ApiResponse({ status: 403, description: 'Forbidden - Role insufficient.' })
     async getMonProfil(@Request() req: any) {
         return this.candidatService.getMonProfil(req.user.userId);
+    }
+
+    @Get('dashboard')
+    @ApiOperation({ summary: 'Get candidate dashboard data' })
+    @ApiResponse({ status: 200, description: 'Dashboard data retrieved successfully.' })
+    async getDashboard(@Request() req: any) {
+        return this.candidatService.getDashboard(req.user.userId);
+    }
+
+    @Put('mon-profil')
+    @ApiOperation({ summary: 'Update current candidat profile' })
+    @ApiResponse({ status: 200, description: 'Profile updated successfully.' })
+    async updateProfil(@Request() req: any, @Body() body: any) {
+        return this.candidatService.updateProfil(req.user.userId, body);
     }
 }
