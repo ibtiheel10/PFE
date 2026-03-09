@@ -492,7 +492,7 @@ const confirmDeleteJob = async () => {
         try {
             const token = localStorage.getItem('userToken');
             const config = { headers: { Authorization: `Bearer ${token}` } };
-            await axios.delete(`http://localhost:5173/api/OffreEmploi/${jobToDelete.value}`, config);
+            await axios.delete(`http://localhost:5173/api/Entreprise/offres/${jobToDelete.value}`, config);
             showDeleteConfirm.value = false;
             jobToDelete.value = null;
             fetchMyJobs();
@@ -529,7 +529,7 @@ const confirmRenameJob = async () => {
                 nbPost: jobToRename.value.nbPost,
                 dateLimite: jobToRename.value.dateLimite
             };
-            await axios.put(`http://localhost:5173/api/OffreEmploi/${jobToRename.value.id}`, payload, config);
+            await axios.put(`http://localhost:5173/api/Entreprise/offres/${jobToRename.value.id}`, payload, config);
             showRenameModal.value = false;
             jobToRename.value = null;
             fetchMyJobs();
@@ -608,7 +608,7 @@ const fetchMyJobs = async () => {
         const token = localStorage.getItem('userToken');
         if (!token) return;
         const config = { headers: { Authorization: `Bearer ${token}` } };
-        const res = await axios.get('http://localhost:5173/api/OffreEmploi/mes-offres', config);
+        const res = await axios.get('http://localhost:5173/api/Entreprise/mes-offres', config);
         jobsList.value = res.data;
     } catch (e) { console.error("Erreur de récupération des offres", e); }
 };
@@ -617,7 +617,7 @@ const displayJobs = computed(() => {
     let list = jobsList.value.map(j => ({
         id: j.id,
         title: j.titre,
-        applicants: j.candidatures ? j.candidatures.length : 0,
+        applicants: typeof j.candidatures === 'number' ? j.candidatures : (j.candidatures ? j.candidatures.length : 0),
         daysLeft: j.dateLimite ? Math.max(0, Math.ceil((new Date(j.dateLimite).getTime() - new Date().getTime()) / (1000 * 3600 * 24))) : 0,
         progress: Math.floor(Math.random() * 100),
         quality: 'ÉLEVÉE',
@@ -685,7 +685,7 @@ const submitPost = async () => {
             nbPost: formData.value.positions,
             dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : null
         };
-        await axios.post('http://localhost:5173/api/OffreEmploi', payload, config);
+        await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
         alert('Poste publié avec succès !');
         closeCreateModal();
         fetchMyJobs();
@@ -1042,11 +1042,6 @@ onMounted(() => {
 .icon-btn:hover {
     background: #E5E7EB;
     color: #111827;
-    transform: rotate(90deg) scale(1.1);
-}
-
-.icon-btn:active {
-    transform: rotate(90deg) scale(0.95);
 }
 
 /* Modal Styles */

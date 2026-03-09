@@ -2,12 +2,17 @@
     <div class="content-container animate-fade-in">
         <div class="page-header">
             <div>
-                <h1>Candidats <span class="badge-total" style="font-size: 0.8rem; vertical-align: middle; margin-left: 8px;">{{ candidates.length }} TOTAL</span></h1>
+                <h1>Candidats <span class="badge-total" style="font-size: 0.8rem; vertical-align: middle; margin-left: 8px;">{{ candidatesList.length }} TOTAL</span></h1>
                 <p class="subtitle">Gérez et évaluez les candidats pour tous vos postes.</p>
             </div>
         </div>
 
+        <!-- Loading / Error state -->
+        <div v-if="isLoading" style="text-align:center; padding: 3rem; color: #6B7280; font-weight: 500;">Chargement des candidats…</div>
+        <div v-else-if="errorMsg" style="text-align:center; padding: 2rem; color: #DC2626;">{{ errorMsg }}</div>
+
         <!-- Filters Bar -->
+        <div v-else>
         <div class="filters-card">
             <div class="search-wrap-lg">
                 <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6B7280" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -71,7 +76,7 @@
                             <td>
                                 <div class="candidate-profile">
                                     <div class="avatar-wrapper">
-                                        <img :src="candidate.avatar" class="c-avatar-lg" alt="">
+                                        <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&color=fff&rounded=true&bold=true`" class="c-avatar-lg" :alt="candidate.name">
                                         <div class="status-indicator" :class="getScoreColor(candidate.score)"></div>
                                     </div>
                                     <div class="candidate-details">
@@ -178,20 +183,37 @@
                 </div>
             </div>
         </div>
+        </div><!-- end v-else -->
     </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { MockData } from '../services/MockData';
+import { ref, computed, onMounted } from 'vue';
+import api from '../services/axios';
 import { TrashIcon } from '@heroicons/vue/24/outline';
 
-// Props
-const props = defineProps<{
-    candidates: any[];
-}>();
+// ─── Data ────────────────────────────────────────────────────────────────────
+const candidatesList = ref<any[]>([]);
+const isLoading = ref(true);
+const errorMsg = ref('');
 
-// State
+const fetchCandidats = async () => {
+    try {
+        isLoading.value = true;
+        errorMsg.value = '';
+        const res = await api.get('/Entreprise/candidats');
+        candidatesList.value = res.data;
+    } catch (e: any) {
+        errorMsg.value = 'Erreur lors du chargement des candidats.';
+        console.error(e);
+    } finally {
+        isLoading.value = false;
+    }
+};
+
+onMounted(fetchCandidats);
+
+// ─── Filters & Sorting ───────────────────────────────────────────────────────
 const searchQuery = ref('');
 const selectedStatusFilter = ref('');
 const sortField = ref('score');
@@ -199,32 +221,26 @@ const sortOrder = ref('desc');
 const selectedCandidates = ref<any[]>([]);
 const showDeleteDialog = ref(false);
 const candidateToDelete = ref<any>(null);
-
-
-// Computed
 const currentPage = ref(1);
 const itemsPerPage = 5;
 
 const filteredCandidates = computed(() => {
-    let list = props.candidates;
-    
-    // Search
+    let list = candidatesList.value;
+
     if (searchQuery.value.trim()) {
         const q = searchQuery.value.toLowerCase();
-        list = list.filter(c => 
-            c.name.toLowerCase().includes(q) || 
-            c.role.toLowerCase().includes(q)
+        list = list.filter(c =>
+            c.name?.toLowerCase().includes(q) ||
+            c.role?.toLowerCase().includes(q)
         );
     }
 
-    // Filter by Status
     if (selectedStatusFilter.value) {
         list = list.filter(c => c.status === selectedStatusFilter.value);
     }
 
-    // Sort
     return list.slice().sort((a: any, b: any) => {
-        let modifier = sortOrder.value === 'asc' ? 1 : -1;
+        const modifier = sortOrder.value === 'asc' ? 1 : -1;
         if (a[sortField.value] < b[sortField.value]) return -1 * modifier;
         if (a[sortField.value] > b[sortField.value]) return 1 * modifier;
         return 0;
@@ -239,16 +255,15 @@ const paginatedCandidates = computed(() => {
 });
 
 const changePage = (page: number) => {
-    if (page >= 1 && page <= totalPages.value) {
-        currentPage.value = page;
-    }
+    if (page >= 1 && page <= totalPages.value) currentPage.value = page;
 };
 
-const isAllSelected = computed(() => {
-    return filteredCandidates.value.length > 0 && selectedCandidates.value.length === filteredCandidates.value.length;
-});
+const isAllSelected = computed(() =>
+    filteredCandidates.value.length > 0 &&
+    selectedCandidates.value.length === filteredCandidates.value.length
+);
 
-// Helpers
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 const getScoreColor = (score: number) => {
     if (score >= 90) return 'green-fill';
     if (score >= 80) return 'blue-fill';
@@ -268,23 +283,21 @@ const getScoreLabel = (score: number) => {
     return 'Moyen';
 };
 
-// Methods
+// ─── Methods ─────────────────────────────────────────────────────────────────
 const sortBy = (field: string) => {
     if (sortField.value === field) {
         sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc';
     } else {
         sortField.value = field;
-        sortOrder.value = 'desc'; 
+        sortOrder.value = 'desc';
     }
 };
 
-const isSelected = (candidate: any) => {
-    return selectedCandidates.value.some(c => c.name === candidate.name);
-};
+const isSelected = (candidate: any) => selectedCandidates.value.some(c => c.id === candidate.id);
 
 const toggleSelection = (candidate: any) => {
     if (isSelected(candidate)) {
-        selectedCandidates.value = selectedCandidates.value.filter(c => c.name !== candidate.name);
+        selectedCandidates.value = selectedCandidates.value.filter(c => c.id !== candidate.id);
     } else {
         selectedCandidates.value.push(candidate);
     }
@@ -308,9 +321,19 @@ const closeDeleteDialog = () => {
     candidateToDelete.value = null;
 };
 
-const confirmReject = () => {
-    if (candidateToDelete.value) {
-        MockData.deleteApplication(candidateToDelete.value.id);
+const confirmReject = async () => {
+    if (!candidateToDelete.value) return;
+    try {
+        await api.patch(`/Entreprise/candidats/${candidateToDelete.value.id}/statut`, {
+            statut: 'Rejeté',
+            decision: 'Candidature rejetée',
+        });
+        // Refresh list
+        await fetchCandidats();
+    } catch (e) {
+        console.error('Erreur lors du rejet :', e);
+        alert('Impossible de rejeter la candidature. Réessayez.');
+    } finally {
         closeDeleteDialog();
     }
 };
@@ -616,12 +639,11 @@ const confirmReject = () => {
 .candidate-profile {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 }
 
 .avatar-wrapper {
     position: relative;
-    width: 42px;
     height: 42px;
     flex-shrink: 0;
 }

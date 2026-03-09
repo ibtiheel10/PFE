@@ -19,7 +19,7 @@
                         <td>
                             <div class="candidate-profile">
                                 <div class="avatar-wrapper" style="width: 36px; height: 36px;">
-                                    <img :src="candidate.avatar" class="c-avatar-lg" alt="">
+                                    <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&color=fff&rounded=true&bold=true`" class="c-avatar-lg" :alt="candidate.name">
                                     <div class="status-indicator" :class="getScoreColor(candidate.score)"></div>
                                 </div>
                                 <div class="candidate-details">

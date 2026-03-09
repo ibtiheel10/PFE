@@ -134,7 +134,7 @@ export const updateMonProfil = async (id: number, secteur: string): Promise<void
  * Toutes les offres de l'entreprise connectée.
  */
 export const getMesOffres = async (): Promise<OffreEmploiResponse[]> => {
-    const response = await api.get<OffreEmploiResponse[]>('/OffreEmploi/mes-offres');
+    const response = await api.get<OffreEmploiResponse[]>('/Entreprise/mes-offres');
     return response.data;
 };
 
@@ -142,7 +142,7 @@ export const getMesOffres = async (): Promise<OffreEmploiResponse[]> => {
  * Crée une nouvelle offre d'emploi (l'entrepriseId est lu du JWT côté serveur).
  */
 export const createOffre = async (dto: OffreEmploiCreateDto): Promise<OffreEmploiResponse> => {
-    const response = await api.post<OffreEmploiResponse>('/OffreEmploi', dto);
+    const response = await api.post<OffreEmploiResponse>('/Entreprise/offres', dto);
     return response.data;
 };
 
@@ -150,14 +150,14 @@ export const createOffre = async (dto: OffreEmploiCreateDto): Promise<OffreEmplo
  * Modifie une offre existante.
  */
 export const updateOffre = async (id: number, dto: OffreEmploiCreateDto): Promise<void> => {
-    await api.put(`/OffreEmploi/${id}`, { ...dto, id } as OffreEmploiUpdateDto);
+    await api.put(`/Entreprise/offres/${id}`, { ...dto, id } as OffreEmploiUpdateDto);
 };
 
 /**
  * Supprime une offre d'emploi.
  */
 export const deleteOffre = async (id: number): Promise<void> => {
-    await api.delete(`/OffreEmploi/${id}`);
+    await api.delete(`/Entreprise/offres/${id}`);
 };
 
 // ─── Candidatures reçues ──────────────────────────────────────────────────────

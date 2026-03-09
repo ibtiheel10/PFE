@@ -97,7 +97,7 @@
             <!-- Profile -->
             <div class="relative">
                 <button @click="toggleProfileMenu" class="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full border border-transparent hover:border-gray-200 transition-all">
-                    <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random`" alt="User" class="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm" />
+                    <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random&color=fff&rounded=true&bold=true`" alt="User" class="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm" />
                     <div class="hidden md:flex flex-col items-start">
                         <span class="text-sm font-bold text-gray-700 leading-none">{{ userName }}</span>
                         <span class="text-[11px] font-medium text-blue-600 mt-1">RH Manager</span>
@@ -339,7 +339,6 @@
 
             <ListeCondidat 
                 v-else-if="activeNav === 'Candidats'" 
-                :candidates="candidatesSource" 
             />
 
 
@@ -661,11 +660,11 @@ const displayJobs = computed(() => {
     let list = employerJobs.value.map(j => ({
         id: j.id,
         title: j.titre || j.categorie, // Utiliser le titre ou la catégorie
-        applicants: 0, // Idéalement, retourné par le backend
-        daysLeft: j.dateLimite ? Math.max(0, Math.floor((new Date(j.dateLimite).getTime() - new Date().getTime()) / (1000 * 3600 * 24))) : 30,
+        applicants: (j as any).candidatures || 0,
+        daysLeft: (j as any).daysLeft !== undefined ? (j as any).daysLeft : 30,
         progress: 100,
         quality: 'ÉLEVÉE',
-        status: 'ACTIVE'
+        status: (j as any).status || 'ACTIVE'
     }));
     
     if (!searchQuery.value.trim()) return list;

@@ -35,6 +35,6 @@ export const getCandidatDashboard = async (): Promise<CandidatDashboardDto> => {
 };
 
 export const getEntrepriseDashboard = async (): Promise<EntrepriseDashboardDto> => {
-    const response = await api.get<EntrepriseDashboardDto>('/Dashboard/entreprise');
+    const response = await api.get<EntrepriseDashboardDto>('/Entreprise/dashboard');
     return response.data;
 };

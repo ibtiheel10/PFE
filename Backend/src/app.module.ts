@@ -11,8 +11,10 @@ import { User } from './entities/user.entity';
 import { OtpCode } from './entities/otp-code.entity';
 import { OffreEmploi } from './entities/offre-emploi.entity';
 import { Candidature } from './entities/candidature.entity';
+import { Question } from './entities/question.entity';
 import { OffresModule } from './offres/offres.module';
 import { CandidaturesModule } from './candidatures/candidatures.module';
+import { QuestionsModule } from './questions/questions.module';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { CandidaturesModule } from './candidatures/candidatures.module';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', ''),
         database: configService.get<string>('DB_NAME', 'projet_pfe'),
-        entities: [User, OtpCode, OffreEmploi, Candidature],
+        entities: [User, OtpCode, OffreEmploi, Candidature, Question],
         synchronize: true, // Auto-creates tables — disable in production!
         logging: false,
       }),
@@ -42,6 +44,7 @@ import { CandidaturesModule } from './candidatures/candidatures.module';
     AdminModule,
     OffresModule,
     CandidaturesModule,
+    QuestionsModule,
   ],
 })
 export class AppModule { }
