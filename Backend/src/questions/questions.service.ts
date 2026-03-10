@@ -11,7 +11,14 @@ export class QuestionsService {
     ) { }
 
     async findAll() {
-        return await this.questionRepo.find();
+        return await this.questionRepo.find({ relations: ['offre'] });
+    }
+
+    async findByOffre(offreId: string) {
+        return await this.questionRepo.find({
+            where: { offre: { id: offreId } },
+            relations: ['offre'],
+        });
     }
 
     async findOne(id: number) {

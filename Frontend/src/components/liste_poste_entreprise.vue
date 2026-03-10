@@ -456,10 +456,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { TrashIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 import axios from 'axios';
+
+const router = useRouter();
 
 const props = defineProps({
     searchQuery: {
@@ -473,8 +475,6 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['modal-opened']);
-
-const router = useRouter();
 
 const activeJobMenu = ref<number | null>(null);
 const toggleJobMenu = (id: number) => {
