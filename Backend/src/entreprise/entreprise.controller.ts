@@ -3,7 +3,62 @@ import { EntrepriseService } from './entreprise.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+
+export class CreateOffreDto {
+    @ApiProperty({ example: 'Développeur Full Stack' })
+    @IsString()
+    @IsNotEmpty()
+    titre: string;
+
+    @ApiProperty({ example: 'Description détaillée de l\'offre...' })
+    @IsString()
+    @IsNotEmpty()
+    description: string;
+
+    @ApiProperty({ example: 'Informatique' })
+    @IsString()
+    @IsNotEmpty()
+    categorie: string;
+
+    @ApiProperty({ example: '2026-12-31T23:59:59Z', required: false })
+    @IsOptional()
+    dateLimite?: string;
+
+    @ApiProperty({ example: 'CDI', required: false })
+    @IsOptional()
+    @IsString()
+    typeDeContrat?: string;
+
+    @ApiProperty({ example: 'Hybride', required: false })
+    @IsOptional()
+    @IsString()
+    modeDeTravail?: string;
+
+    @ApiProperty({ example: 3000, required: false })
+    @IsOptional()
+    salaire?: number;
+
+    @ApiProperty({ example: 'Paris', required: false })
+    @IsOptional()
+    @IsString()
+    localisation?: string;
+
+    @ApiProperty({ example: '3 ans', required: false })
+    @IsOptional()
+    @IsString()
+    experienceRequise?: string;
+
+    @ApiProperty({ example: 1, required: false })
+    @IsOptional()
+    nbPost?: number;
+
+    @ApiProperty({ example: 'Vue.js, TypeScript...', required: false })
+    @IsOptional()
+    @IsString()
+    competences?: string;
+}
 
 @ApiTags('Entreprise')
 @ApiBearerAuth()
@@ -44,23 +99,24 @@ export class EntrepriseController {
      * GET /api/Entreprise/mes-offres
      * Liste toutes les offres avec compteur de candidatures et jours restants.
      */
+
     @Get('mes-offres')
     @ApiOperation({ summary: 'Get all job offers with applicant count and days left' })
     @ApiResponse({ status: 200, description: 'List of offres returned.' })
-    async getMesOffres() {
-        return this.entrepriseService.getMesOffres();
+    async getMesOffres(@Request() req: any) {
+        return this.entrepriseService.getMesOffres(req.user.userId);
     }
 
     /**
      * POST /api/Entreprise/offres
      * Crée une nouvelle offre d'emploi.
-     * Body: { titre, description, categorie, dateLimite, typeDeContact, modeDeTravail, salaire?, localisation, experienceRequise?, nbPost? }
      */
     @Post('offres')
     @ApiOperation({ summary: 'Create a new job offer' })
+    @ApiBody({ type: CreateOffreDto })
     @ApiResponse({ status: 201, description: 'Offre created.' })
-    async createOffre(@Body() body: any) {
-        return this.entrepriseService.createOffre(body);
+    async createOffre(@Body() body: CreateOffreDto, @Request() req: any) {
+        return this.entrepriseService.createOffre({ ...body, userId: req.user.userId });
     }
 
     /**
@@ -70,9 +126,10 @@ export class EntrepriseController {
     @Put('offres/:id')
     @ApiOperation({ summary: 'Update a job offer' })
     @ApiParam({ name: 'id', description: 'UUID of the offre' })
+    @ApiBody({ type: CreateOffreDto })
     @ApiResponse({ status: 200, description: 'Offre updated.' })
     @ApiResponse({ status: 404, description: 'Offre not found.' })
-    async updateOffre(@Param('id') id: string, @Body() body: any) {
+    async updateOffre(@Param('id') id: string, @Body() body: CreateOffreDto) {
         return this.entrepriseService.updateOffre(id, body);
     }
 
@@ -96,10 +153,10 @@ export class EntrepriseController {
      * Liste tous les candidats ayant postulé à une offre, avec leur score et statut.
      */
     @Get('candidats')
-    @ApiOperation({ summary: 'Get all candidates who applied to any offer' })
+    @ApiOperation({ summary: 'Get all candidates who applied to this entreprise offers' })
     @ApiResponse({ status: 200, description: 'List of candidates returned.' })
-    async getAllCandidats() {
-        return this.entrepriseService.getAllCandidats();
+    async getAllCandidats(@Request() req: any) {
+        return this.entrepriseService.getAllCandidats(req.user.userId);
     }
 
     /**

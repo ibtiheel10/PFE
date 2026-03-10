@@ -30,11 +30,11 @@ import { QuestionsModule } from './questions/questions.module';
         host: configService.get<string>('DB_HOST', 'localhost'),
         port: configService.get<number>('DB_PORT', 5432),
         username: configService.get<string>('DB_USERNAME', 'postgres'),
-        password: configService.get<string>('DB_PASSWORD', ''),
-        database: configService.get<string>('DB_NAME', 'projet_pfe'),
+        password: configService.get<string>('DB_PASSWORD', 'admin123'),
+        database: configService.get<string>('DB_NAME', 'skillvia_db_2'),
         entities: [User, OtpCode, OffreEmploi, Candidature, Question],
         synchronize: true, // Auto-creates tables — disable in production!
-        logging: false,
+        logging: true,
       }),
     }),
 

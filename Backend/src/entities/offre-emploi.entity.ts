@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne } from 'typeorm';
+import { User } from './user.entity';
 
 @Entity('offres_emploi')
 export class OffreEmploi {
@@ -26,6 +27,9 @@ export class OffreEmploi {
     @Column({ nullable: true })
     ModeDeTravail: string;
 
+    @Column({ type: 'text', nullable: true })
+    competences: string;
+
     @Column({ type: 'float', nullable: true })
     Salaire: number;
 
@@ -37,4 +41,7 @@ export class OffreEmploi {
 
     @Column({ type: 'int', default: 1 })
     NbPost: number;
+
+    @ManyToOne(() => User, { nullable: true })
+    entreprise: User;
 }

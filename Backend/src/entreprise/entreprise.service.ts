@@ -29,16 +29,27 @@ export class EntrepriseService {
 
     // ─── Dashboard ────────────────────────────────────────────────────────────
 
-    async getDashboard(_userId: number) {
-        const totalOffres = await this.offreRepo.count();
+    async getDashboard(userId: number) {
+        // Only count offers from the connected entreprise
+        const totalOffres = await this.offreRepo.count({
+            where: { entreprise: { id: userId } },
+        });
 
         const today = new Date();
         const offresActives = await this.offreRepo
             .createQueryBuilder('o')
-            .where('o."DateLimite" IS NULL OR o."DateLimite" >= :today', { today })
+            .leftJoin('o.entreprise', 'ent')
+            .where('ent.id = :userId', { userId })
+            .andWhere('(o."DateLimite" IS NULL OR o."DateLimite" >= :today)', { today })
             .getCount();
 
-        const totalCandidatures = await this.candidatureRepo.count();
+        // Only count candidatures for this entreprise's offers
+        const totalCandidatures = await this.candidatureRepo
+            .createQueryBuilder('c')
+            .leftJoin('c.offre', 'o')
+            .leftJoin('o.entreprise', 'ent')
+            .where('ent.id = :userId', { userId })
+            .getCount();
 
         const sevenMonthsAgo = new Date();
         sevenMonthsAgo.setMonth(sevenMonthsAgo.getMonth() - 6);
@@ -46,9 +57,12 @@ export class EntrepriseService {
 
         const rawParMois = await this.candidatureRepo
             .createQueryBuilder('c')
+            .leftJoin('c.offre', 'o')
+            .leftJoin('o.entreprise', 'ent')
             .select(`TO_CHAR(c."datePostulation", 'Mon YY')`, 'mois')
             .addSelect('COUNT(*)', 'count')
-            .where('c."datePostulation" >= :from', { from: sevenMonthsAgo })
+            .where('ent.id = :userId', { userId })
+            .andWhere('c."datePostulation" >= :from', { from: sevenMonthsAgo })
             .groupBy(`DATE_TRUNC('month', c."datePostulation")`)
             .addGroupBy(`TO_CHAR(c."datePostulation", 'Mon YY')`)
             .orderBy(`DATE_TRUNC('month', c."datePostulation")`, 'ASC')
@@ -62,7 +76,10 @@ export class EntrepriseService {
         const topCandidats = await this.candidatureRepo
             .createQueryBuilder('c')
             .leftJoinAndSelect('c.candidat', 'user')
-            .where('c.score IS NOT NULL')
+            .leftJoin('c.offre', 'o')
+            .leftJoin('o.entreprise', 'ent')
+            .where('ent.id = :userId', { userId })
+            .andWhere('c.score IS NOT NULL')
             .orderBy('c.score', 'DESC')
             .limit(5)
             .getMany();
@@ -83,8 +100,9 @@ export class EntrepriseService {
     // ─── Mes Postes (OffreEmploi CRUD) ───────────────────────────────────────
 
     /** GET all offres (mes-offres) */
-    async getMesOffres() {
+    async getMesOffres(userId: number) {
         const offres = await this.offreRepo.find({
+            where: { entreprise: { id: userId } }, // Filter by the entreprise that created them
             order: { DatePublication: 'DESC' },
         });
 
@@ -127,13 +145,17 @@ export class EntrepriseService {
             Description: dto.description,
             Categorie: dto.categorie,
             DateLimite: dto.dateLimite ? new Date(dto.dateLimite) : undefined,
-            TypeDeContrat: dto.typeDeContact,
+            TypeDeContrat: dto.typeDeContrat,
             ModeDeTravail: dto.modeDeTravail,
             Salaire: dto.salaire ? parseFloat(dto.salaire) : undefined,
             Localisation: dto.localisation,
             ExperienceRequise: dto.experienceRequise,
             NbPost: dto.nbPost ?? 1,
-        });
+            competences: dto.competences,
+            icon: dto.icon,
+            iconColor: dto.iconColor,
+            entreprise: dto.userId ? { id: dto.userId } : undefined,
+        } as any);
         return await this.offreRepo.save(offre);
     }
 
@@ -147,12 +169,13 @@ export class EntrepriseService {
             Description: dto.description ?? offre.Description,
             Categorie: dto.categorie ?? offre.Categorie,
             DateLimite: dto.dateLimite ? new Date(dto.dateLimite) : offre.DateLimite,
-            TypeDeContrat: dto.typeDeContact ?? offre.TypeDeContrat,
+            TypeDeContrat: dto.typeDeContrat ?? offre.TypeDeContrat,
             ModeDeTravail: dto.modeDeTravail ?? offre.ModeDeTravail,
             Salaire: dto.salaire !== undefined ? parseFloat(dto.salaire) : offre.Salaire,
             Localisation: dto.localisation ?? offre.Localisation,
             ExperienceRequise: dto.experienceRequise ?? offre.ExperienceRequise,
             NbPost: dto.nbPost ?? offre.NbPost,
+            competences: dto.competences ?? offre.competences,
         });
 
         return await this.offreRepo.save(offre);
@@ -168,12 +191,16 @@ export class EntrepriseService {
 
     // ─── Candidats ────────────────────────────────────────────────────────────
 
-    /** GET all candidats who applied to any offre (for the Candidats page) */
-    async getAllCandidats() {
-        const candidatures = await this.candidatureRepo.find({
-            relations: ['candidat', 'offre'],
-            order: { datePostulation: 'DESC' },
-        });
+    /** GET all candidats who applied to this entreprise's offres */
+    async getAllCandidats(userId: number) {
+        const candidatures = await this.candidatureRepo
+            .createQueryBuilder('c')
+            .leftJoinAndSelect('c.candidat', 'candidat')
+            .leftJoinAndSelect('c.offre', 'offre')
+            .leftJoin('offre.entreprise', 'ent')
+            .where('ent.id = :userId', { userId })
+            .orderBy('c.datePostulation', 'DESC')
+            .getMany();
 
         return candidatures.map((c) => ({
             id: c.id,
