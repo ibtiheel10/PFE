@@ -30,11 +30,11 @@ async function bootstrap() {
 
   // CORS for Vue.js frontend
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: ['http://localhost:5173', 'http://localhost:"3000'],
     credentials: true,
   });
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 5000;
   await app.listen(port);
   console.log(`🚀 SkillVia API is running on: http://localhost:${port}/api`);
 }

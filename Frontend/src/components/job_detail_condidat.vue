@@ -6,9 +6,8 @@
         <!-- Brand -->
         <div class="brand">
           <div class="brand-logo">
-            <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="7" fill="#2563EB"/>
-              <path d="M10 22V14M16 22V10M22 22V17" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+               <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>
           <span class="brand-name">Skillvia</span>
@@ -20,7 +19,9 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
             Offres
           </router-link>
-          <span class="bc-sep">›</span>
+          <span class="bc-sep">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+          </span>
           <span class="bc-current" v-if="job">{{ job.TitreDePost }}</span>
         </nav>
 
@@ -428,40 +429,53 @@ const showToast = (emoji: string, msg: string) => {
 .job-topbar {
   position: sticky;
   top: 0;
-  z-index: 30;
-  background: white;
-  border-bottom: 1px solid #E2E8F0;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  z-index: 50;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(226, 232, 240, 0.6);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .job-topbar-inner {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
   padding: 0 24px;
-  height: 60px;
+  height: 72px;
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 32px;
 }
 .brand {
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.brand:hover {
+  opacity: 0.85;
 }
 .brand-logo {
-  width: 32px;
-  height: 32px;
-  background: #2563EB;
-  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  transition: transform 0.2s;
+}
+.brand:hover .brand-logo {
+  transform: scale(1.05);
 }
 .brand-name {
   font-weight: 800;
-  font-size: 1rem;
+  font-size: 1.2rem;
   color: #0F172A;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.02em;
 }
 .breadcrumb {
   display: flex;
@@ -472,40 +486,68 @@ const showToast = (emoji: string, msg: string) => {
 .bc-link {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 13px;
-  font-weight: 500;
-  color: #3B82F6;
+  font-weight: 600;
+  color: #64748B;
   text-decoration: none;
-  transition: color 0.2s;
+  transition: all 0.2s ease;
+  padding: 6px 12px;
+  border-radius: 8px;
+  background: #F1F5F9;
+  border: 1px solid transparent;
 }
-.bc-link:hover { color: #1D4ED8; }
-.bc-sep { color: #CBD5E1; font-size: 14px; }
+.bc-link:hover {
+  color: #2563EB;
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+}
+.bc-sep {
+  color: #94A3B8;
+  display: flex;
+  align-items: center;
+}
 .bc-current {
   font-size: 13px;
   font-weight: 600;
-  color: #475569;
+  color: #1E293B;
+  padding: 6px 12px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 300px;
 }
-.topbar-actions { margin-left: auto; }
+.topbar-actions {
+  margin-left: auto;
+}
 .topbar-btn {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  padding: 7px 14px;
-  border-radius: 9px;
-  background: #F1F5F9;
-  color: #475569;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: #111827;
+  color: #FFFFFF;
   font-size: 13px;
   font-weight: 600;
   text-decoration: none;
-  transition: all 0.2s;
-  border: 1px solid #E2E8F0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(17, 24, 39, 0.15);
+  border: 1px solid #111827;
 }
-.topbar-btn:hover { background: #E2E8F0; color: #1e293b; }
+.topbar-btn:hover {
+  background: #1F2937;
+  border-color: #1F2937;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(17, 24, 39, 0.25);
+}
+.topbar-btn svg {
+  opacity: 0.9;
+}
 
 /* ── Body ──────────────────────────────────────────────── */
 .job-body {

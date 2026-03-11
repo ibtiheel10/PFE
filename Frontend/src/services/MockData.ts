@@ -195,7 +195,7 @@ export const MockData = reactive({
             jobId,
             candidateName,
             status: 'En cours',
-            date: new Date().toISOString().split('T')[0],
+            date: new Date().toISOString().split('T')[0] || '',
             dateDisplay: new Date().toLocaleDateString('fr-FR'),
         });
         const job = this.getJob(jobId);
