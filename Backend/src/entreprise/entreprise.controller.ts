@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, Min } from 'class-validator';
 
 export class CreateOffreDto {
     @ApiProperty({ example: 'Développeur Full Stack' })
@@ -38,6 +38,8 @@ export class CreateOffreDto {
 
     @ApiProperty({ example: 3000, required: false })
     @IsOptional()
+    @IsNumber()
+    @Min(0, { message: 'Le salaire ne peut pas être négatif.' })
     salaire?: number;
 
     @ApiProperty({ example: 'Paris', required: false })
@@ -129,21 +131,22 @@ export class EntrepriseController {
     @ApiBody({ type: CreateOffreDto })
     @ApiResponse({ status: 200, description: 'Offre updated.' })
     @ApiResponse({ status: 404, description: 'Offre not found.' })
-    async updateOffre(@Param('id') id: string, @Body() body: CreateOffreDto) {
-        return this.entrepriseService.updateOffre(id, body);
+    async updateOffre(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+        return this.entrepriseService.updateOffre(id, req.user.userId, body);
     }
 
     /**
      * DELETE /api/Entreprise/offres/:id
-     * Supprime une offre d'emploi.
+     * Supprime une offre (seulement si propriétaire).
      */
     @Delete('offres/:id')
-    @ApiOperation({ summary: 'Delete a job offer' })
-    @ApiParam({ name: 'id', description: 'UUID of the offre' })
+    @ApiOperation({ summary: 'Delete job offer (Owner only)' })
+    @ApiParam({ name: 'id', description: 'ID of the offre to delete' })
     @ApiResponse({ status: 200, description: 'Offre deleted.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
     @ApiResponse({ status: 404, description: 'Offre not found.' })
-    async deleteOffre(@Param('id') id: string) {
-        return this.entrepriseService.deleteOffre(id);
+    async deleteOffre(@Param('id') id: string, @Request() req: any) {
+        return this.entrepriseService.deleteOffre(id, req.user.userId);
     }
 
     // ─── Candidats ────────────────────────────────────────────────────────────

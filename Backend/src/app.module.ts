@@ -12,6 +12,7 @@ import { OtpCode } from './entities/otp-code.entity';
 import { OffreEmploi } from './entities/offre-emploi.entity';
 import { Candidature } from './entities/candidature.entity';
 import { Question } from './entities/question.entity';
+import { ReponseCandidat } from './entities/reponse-candidat.entity';
 import { OffresModule } from './offres/offres.module';
 import { CandidaturesModule } from './candidatures/candidatures.module';
 import { QuestionsModule } from './questions/questions.module';
@@ -32,7 +33,7 @@ import { QuestionsModule } from './questions/questions.module';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'admin123'),
         database: configService.get<string>('DB_NAME', 'skillvia_db_2'),
-        entities: [User, OtpCode, OffreEmploi, Candidature, Question],
+        entities: [User, OtpCode, OffreEmploi, Candidature, Question, ReponseCandidat],
         synchronize: true, // Auto-creates tables — disable in production!
         logging: true,
       }),

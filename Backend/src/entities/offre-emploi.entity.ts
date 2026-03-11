@@ -1,5 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne } from 'typeorm';
 import { User } from './user.entity';
+import { Question } from './question.entity';
+import { Candidature } from './candidature.entity';
+import { OneToMany } from 'typeorm';
 
 @Entity('offres_emploi')
 export class OffreEmploi {
@@ -44,4 +47,10 @@ export class OffreEmploi {
 
     @ManyToOne(() => User, { nullable: true })
     entreprise: User;
+
+    @OneToMany(() => Question, (question) => question.offre)
+    questions: Question[];
+
+    @OneToMany(() => Candidature, (candidature) => candidature.offre)
+    candidatures: Candidature[];
 }

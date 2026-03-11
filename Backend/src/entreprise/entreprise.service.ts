@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
@@ -159,10 +159,17 @@ export class EntrepriseService {
         return await this.offreRepo.save(offre);
     }
 
-    /** PUT update offre */
-    async updateOffre(id: string, dto: any) {
-        const offre = await this.offreRepo.findOneBy({ id });
+    /** PUT update offre (Owner only) */
+    async updateOffre(id: string, userId: number, dto: any) {
+        const offre = await this.offreRepo.findOne({
+            where: { id },
+            relations: ['entreprise'],
+        });
         if (!offre) throw new NotFoundException(`Offre ${id} introuvable.`);
+
+        if (offre.entreprise?.id !== userId) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
+        }
 
         Object.assign(offre, {
             TitreDePost: dto.titre ?? offre.TitreDePost,
@@ -181,10 +188,18 @@ export class EntrepriseService {
         return await this.offreRepo.save(offre);
     }
 
-    /** DELETE offre */
-    async deleteOffre(id: string) {
-        const offre = await this.offreRepo.findOneBy({ id });
+    /** DELETE offre (Owner only) */
+    async deleteOffre(id: string, userId: number) {
+        const offre = await this.offreRepo.findOne({
+            where: { id },
+            relations: ['entreprise'],
+        });
         if (!offre) throw new NotFoundException(`Offre ${id} introuvable.`);
+
+        if (offre.entreprise?.id !== userId) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à supprimer cette offre.");
+        }
+
         await this.offreRepo.remove(offre);
         return { message: 'Offre supprimée avec succès.' };
     }

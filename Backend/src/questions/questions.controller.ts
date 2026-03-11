@@ -23,6 +23,15 @@ export class QuestionsController {
         return this.questionsService.findAll();
     }
 
+    @Get('by-offre/:offreId')
+    @ApiOperation({ summary: 'Récupérer les questions d\'une offre d\'emploi' })
+    @ApiParam({ name: 'offreId', description: 'UUID de l\'offre' })
+    @ApiResponse({ status: 200, description: 'Questions de l\'offre récupérées.' })
+    @ApiResponse({ status: 401, description: 'Non authentifié.' })
+    findByOffre(@Param('offreId') offreId: string) {
+        return this.questionsService.findByOffre(offreId);
+    }
+
     @Get(':id')
     @ApiOperation({ summary: 'Récupérer une question par son ID (authentifié)' })
     @ApiParam({ name: 'id', description: 'ID de la question' })

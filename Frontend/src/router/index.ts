@@ -9,7 +9,7 @@ import Result from '@/components/Result.vue'
 
 import Evaluation from '@/components/Evaluation.vue'
 import JobBoard from '@/components/JobBoard.vue'
-import JobDetails from '@/components/job_details_&_test_info.vue'
+import JobDetailEntreprise from '@/components/job_detail_entreprise.vue'
 import EmployerDashboard from '@/components/employer_dashboard.vue'
 import Tarifs from '@/components/tarifs.vue'
 import VoirDemo from '@/components/Voirdemo.vue'
@@ -238,14 +238,14 @@ const routes: RouteRecordRaw[] = [
         name: 'Messages',
         component: Messages,
         meta: { requiresAuth: true, role: 'entreprise' }
-      },
-      {
-        path: '/job-details/:id',
-        name: 'JobDetails',
-        component: JobDetails,
-        meta: { requiresAuth: true, role: 'entreprise' }
       }
     ]
+  },
+  {
+    path: '/job-details/:id',
+    name: 'JobDetails',
+    component: JobDetailEntreprise,
+    meta: { requiresAuth: true, role: 'entreprise' }
   },
 
   // ──────────────────────────────────────────────

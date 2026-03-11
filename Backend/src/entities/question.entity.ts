@@ -1,4 +1,5 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { OffreEmploi } from './offre-emploi.entity';
 
 export type QuestionNiveau = 'Facile' | 'Moyen' | 'Difficile';
 
@@ -24,6 +25,10 @@ export class Question {
 
     @Column({ type: 'varchar', default: 'Moyen' })
     niveauDifficulte: QuestionNiveau;
+
+    @ManyToOne(() => OffreEmploi, (offre) => offre.questions, { onDelete: 'CASCADE', nullable: true })
+    @JoinColumn({ name: 'offre_id' })
+    offre: OffreEmploi;
 
     @CreateDateColumn()
     createdAt: Date;
