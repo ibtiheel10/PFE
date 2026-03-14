@@ -409,13 +409,27 @@
                 </button>
               </div>
               <div class="edit-profile-body">
+                <div v-if="profileSuccessMessage" class="mb-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
+                  {{ profileSuccessMessage }}
+                </div>
+                <div v-if="profileErrorMessage" class="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
+                  {{ profileErrorMessage }}
+                </div>
                 <div class="edit-profile-field">
-                  <label class="edit-profile-label">Name</label>
+                  <label class="edit-profile-label">Nom de l'entreprise</label>
                   <input type="text" v-model="editName" class="edit-profile-input" />
                 </div>
                 <div class="edit-profile-field">
-                  <label class="edit-profile-label">Username</label>
-                  <input type="text" v-model="editUsername" class="edit-profile-input" />
+                  <label class="edit-profile-label">Email</label>
+                  <input type="email" v-model="editEmail" class="edit-profile-input" />
+                </div>
+                <div class="edit-profile-field">
+                  <label class="edit-profile-label">Mot de passe actuel</label>
+                  <input type="password" v-model="currentPassword" class="edit-profile-input" placeholder="Laisser vide pour ne pas modifier" />
+                </div>
+                <div class="edit-profile-field">
+                  <label class="edit-profile-label">Nouveau mot de passe</label>
+                  <input type="password" v-model="newPassword" class="edit-profile-input" placeholder="Laisser vide pour ne pas modifier" />
                 </div>
               </div>
               <div class="edit-profile-actions">
@@ -476,7 +490,11 @@ const newJobTitle = ref('');
 // Profile Edit Modal
 const showEditProfile = ref(false);
 const editName = ref(userName.value);
-const editUsername = ref(userEmail.value);
+const editEmail = ref(userEmail.value);
+const currentPassword = ref('');
+const newPassword = ref('');
+const profileSuccessMessage = ref('');
+const profileErrorMessage = ref('');
 
 // --- Dynamic Data State ---
 const dashboardData = ref<EntrepriseDashboardDto | null>(null);
@@ -513,9 +531,54 @@ const handleLogout = async () => {
     router.push('/');
 };
 
-const saveProfile = () => {
-    // Save logic here (API call, etc.)
-    showEditProfile.value = false;
+const saveProfile = async () => {
+    profileSuccessMessage.value = '';
+    profileErrorMessage.value = '';
+    
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) return;
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        
+        const payload: any = {
+            nom: editName.value,
+            email: editEmail.value
+        };
+        
+        if (newPassword.value) {
+            payload.currentPassword = currentPassword.value;
+            payload.newPassword = newPassword.value;
+        }
+
+        const res = await axios.patch('http://localhost:5173/api/Entreprise/mon-profil', payload, config);
+        
+        profileSuccessMessage.value = 'Profil mis à jour avec succès.';
+        
+        // Update local state and storage
+        userName.value = res.data.user.nom;
+        userEmail.value = res.data.user.email;
+        
+        // Also sync local edit refs
+        editName.value = res.data.user.nom;
+        editEmail.value = res.data.user.email;
+        
+        const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+        userInfo.nom = res.data.user.nom;
+        userInfo.email = res.data.user.email;
+        localStorage.setItem('user_info', JSON.stringify(userInfo));
+        
+        // Clear passwords
+        currentPassword.value = '';
+        newPassword.value = '';
+        
+        setTimeout(() => {
+            showEditProfile.value = false;
+            profileSuccessMessage.value = '';
+        }, 1500);
+        
+    } catch (error: any) {
+        profileErrorMessage.value = error.response?.data?.message || 'Une erreur est survenue lors de la mise à jour du profil.';
+    }
 };
 
 const activeJobMenu = ref<number | null>(null);
@@ -1472,13 +1535,13 @@ const displayJobs = computed(() => {
 }
 
 .edit-profile-dialog {
-    background: #1a1a1a;
+    background: #ffffff;
     border-radius: 16px;
     padding: 28px 32px;
     width: 100%;
     max-width: 440px;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #E5E7EB;
 }
 
 .edit-profile-header {
@@ -1491,13 +1554,13 @@ const displayJobs = computed(() => {
 .edit-profile-title {
     font-size: 1.2rem;
     font-weight: 700;
-    color: #ffffff;
+    color: #111827;
     margin: 0 0 8px 0;
 }
 
 .edit-profile-desc {
     font-size: 0.85rem;
-    color: #a0a0a0;
+    color: #6B7280;
     margin: 0;
     line-height: 1.5;
     max-width: 340px;
@@ -1506,7 +1569,7 @@ const displayJobs = computed(() => {
 .edit-profile-close {
     background: none;
     border: none;
-    color: #a0a0a0;
+    color: #9CA3AF;
     cursor: pointer;
     padding: 4px;
     border-radius: 6px;
@@ -1515,8 +1578,8 @@ const displayJobs = computed(() => {
 }
 
 .edit-profile-close:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.1);
+    color: #111827;
+    background: #F3F4F6;
 }
 
 .edit-profile-body {
@@ -1535,24 +1598,24 @@ const displayJobs = computed(() => {
 .edit-profile-label {
     font-size: 0.85rem;
     font-weight: 600;
-    color: #ffffff;
+    color: #374151;
 }
 
 .edit-profile-input {
-    background: #2a2a2a;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #F9FAFB;
+    border: 1px solid #D1D5DB;
     border-radius: 10px;
     padding: 10px 14px;
     font-size: 0.9rem;
-    color: #ffffff;
+    color: #111827;
     outline: none;
     transition: all 0.2s;
     font-family: inherit;
 }
 
 .edit-profile-input:focus {
-    border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.05);
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .edit-profile-actions {
@@ -1574,20 +1637,20 @@ const displayJobs = computed(() => {
 
 .edit-profile-btn.cancel {
     background: transparent;
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #374151;
+    border: 1px solid #D1D5DB;
 }
 
 .edit-profile-btn.cancel:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: #F3F4F6;
 }
 
 .edit-profile-btn.save {
-    background: #ffffff;
-    color: #000000;
+    background: #3B82F6;
+    color: #ffffff;
 }
 
 .edit-profile-btn.save:hover {
-    background: #e5e5e5;
+    background: #2563EB;
 }
 </style>

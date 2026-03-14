@@ -1,0 +1,4 @@
+﻿src/components/liste_poste_entreprise.vue(435,46): error TS6133: 'onUnmounted' is declared but its value is never read.
+src/components/liste_poste_entreprise.vue(437,21): error TS6133: 'PencilSquareIcon' is declared but its value is never read.
+src/components/liste_poste_entreprise.vue(499,7): error TS2322: Type 'string | undefined' is not assignable to type 'string'.
+  Type 'undefined' is not assignable to type 'string'.

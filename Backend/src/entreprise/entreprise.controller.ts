@@ -82,6 +82,28 @@ export class EntrepriseController {
         return this.entrepriseService.getMonProfil(req.user.userId);
     }
 
+    /**
+     * PATCH /api/Entreprise/mon-profil
+     * Updates current entreprise profile (nom, email, password)
+     */
+    @Patch('mon-profil')
+    @ApiOperation({ summary: 'Update current entreprise profile' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                nom: { type: 'string' },
+                email: { type: 'string' },
+                currentPassword: { type: 'string' },
+                newPassword: { type: 'string' },
+            }
+        }
+    })
+    @ApiResponse({ status: 200, description: 'Profile updated.' })
+    async updateMonProfil(@Request() req: any, @Body() body: any) {
+        return this.entrepriseService.updateProfil(req.user.userId, body);
+    }
+
     // ─── Dashboard ────────────────────────────────────────────────────────────
 
     /**

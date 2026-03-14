@@ -47,7 +47,7 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col overflow-hidden relative">
       <!-- HEADER -->
-      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
+      <header class="relative z-50 h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm">
         <!-- Left: Toggle & Title -->
         <div class="flex items-center gap-4">
           <button @click="toggleSidebar" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors">
@@ -77,7 +77,7 @@
 
             <!-- Notification Dropdown -->
             <transition enter-active-class="transition ease-out duration-150" enter-from-class="opacity-0 -translate-y-2 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition ease-in duration-100" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-2 scale-95">
-              <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
+              <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
                 <!-- Header -->
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-50 bg-gray-50/80">
                   <div>
@@ -88,8 +88,12 @@
                     Tout marquer lu
                   </button>
                 </div>
+                <!-- Loading -->
+                <div v-if="notifLoading" class="py-8 text-center">
+                  <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                </div>
                 <!-- Notifications list -->
-                <div class="max-h-72 overflow-y-auto divide-y divide-gray-50">
+                <div v-else class="max-h-80 overflow-y-auto divide-y divide-gray-50">
                   <div v-if="notifications.length === 0" class="py-10 text-center">
                     <BellIcon class="w-8 h-8 text-gray-200 mx-auto mb-2" />
                     <p class="text-sm text-gray-400">Aucune notification</p>
@@ -97,18 +101,20 @@
                   <div
                     v-for="notif in notifications"
                     :key="notif.id"
-                    class="flex gap-3 px-4 py-3 transition-colors cursor-pointer"
-                    :class="notif.read ? 'hover:bg-gray-50' : 'bg-blue-50/50 hover:bg-blue-50'"
+                    class="flex gap-3 px-4 py-3 transition-colors cursor-pointer group"
+                    :class="notif.lu ? 'hover:bg-gray-50' : 'bg-blue-50/40 hover:bg-blue-50'"
+                    @click="handleMarkRead(notif.id)"
                   >
-                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-base"
-                         :class="getNotifIconClass(notif.message)">
-                      {{ getNotifEmoji(notif.message) }}
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+                         :class="getNotifBgClass(notif.type)">
+                      {{ getNotifIcon(notif.type) }}
                     </div>
                     <div class="flex-1 min-w-0">
-                      <p class="text-[13px] text-gray-800 leading-snug">{{ notif.message }}</p>
-                      <p class="text-[11px] text-gray-400 mt-0.5 font-medium">{{ notif.time }}</p>
+                      <p class="text-[13px] font-semibold text-gray-800 leading-snug">{{ notif.titre }}</p>
+                      <p class="text-[12px] text-gray-500 mt-0.5 leading-relaxed">{{ notif.message }}</p>
+                      <p class="text-[11px] text-gray-400 mt-1 font-medium">{{ formatNotifTime(notif.createdAt) }}</p>
                     </div>
-                    <div v-if="!notif.read" class="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div v-if="!notif.lu" class="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
                   </div>
                 </div>
               </div>
@@ -301,7 +307,15 @@ import {
     ArrowRightOnRectangleIcon,
     ClipboardDocumentCheckIcon
 } from '@heroicons/vue/24/outline';
-import { MockData } from '../services/MockData';
+import {
+    getNotifications,
+    markAsRead,
+    markAllNotificationsRead,
+    getNotifIcon,
+    getNotifBgClass,
+    formatNotifTime,
+    type Notification,
+} from '../services/notificationService';
 
 const router = useRouter();
 const route = useRoute();
@@ -346,20 +360,33 @@ const showEditProfile   = ref(false);
 const isSidebarCollapsed = ref(false);
 
 // ── Notifications ────────────────────────────────────────────────
-const notifications = computed(() => MockData.notifications);
-const unreadCount   = computed(() => MockData.notifications.filter(n => !n.read).length);
-const markAllRead   = () => MockData.markAllRead();
+const notifications  = ref<Notification[]>([]);
+const unreadCount    = computed(() => notifications.value.filter(n => !n.lu).length);
+const notifLoading   = ref(false);
+let pollInterval: ReturnType<typeof setInterval> | null = null;
 
-const getNotifEmoji = (msg: string) => {
-    if (msg.startsWith('✅')) return '✅';
-    if (msg.startsWith('❌')) return '❌';
-    if (msg.startsWith('🆕')) return '🆕';
-    return '🔔';
+const loadNotifications = async () => {
+    try {
+        notifications.value = await getNotifications();
+    } catch (e) {
+        // silent fail (user not logged in yet)
+    }
 };
-const getNotifIconClass = (msg: string) => {
-    if (msg.startsWith('✅')) return 'bg-green-50';
-    if (msg.startsWith('❌')) return 'bg-red-50';
-    return 'bg-blue-50';
+
+const markAllRead = async () => {
+    await markAllNotificationsRead();
+    notifications.value.forEach(n => { n.lu = true; });
+};
+
+const handleMarkRead = async (id: number) => {
+    await markAsRead(id);
+    const notif = notifications.value.find(n => n.id === id);
+    if (notif) notif.lu = true;
+};
+
+// Poll every 30s for new notifications
+const startPolling = () => {
+    pollInterval = setInterval(loadNotifications, 30000);
 };
 
 // ── Nav ───────────────────────────────────────────────────────────
@@ -406,8 +433,15 @@ const handleClickOutside = (e: MouseEvent) => {
         showProfileMenu.value = false;
     }
 };
-onMounted(() => document.addEventListener('click', handleClickOutside));
-onUnmounted(() => document.removeEventListener('click', handleClickOutside));
+onMounted(() => {
+    document.addEventListener('click', handleClickOutside);
+    loadNotifications();
+    startPolling();
+});
+onUnmounted(() => {
+    document.removeEventListener('click', handleClickOutside);
+    if (pollInterval) clearInterval(pollInterval);
+});
 
 // ── Edit Profile ──────────────────────────────────────────────────
 const openEditProfile = () => {
@@ -443,7 +477,6 @@ const saveProfile = () => {
     localStorage.setItem('prof_location', editLocation.value);
     localStorage.setItem('prof_bio',      editBio.value);
 
-    MockData.addNotification('✅ Profil mis à jour avec succès !');
     profileSaveSuccess.value = true;
     setTimeout(() => { showEditProfile.value = false; profileSaveSuccess.value = false; }, 1500);
 };

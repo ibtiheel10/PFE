@@ -38,9 +38,9 @@
                                 <!-- Job Action Dropdown -->
                                 <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
                                     <div v-if="activeJobMenu === job.id" class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
-                                        <button @click.stop="renameJob(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                                        <button @click.stop="editJob(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                                            Renommer la poste
+                                            Modifier l'offre
                                         </button>
                                         <button @click.stop="deleteJob(job.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
@@ -62,8 +62,8 @@
         <!-- Modal Header -->
         <div class="modal-header">
           <div>
-            <h2 class="modal-title-main">Créer un Nouveau Poste</h2>
-            <p class="modal-subtitle">Complétez les informations pour publier votre offre d'emploi</p>
+            <h2 class="modal-title-main">{{ isEditing ? 'Modifier l\'Offre' : 'Créer un Nouveau Poste' }}</h2>
+            <p class="modal-subtitle">{{ isEditing ? 'Modifiez les informations de votre offre d\'emploi' : 'Complétez les informations pour publier votre offre d\'emploi' }}</p>
           </div>
           <button class="modal-close-btn" @click="closeCreateModal">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -293,7 +293,7 @@
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
               <polyline points="22 4 12 14.01 9 11.01"></polyline>
             </svg>
-            Publier le Poste
+            {{ isEditing ? 'Enregistrer les modifications' : 'Publier le Poste' }}
           </button>
         </div>
       </div>
@@ -316,30 +316,6 @@
         </div>
     </div>
 
-    <!-- Rename Job Modal -->
-    <div v-if="showRenameModal" class="modal-overlay" @click="showRenameModal = false">
-        <div class="modal-dialog" @click.stop>
-            <div class="modal-icon-wrapper">
-                <div class="modal-icon-bg info">
-                    <PencilSquareIcon class="w-8 h-8 text-blue-600" />
-                </div>
-            </div>
-            <h3 class="modal-title">Renommer le poste</h3>
-            <div class="modal-body-input">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nouveau titre</label>
-                <input 
-                    type="text" 
-                    v-model="newJobTitle" 
-                    class="custom-modal-input"
-                    placeholder="Ex: Développeur Fullstack"
-                />
-            </div>
-            <div class="modal-actions-small">
-                <button class="modal-btn modal-btn-cancel" @click="showRenameModal = false">Annuler</button>
-                <button class="modal-btn modal-btn-confirm" @click="confirmRenameJob">Enregistrer</button>
-            </div>
-        </div>
-    </div>
 
     <!-- QCM Generator Dialog (side panel) -->
     <transition name="qcm-slide">
@@ -456,9 +432,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, nextTick, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { TrashIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
+import { TrashIcon } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 
 const router = useRouter();
@@ -476,12 +452,12 @@ const props = defineProps({
 
 const emit = defineEmits(['modal-opened']);
 
-const activeJobMenu = ref<number | null>(null);
-const toggleJobMenu = (id: number) => {
+const activeJobMenu = ref<string | null>(null);
+const toggleJobMenu = (id: string) => {
     activeJobMenu.value = activeJobMenu.value === id ? null : id;
 };
 
-const deleteJob = (id: number) => {
+const deleteJob = (id: string) => {
     jobToDelete.value = id;
     showDeleteConfirm.value = true;
     activeJobMenu.value = null;
@@ -503,41 +479,33 @@ const confirmDeleteJob = async () => {
     }
 };
 
-const renameJob = (job: any) => {
-    jobToRename.value = job.raw;
-    newJobTitle.value = job.title;
-    showRenameModal.value = true;
+const editJob = (job: any) => {
+    isEditing.value = true;
+    currentEditId.value = job.id;
+    
+    // Populate form data
+    const raw = job.raw;
+    formData.value = {
+      title: raw.titre || '',
+      category: raw.categorie || '',
+      contractType: raw.typeDeContrat || '',
+      location: raw.localisation || '',
+      remote: raw.modeDeTravail || 'onsite',
+      experience: raw.experienceRequise || '',
+      salary: raw.salaire ? raw.salaire.toString() : '',
+      description: raw.description || '',
+      requirements: raw.competences || '',
+      benefits: raw.avantages || '',
+      deadline: raw.dateLimite ? (new Date(raw.dateLimite).toISOString().split('T')[0] || '') : '',
+      positions: raw.nbPost || 1,
+      hasQCM: false,
+      qcmId: ''
+    };
+    
+    showCreateModal.value = true;
+    currentTab.value = 'basic';
     activeJobMenu.value = null;
-};
-
-const confirmRenameJob = async () => {
-    if (jobToRename.value && newJobTitle.value.trim() !== '') {
-        try {
-            const token = localStorage.getItem('userToken');
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-            const payload = {
-                titre: newJobTitle.value.trim(),
-                categorie: jobToRename.value.categorie,
-                localisation: jobToRename.value.localisation,
-                typeDeContact: jobToRename.value.typeDeContact,
-                experienceRequise: jobToRename.value.experienceRequise,
-                salaire: jobToRename.value.salaire,
-                description: jobToRename.value.description,
-                competences: jobToRename.value.competences,
-                icon: jobToRename.value.icon,
-                iconColor: jobToRename.value.iconColor,
-                nbPost: jobToRename.value.nbPost,
-                dateLimite: jobToRename.value.dateLimite
-            };
-            await axios.put(`http://localhost:5173/api/Entreprise/offres/${jobToRename.value.id}`, payload, config);
-            showRenameModal.value = false;
-            jobToRename.value = null;
-            fetchMyJobs();
-        } catch (e) {
-            console.error(e);
-            alert("Erreur de modification.");
-        }
-    }
+    nextTick(() => updateIndicator());
 };
 
 // Close menus when clicking outside
@@ -550,10 +518,9 @@ if (typeof window !== 'undefined') {
 // Modal state
 const showCreateModal = ref(false);
 const showDeleteConfirm = ref(false);
-const showRenameModal = ref(false);
-const jobToDelete = ref<number | null>(null);
-const jobToRename = ref<any>(null);
-const newJobTitle = ref('');
+const isEditing = ref(false);
+const currentEditId = ref<string | null>(null);
+const jobToDelete = ref<string | null>(null);
 const currentTab = ref('basic');
 const tabRefs = ref<HTMLElement[]>([]);
 const indicatorStyle = ref({ left: '4px', width: '0px' });
@@ -632,6 +599,26 @@ const displayJobs = computed(() => {
 
 // Modal handlers
 const createNewPost = () => {
+    isEditing.value = false;
+    currentEditId.value = null;
+    
+    formData.value = {
+      title: '',
+      category: '',
+      contractType: '',
+      location: '',
+      remote: 'onsite',
+      experience: '',
+      salary: '',
+      description: '',
+      requirements: '',
+      benefits: '',
+      deadline: '',
+      positions: 1,
+      hasQCM: false,
+      qcmId: ''
+    };
+    
     showCreateModal.value = true;
     currentTab.value = 'basic';
     nextTick(() => updateIndicator());
@@ -639,6 +626,8 @@ const createNewPost = () => {
 
 const closeCreateModal = () => {
     showCreateModal.value = false;
+    isEditing.value = false;
+    currentEditId.value = null;
     // Reset form data
     formData.value = {
       title: '',
@@ -686,11 +675,18 @@ const submitPost = async () => {
             nbPost: formData.value.positions,
             dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : null
         };
-        await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
-        alert('Poste publié avec succès !');
+        
+        if (isEditing.value && currentEditId.value) {
+            await axios.put(`http://localhost:5173/api/Entreprise/offres/${currentEditId.value}`, payload, config);
+            alert('Poste modifié avec succès !');
+        } else {
+            await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
+            alert('Poste publié avec succès !');
+        }
+        
         closeCreateModal();
         fetchMyJobs();
-    } catch(e) { console.error(e); alert("Erreur lors de la publication !"); }
+    } catch(e) { console.error(e); alert("Erreur lors de l'enregistrement !"); }
 };
 
 // ─── QCM Dialog state ────────────────────────────────────────────

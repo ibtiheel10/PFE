@@ -13,9 +13,11 @@ import { OffreEmploi } from './entities/offre-emploi.entity';
 import { Candidature } from './entities/candidature.entity';
 import { Question } from './entities/question.entity';
 import { ReponseCandidat } from './entities/reponse-candidat.entity';
+import { Notification } from './entities/notification.entity';
 import { OffresModule } from './offres/offres.module';
 import { CandidaturesModule } from './candidatures/candidatures.module';
 import { QuestionsModule } from './questions/questions.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -33,7 +35,7 @@ import { QuestionsModule } from './questions/questions.module';
         username: configService.get<string>('DB_USERNAME', 'postgres'),
         password: configService.get<string>('DB_PASSWORD', 'admin123'),
         database: configService.get<string>('DB_NAME', 'skillvia_db_2'),
-        entities: [User, OtpCode, OffreEmploi, Candidature, Question, ReponseCandidat],
+        entities: [User, OtpCode, OffreEmploi, Candidature, Question, ReponseCandidat, Notification],
         synchronize: true, // Auto-creates tables — disable in production!
         logging: true,
       }),
@@ -46,6 +48,7 @@ import { QuestionsModule } from './questions/questions.module';
     OffresModule,
     CandidaturesModule,
     QuestionsModule,
+    NotificationsModule,
   ],
 })
 export class AppModule { }
