@@ -45,6 +45,12 @@ export class OffreEmploi {
     @Column({ type: 'int', default: 1 })
     NbPost: number;
 
+    @Column({ nullable: true })
+    icon: string;
+
+    @Column({ nullable: true })
+    iconColor: string;
+
     @ManyToOne(() => User, { nullable: true })
     entreprise: User;
 

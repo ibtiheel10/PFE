@@ -17,6 +17,7 @@ export interface CandidatureResponse {
         TitreDePost: string;
         Categorie: string;
         Localisation: string;
+        DateLimite?: string | null;
     };
 }
 

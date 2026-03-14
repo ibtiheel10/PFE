@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { User } from '../entities/user.entity';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { Candidature } from '../entities/candidature.entity';
@@ -30,6 +31,35 @@ export class EntrepriseService {
         });
         if (!user) throw new NotFoundException('Profil entreprise introuvable.');
         return user;
+    }
+
+    async updateProfil(userId: number, dto: any) {
+        const user = await this.userRepo.findOne({ where: { id: userId, role: 'Entreprise' } });
+        if (!user) throw new NotFoundException('Profil entreprise introuvable.');
+
+        if (dto.nom) user.nom = dto.nom;
+        if (dto.email) user.email = dto.email;
+
+        if (dto.currentPassword && dto.newPassword) {
+            const isMatch = await bcrypt.compare(dto.currentPassword, user.password);
+            if (!isMatch) {
+                throw new BadRequestException('Mot de passe actuel incorrect.');
+            }
+            user.password = await bcrypt.hash(dto.newPassword, 10);
+        } else if (dto.newPassword && !dto.currentPassword) {
+            throw new BadRequestException('Le mot de passe actuel est requis pour le modifier.');
+        }
+
+        await this.userRepo.save(user);
+
+        return {
+            message: 'Profil mis à jour avec succès.',
+            user: {
+                id: user.id,
+                nom: user.nom,
+                email: user.email,
+            }
+        };
     }
 
     // ─── Dashboard ────────────────────────────────────────────────────────────
@@ -126,12 +156,15 @@ export class EntrepriseService {
                     categorie: o.Categorie,
                     datePublication: o.DatePublication,
                     dateLimite: o.DateLimite,
-                    typeDeContact: o.TypeDeContrat,
+                    typeDeContrat: o.TypeDeContrat,
                     modeDeTravail: o.ModeDeTravail,
                     salaire: o.Salaire,
                     localisation: o.Localisation,
                     experienceRequise: o.ExperienceRequise,
                     nbPost: o.NbPost,
+                    competences: o.competences,
+                    icon: o.icon,
+                    iconColor: o.iconColor,
                     candidatures: count,
                     status: deadline && deadline < now ? 'EXPIRÉE' : 'ACTIVE',
                     daysLeft: deadline
@@ -188,6 +221,8 @@ export class EntrepriseService {
             ExperienceRequise: dto.experienceRequise ?? offre.ExperienceRequise,
             NbPost: dto.nbPost ?? offre.NbPost,
             competences: dto.competences ?? offre.competences,
+            icon: dto.icon ?? offre.icon,
+            iconColor: dto.iconColor ?? offre.iconColor,
         });
 
         return await this.offreRepo.save(offre);

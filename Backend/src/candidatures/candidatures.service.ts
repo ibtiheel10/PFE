@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Candidature } from '../entities/candidature.entity';
 import { User } from '../entities/user.entity';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class CandidaturesService {
@@ -14,6 +15,7 @@ export class CandidaturesService {
         private readonly userRepo: Repository<User>,
         @InjectRepository(OffreEmploi)
         private readonly offreRepo: Repository<OffreEmploi>,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     async apply(userId: number, offreId: string): Promise<Candidature> {
@@ -49,7 +51,13 @@ export class CandidaturesService {
             datePostulation: new Date(),
         });
 
-        return await this.candidatureRepo.save(candidature);
+        const saved = await this.candidatureRepo.save(candidature);
+
+        // 5. Créer les notifications automatiques
+        await this.notificationsService.notifyCandidatureEnvoyee(userId, offre.TitreDePost);
+        await this.notificationsService.notifyCandidatureEnAttente(userId, offre.TitreDePost);
+
+        return saved;
     }
 
     async getMyApplications(userId: number): Promise<Candidature[]> {
