@@ -185,11 +185,6 @@
           <template v-if="!generatingQcm">
             <!-- Configuration Form -->
             <div class="ai-config-section">
-              <div class="desc-group">
-                <label class="desc-label">DESCRIPTION DU POSTE</label>
-                <textarea v-model="aiConfig.description" rows="5" class="ai-textarea" placeholder="Aucune description fournie."></textarea>
-              </div>
-
               <div class="form-row-2 ai-params">
                 <div class="form-group ai-param-group">
                   <label>
@@ -241,6 +236,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
+import { generateQuestionsForOffre, regenerateQuestionsForOffre } from '../services/entrepriseService'
 
 const route = useRoute()
 const router = useRouter()
@@ -297,39 +293,46 @@ const openAddModal = () => {
 }
 
 const generateAIQcm = async () => {
-  if (!aiConfig.value.description.trim()) {
-    alert('Veuillez fournir une description pour générer le QCM.')
-    return
-  }
-  
   generatingQcm.value = true
   
-  // Simulation de l'appel API IA
-  setTimeout(async () => {
-    try {
-      // Mocked AI generation result
-      const newQuestion = {
-        contenu: { 
-          question: `Question générée (Niveau: ${aiConfig.value.niveau}) basée sur : ${aiConfig.value.description.substring(0, 20)}...`, 
-          options: ['Option A', 'Option B', 'Option C', 'Option D'] 
-        },
-        reponses: ['Option B'],
-        niveauDifficulte: aiConfig.value.niveau,
-        chronometre: aiConfig.value.chronometre,
-        dateEvaluation: new Date().toISOString(),
-        offre: { id: offreId },
-      }
-      
-      await axios.post('/api/questions', newQuestion, getAuthConfig())
-      showAddModal.value = false
-      await fetchQuestions()
-    } catch (e) {
-      console.error('Erreur génération QCM', e)
-      alert('Erreur lors de la génération.')
-    } finally {
-      generatingQcm.value = false
+  try {
+    let response;
+    if (questions.value.length > 0) {
+       // Regénération : utilise l'endpoint dédié
+       response = await regenerateQuestionsForOffre(offreId);
+    } else {
+       // Génération initiale
+       response = await generateQuestionsForOffre(offreId);
     }
-  }, 2500)
+
+    if (response.success && response.data?.questions && response.data.questions.length > 0) {
+      // Pour chaque question générée, on l'ajoute dans le backend
+      for (const q of response.data.questions) {
+        const newQuestion = {
+          contenu: { 
+            question: q.question || q.contenu?.question || q.text, 
+            options: q.options || q.contenu?.options || []
+          },
+          reponses: q.reponses || q.correctAnswers || [q.options?.[0] || ''],
+          niveauDifficulte: aiConfig.value.niveau,
+          chronometre: aiConfig.value.chronometre,
+          dateEvaluation: new Date().toISOString(),
+          offre: { id: offreId },
+        }
+        await axios.post('/api/questions', newQuestion, getAuthConfig())
+      }
+      showAddModal.value = false
+      alert('QCM généré avec succès par l\'IA !')
+      await fetchQuestions()
+    } else {
+      alert(response.error || "Une erreur est survenue avec l'IA.");
+    }
+  } catch (e: any) {
+    console.error('Erreur inattendue génération QCM par IA', e)
+    alert("Une erreur inattendue est survenue.");
+  } finally {
+    generatingQcm.value = false
+  }
 }
 
 const publishQcm = async () => {

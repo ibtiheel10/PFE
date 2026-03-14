@@ -6,6 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { CandidatModule } from './candidat/candidat.module';
 import { EntrepriseModule } from './entreprise/entreprise.module';
 import { AdminModule } from './admin/admin.module';
+import { AiModule } from './ai/ai.module';
+import { QuestionsModule } from './questions/questions.module';
+import { ContactModule } from './contact/contact.module';
 
 import { User } from './entities/user.entity';
 import { OtpCode } from './entities/otp-code.entity';
@@ -15,7 +18,7 @@ import { Question } from './entities/question.entity';
 import { ReponseCandidat } from './entities/reponse-candidat.entity';
 import { OffresModule } from './offres/offres.module';
 import { CandidaturesModule } from './candidatures/candidatures.module';
-import { QuestionsModule } from './questions/questions.module';
+
 
 @Module({
   imports: [
@@ -45,7 +48,9 @@ import { QuestionsModule } from './questions/questions.module';
     AdminModule,
     OffresModule,
     CandidaturesModule,
+    AiModule,
     QuestionsModule,
+    ContactModule,
   ],
 })
 export class AppModule { }

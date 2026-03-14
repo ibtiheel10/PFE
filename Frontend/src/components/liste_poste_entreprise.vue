@@ -456,12 +456,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, watch, onMounted, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { TrashIcon, PencilSquareIcon } from '@heroicons/vue/24/outline';
 import axios from 'axios';
-
-const router = useRouter();
+import { generateQuestionsForOffre, regenerateQuestionsForOffre } from '../services/entrepriseService';
 
 const props = defineProps({
     searchQuery: {
@@ -475,6 +474,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['modal-opened']);
+
+const router = useRouter();
 
 const activeJobMenu = ref<number | null>(null);
 const toggleJobMenu = (id: number) => {
@@ -639,6 +640,7 @@ const createNewPost = () => {
 
 const closeCreateModal = () => {
     showCreateModal.value = false;
+    createdOffreId.value = null; // Réinitialiser pour une prochaine création
     // Reset form data
     formData.value = {
       title: '',
@@ -697,6 +699,7 @@ const submitPost = async () => {
 const showQCMDialog = ref(false);
 const qcmLoading = ref(false);
 const qcmConfig = ref({ timer: 30, difficulty: 'moyen' });
+const createdOffreId = ref<number | null>(null); // ID de l'offre créée pour lier le QCM
 
 interface QCMQuestion {
   text: string;
@@ -749,23 +752,95 @@ const mockQuestions = (title: string, difficulty: string): QCMQuestion[] => {
   return difficulty === 'difficile' || difficulty === 'expert' ? [...base, ...extraHard] : base;
 };
 
-const generateQCM = () => {
+/**
+ * Génère le QCM via l'IA.
+ * Si le poste n'est pas encore créé, on le crée d'abord
+ * puis on appelle /api/Entreprise/offres/{id}/generer-questions-ia
+ */
+const generateQCM = async () => {
+  if (!formData.value.title) {
+    alert('Veuillez d\'abord renseigner le titre du poste (onglet 1).');
+    return;
+  }
   showQCMDialog.value = true;
   generatedQuestions.value = [];
   qcmLoading.value = true;
-  setTimeout(() => {
-    generatedQuestions.value = mockQuestions(formData.value.title || 'ce poste', qcmConfig.value.difficulty);
+
+  try {
+    // Étape 1 : créer ou réutiliser l'offre pour obtenir son ID
+    if (!createdOffreId.value) {
+      const token = localStorage.getItem('userToken');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+      const payload = {
+        titre: formData.value.title || 'Nouveau poste',
+        categorie: formData.value.category || 'tech',
+        localisation: formData.value.location || 'Non spécifié',
+        typeDeContact: formData.value.contractType || 'CDI',
+        modeDeTravail: formData.value.remote || 'onsite',
+        experienceRequise: formData.value.experience || 'junior',
+        salaire: formData.value.salary ? parseFloat(formData.value.salary) : undefined,
+        description: formData.value.description || formData.value.title,
+        competences: formData.value.requirements || '',
+        icon: 'fa-solid fa-briefcase',
+        iconColor: '#3b82f6',
+        nbPost: formData.value.positions || 1,
+        dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
+      };
+      const res = await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
+      createdOffreId.value = res.data.id;
+      fetchMyJobs(); // Refresh la liste en arrière-plan
+    }
+
+    // Étape 2 : appel à l'endpoint IA avec l'ID de l'offre
+    const response = await generateQuestionsForOffre(createdOffreId.value!);
+
+    if (response.success && response.data?.questions?.length > 0) {
+      generatedQuestions.value = response.data.questions.map((q: any) => ({
+        text: q.question || q.contenu?.question || '',
+        options: q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'],
+        correct: 0
+      }));
+    } else {
+      alert(response.error || "L'IA n'a retourné aucune question.");
+      showQCMDialog.value = false;
+    }
+  } catch (e: any) {
+    console.error('Erreur génération QCM', e);
+    alert('Erreur lors de la création de l\'offre ou de la génération du QCM.');
+    showQCMDialog.value = false;
+  } finally {
     qcmLoading.value = false;
-  }, 1800);
+  }
 };
 
-const regenerateQCM = () => {
+/**
+ * Régénère les questions IA pour l'offre déjà créée.
+ */
+const regenerateQCM = async () => {
+  if (!createdOffreId.value) {
+    // Premier appel = générer
+    await generateQCM();
+    return;
+  }
   qcmLoading.value = true;
   generatedQuestions.value = [];
-  setTimeout(() => {
-    generatedQuestions.value = mockQuestions(formData.value.title || 'ce poste', qcmConfig.value.difficulty);
+  try {
+    const response = await regenerateQuestionsForOffre(createdOffreId.value);
+    if (response.success && response.data?.questions?.length > 0) {
+      generatedQuestions.value = response.data.questions.map((q: any) => ({
+        text: q.question || q.contenu?.question || '',
+        options: q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'],
+        correct: 0
+      }));
+    } else {
+      alert(response.error || "L'IA n'a retourné aucune question.");
+    }
+  } catch (e) {
+    console.error('Erreur regénération QCM', e);
+    alert('Erreur lors de la regénération.');
+  } finally {
     qcmLoading.value = false;
-  }, 1400);
+  }
 };
 
 const saveQCM = () => {
@@ -1072,7 +1147,7 @@ onMounted(() => {
     flex-direction: column;
     box-shadow: 0 25px 70px rgba(0, 0, 0, 0.25), 0 10px 30px rgba(0, 0, 0, 0.15);
     animation: slideUpFade 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    overflow: hidden;
+    overflow: clip;
 }
 
 @keyframes slideUpFade {
@@ -1199,6 +1274,8 @@ onMounted(() => {
     flex: 1;
     overflow-y: auto;
     padding: 2rem;
+    /* Prevent content from being hidden under sticky footer */
+    padding-bottom: 1.5rem;
 }
 
 .tab-content {

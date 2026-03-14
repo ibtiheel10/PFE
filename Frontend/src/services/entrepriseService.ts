@@ -169,3 +169,81 @@ export const getCandidaturesParOffre = async (offreId: number): Promise<Candidat
     const response = await api.get<CandidatureResponse[]>(`/Candidature/offre/${offreId}`);
     return response.data;
 };
+
+// ─── IA Endpoints (par ID d'offre) ─────────────────────────────────────────────
+
+export interface AiResponse<T> {
+    success: boolean;
+    data?: T;
+    error?: string;
+}
+
+const handleAiError = (error: any): AiResponse<any> => {
+    console.error('AI Service Error:', error);
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        return { success: false, error: "Le délai d'attente a été dépassé. L'IA prend trop de temps." };
+    }
+    if (error.response) {
+        const status = error.response.status;
+        if (status === 422 || status === 400)
+            return { success: false, error: 'Les données fournies sont invalides ou incomplètes.' };
+        if (status === 503)
+            return { success: false, error: "Le moteur d'IA (Ollama) est temporairement indisponible." };
+        return { success: false, error: error.response.data?.message || `Erreur IA (Code ${status}).` };
+    }
+    if (error instanceof Error) return { success: false, error: error.message };
+    return { success: false, error: "Impossible de joindre le service IA." };
+};
+
+/**
+ * Générer des questions QCM pour une offre via l'IA.
+ * POST /api/Entreprise/offres/{id}/generer-questions-ia
+ */
+export const generateQuestionsForOffre = async (offreId: string | number): Promise<AiResponse<{ questions: any[] }>> => {
+    try {
+        const response = await api.post(`/Entreprise/offres/${offreId}/generer-questions-ia`, {}, { timeout: 600000 });
+        if (!response.data || !Array.isArray(response.data.questions)) {
+            throw new Error("L'IA a renvoyé une réponse invalide.");
+        }
+        return { success: true, data: response.data as { questions: any[] } };
+    } catch (error) {
+        return handleAiError(error);
+    }
+};
+
+/**
+ * Régénérer des questions QCM pour une offre via l'IA.
+ * POST /api/Entreprise/offres/{id}/regenerer-questions-ia
+ */
+export const regenerateQuestionsForOffre = async (offreId: string | number): Promise<AiResponse<{ questions: any[] }>> => {
+    try {
+        const response = await api.post(`/Entreprise/offres/${offreId}/regenerer-questions-ia`, {}, { timeout: 600000 });
+        if (!response.data || !Array.isArray(response.data.questions)) {
+            throw new Error("L'IA a renvoyé une réponse invalide.");
+        }
+        return { success: true, data: response.data as { questions: any[] } };
+    } catch (error) {
+        return handleAiError(error);
+    }
+};
+
+/**
+ * Obtenir des recommandations IA pour une offre après résultats de test.
+ * GET /api/Entreprise/offres/{id}/recommandation-ia
+ */
+export const getRecommandationsForOffre = async (offreId: string | number): Promise<AiResponse<any>> => {
+    try {
+        const response = await api.post(`/Entreprise/offres/${offreId}/recommandation-ia`, {}, { timeout: 600000 });
+        if (!response.data || typeof response.data !== 'object') {
+            throw new Error('Format de recommandation IA invalide.');
+        }
+        return { success: true, data: response.data };
+    } catch (error) {
+        return handleAiError(error);
+    }
+};
+
+// Anciennes fonctions génériques (gardées pour rétro-compatibilité)
+export const generateQuestions = generateQuestionsForOffre;
+export const regenerateQuestions = regenerateQuestionsForOffre;
+export const getAIRecommendation = getRecommandationsForOffre;

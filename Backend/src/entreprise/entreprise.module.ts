@@ -5,9 +5,14 @@ import { EntrepriseService } from './entreprise.service';
 import { User } from '../entities/user.entity';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { Candidature } from '../entities/candidature.entity';
+import { Question } from '../entities/question.entity';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([User, OffreEmploi, Candidature])],
+    imports: [
+        TypeOrmModule.forFeature([User, OffreEmploi, Candidature, Question]),
+        AiModule,
+    ],
     controllers: [EntrepriseController],
     providers: [EntrepriseService],
 })

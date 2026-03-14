@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { User } from '../entities/user.entity';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { Candidature } from '../entities/candidature.entity';
+import { Question, QuestionNiveau } from '../entities/question.entity';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class EntrepriseService {
@@ -14,6 +16,9 @@ export class EntrepriseService {
         private readonly offreRepo: Repository<OffreEmploi>,
         @InjectRepository(Candidature)
         private readonly candidatureRepo: Repository<Candidature>,
+        @InjectRepository(Question)
+        private readonly questionRepo: Repository<Question>,
+        private readonly aiService: AiService,
     ) { }
 
     // ─── Profil ──────────────────────────────────────────────────────────────
@@ -202,6 +207,160 @@ export class EntrepriseService {
 
         await this.offreRepo.remove(offre);
         return { message: 'Offre supprimée avec succès.' };
+    }
+
+    /** GET questions for a specific offre (Owner only) */
+    async getQuestionsByOffre(offreId: string, userId: number) {
+        const offre = await this.offreRepo.findOne({
+            where: { id: offreId },
+            relations: ['entreprise'],
+        });
+        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
+
+        if (offre.entreprise?.id !== userId) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à consulter ces questions.");
+        }
+
+        const questions = await this.questionRepo.find({
+            where: { offre: { id: offreId } },
+            order: { dateEvaluation: 'ASC' },
+        });
+
+        return questions;
+    }
+
+    // ─── Génération IA ────────────────────────────────────────────────────────
+
+    /** POST generer-questions-ia */
+    async genererQuestionsIA(offreId: string, userId: number, difficulte: QuestionNiveau = 'Moyen') {
+        // 1. Check ownership
+        const offre = await this.offreRepo.findOne({
+            where: { id: offreId },
+            relations: ['entreprise'],
+        });
+        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
+        if (offre.entreprise?.id !== userId) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
+        }
+
+        // 2. Prepare description context
+        const safeDescription = offre.Description ? offre.Description.substring(0, 800) + (offre.Description.length > 800 ? '...' : '') : '';
+        const context = `
+Titre du poste: ${offre.TitreDePost}
+Description: ${safeDescription}
+Catégorie: ${offre.Categorie}
+Expérience Requise: ${offre.ExperienceRequise || 'Non spécifié'}
+Compétences: ${offre.competences || 'Non spécifié'}
+        `.trim();
+
+        // 3. Call AI Service (map QuestionNiveau 'Facile'|'Moyen'|'Difficile' to AiService's 'facile'|'moyen'|'difficile')
+        // 3. Call AI Service and let it save directly per user request
+        const savedQuestions = await this.aiService.generateQuestions(context, 'moyen', offre);
+
+        return {
+            message: 'Questions generees et sauvegardees avec succes.',
+            count: savedQuestions.length,
+            questions: savedQuestions
+        };
+    }
+
+    /** POST regenerer-questions-ia */
+    async regenererQuestionsIA(offreId: string, userId: number, difficulte: QuestionNiveau = 'Moyen', previousQuestions: string[] = []) {
+        // 1. Check ownership
+        const offre = await this.offreRepo.findOne({
+            where: { id: offreId },
+            relations: ['entreprise'],
+        });
+        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
+        if (offre.entreprise?.id !== userId) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
+        }
+
+        // 2. Prepare context
+        const safeDescription = offre.Description ? offre.Description.substring(0, 800) + (offre.Description.length > 800 ? '...' : '') : '';
+        const context = `
+Titre du poste: ${offre.TitreDePost}
+Description: ${safeDescription}
+Catégorie: ${offre.Categorie}
+Expérience Requise: ${offre.ExperienceRequise || 'Non spécifié'}
+Compétences: ${offre.competences || 'Non spécifié'}
+        `.trim();
+
+        const diffMap: Record<QuestionNiveau, 'facile'|'moyen'|'difficile'> = {
+            Facile: 'facile',
+            Moyen: 'moyen',
+            Difficile: 'difficile'
+        };
+
+        // 3. Generate new questions, avoiding previous ones
+        const newAiQuestions = await this.aiService.regenerateQuestions(
+            context,
+            diffMap[difficulte],
+            previousQuestions
+        );
+
+        // 4. (Optionnel) Delete existing questions for this offer if we want a fresh batch:
+        await this.questionRepo.delete({ offre: { id: offreId } });
+
+        // 5. Save new questions
+        const questionsEntities = newAiQuestions.map(q => {
+            return this.questionRepo.create({
+                contenu: {
+                    question: q.question,
+                    options: q.options,
+                },
+                chronometre: 2,
+                reponses: [q.correctAnswer],
+                dateEvaluation: new Date(),
+                niveauDifficulte: difficulte,
+                isCorrectVerified: false,
+                offre: { id: offre.id } as OffreEmploi,
+            });
+        });
+
+        const savedQuestions = await this.questionRepo.save(questionsEntities);
+
+        return {
+            message: 'Questions regenerees et remplacees avec succes.',
+            count: savedQuestions.length,
+            questions: savedQuestions,
+        };
+    }
+
+    /** POST recommandation-ia */
+    async recommandationIA(offreId: string, userId: number, results: any[]) {
+        // 1. Check ownership (or allow candidate? Let's assume this is for Entreprise review for now)
+        const offre = await this.offreRepo.findOne({
+            where: { id: offreId },
+            relations: ['entreprise'],
+        });
+        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
+
+        const safeDescription = offre.Description ? offre.Description.substring(0, 800) + (offre.Description.length > 800 ? '...' : '') : '';
+        const context = `
+Titre du poste: ${offre.TitreDePost}
+Description: ${safeDescription}
+Compétences: ${offre.competences || 'Non spécifié'}
+        `.trim();
+
+        return this.aiService.generateRecommendation(context, results);
+    }
+
+    /** PATCH verify correct answer for a question (recruiter manual review) */
+    async verifierReponseQuestion(questionId: number, correctAnswer: string) {
+        const question = await this.questionRepo.findOneBy({ id: questionId });
+        if (!question) throw new NotFoundException(`Question ${questionId} introuvable.`);
+
+        // Update correct answer and mark as verified
+        question.reponses = [correctAnswer];
+        question.isCorrectVerified = true;
+        await this.questionRepo.save(question);
+        return {
+            message: 'Reponse correcte mise a jour et question verifiee.',
+            questionId,
+            correctAnswer,
+            isCorrectVerified: true,
+        };
     }
 
     // ─── Candidats ────────────────────────────────────────────────────────────
