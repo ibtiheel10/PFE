@@ -253,9 +253,18 @@ Expérience Requise: ${offre.ExperienceRequise || 'Non spécifié'}
 Compétences: ${offre.competences || 'Non spécifié'}
         `.trim();
 
-        // 3. Call AI Service (map QuestionNiveau 'Facile'|'Moyen'|'Difficile' to AiService's 'facile'|'moyen'|'difficile')
-        // 3. Call AI Service and let it save directly per user request
-        const savedQuestions = await this.aiService.generateQuestions(context, 'moyen', offre);
+        // 3. Call AI Service
+        const diffMap: Record<QuestionNiveau, 'facile' | 'moyen' | 'difficile'> = {
+            Facile: 'facile',
+            Moyen: 'moyen',
+            Difficile: 'difficile'
+        };
+
+        const savedQuestions = await this.aiService.generateQuestions(
+            context, 
+            diffMap[difficulte] || 'moyen', 
+            offre
+        );
 
         return {
             message: 'Questions generees et sauvegardees avec succes.',
