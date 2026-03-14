@@ -6,6 +6,8 @@ import { AuthModule } from './auth/auth.module';
 import { CandidatModule } from './candidat/candidat.module';
 import { EntrepriseModule } from './entreprise/entreprise.module';
 import { AdminModule } from './admin/admin.module';
+import { AiModule } from './ai/ai.module';
+import { ContactModule } from './contact/contact.module';
 
 import { User } from './entities/user.entity';
 import { OtpCode } from './entities/otp-code.entity';
@@ -47,6 +49,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     AdminModule,
     OffresModule,
     CandidaturesModule,
+    AiModule,
     QuestionsModule,
     NotificationsModule,
   ],

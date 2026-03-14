@@ -11,7 +11,7 @@ export class Question {
     @Column({ type: 'jsonb' })
     contenu: {
         question: string;
-        options: string[];
+        options: string[];  // always exactly 4 items
     };
 
     @Column({ type: 'int' })
@@ -26,6 +26,10 @@ export class Question {
     @Column({ type: 'varchar', default: 'Moyen' })
     niveauDifficulte: QuestionNiveau;
 
+    /** Set to true once the recruiter has manually verified the correct answer */
+    @Column({ type: 'boolean', default: false })
+    isCorrectVerified: boolean;
+
     @ManyToOne(() => OffreEmploi, (offre) => offre.questions, { onDelete: 'CASCADE', nullable: true })
     @JoinColumn({ name: 'offre_id' })
     offre: OffreEmploi;
@@ -33,3 +37,4 @@ export class Question {
     @CreateDateColumn()
     createdAt: Date;
 }
+

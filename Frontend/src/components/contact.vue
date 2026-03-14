@@ -204,7 +204,7 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 import Navbar from './Navbar.vue';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'http://localhost:3000/api';
 
 // Info items
 const infoItems = [

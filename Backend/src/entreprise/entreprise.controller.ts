@@ -171,6 +171,142 @@ export class EntrepriseController {
         return this.entrepriseService.deleteOffre(id, req.user.userId);
     }
 
+    /**
+     * GET /api/Entreprise/offres/:id/questions
+     * Récupère les questions générées pour une offre spécifique.
+     */
+    @Get('offres/:id/questions')
+    @ApiOperation({ summary: 'Get generated questions for a specific job offer' })
+    @ApiParam({ name: 'id', description: 'ID of the offre' })
+    @ApiResponse({ status: 200, description: 'Questions retrieved successfully.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
+    @ApiResponse({ status: 404, description: 'Offre not found.' })
+    async getQuestionsByOffre(@Param('id') id: string, @Request() req: any) {
+        return this.entrepriseService.getQuestionsByOffre(id, req.user.userId);
+    }
+
+    // ─── Génération IA pour une offre ─────────────────────────────────────────
+
+    /**
+     * POST /api/Entreprise/offres/:id/generer-questions-ia
+     * Génère et sauvegarde des questions pour l'offre spécifiée.
+     */
+    @Post('offres/:id/generer-questions-ia')
+    @ApiOperation({ summary: 'Generate and save AI questions for a job offer' })
+    @ApiParam({ name: 'id', description: 'ID of the offre' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                difficulte: { type: 'string', enum: ['Facile', 'Moyen', 'Difficile'], default: 'Moyen' }
+            }
+        }
+    })
+    @ApiResponse({ status: 201, description: 'Questions generated and saved successfully.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
+    @ApiResponse({ status: 404, description: 'Offre not found.' })
+    async genererQuestionsIA(
+        @Param('id') id: string,
+        @Body() body: { difficulte?: 'Facile' | 'Moyen' | 'Difficile' },
+        @Request() req: any
+    ) {
+        return this.entrepriseService.genererQuestionsIA(id, req.user.userId, body.difficulte || 'Moyen');
+    }
+
+    /**
+     * POST /api/Entreprise/offres/:id/regenerer-questions-ia
+     * Régénère de nouvelles questions (qui remplacent les anciennes) pour l'offre spécifiée.
+     */
+    @Post('offres/:id/regenerer-questions-ia')
+    @ApiOperation({ summary: 'Regenerate and replace AI questions for a job offer' })
+    @ApiParam({ name: 'id', description: 'ID of the offre' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                difficulte: { type: 'string', enum: ['Facile', 'Moyen', 'Difficile'], default: 'Moyen' },
+                previousQuestions: { type: 'array', items: { type: 'string' } },
+            }
+        }
+    })
+    @ApiResponse({ status: 200, description: 'Questions regenerated successfully.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
+    @ApiResponse({ status: 404, description: 'Offre not found.' })
+    async regenererQuestionsIA(
+        @Param('id') id: string,
+        @Body() body: { difficulte?: 'Facile' | 'Moyen' | 'Difficile', previousQuestions?: string[] },
+        @Request() req: any
+    ) {
+        return this.entrepriseService.regenererQuestionsIA(
+            id,
+            req.user.userId,
+            body.difficulte || 'Moyen',
+            body.previousQuestions || []
+        );
+    }
+
+    /**
+     * PATCH /api/Entreprise/questions/:id/verifier-reponse
+     * Permet au recruteur de corriger manuellement la bonne reponse et de valider la question.
+     * Body: { correctAnswer: string }
+     */
+    @Patch('questions/:id/verifier-reponse')
+    @ApiOperation({ summary: 'Manually verify and set the correct answer for a generated question' })
+    @ApiParam({ name: 'id', description: 'ID of the question to verify' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            required: ['correctAnswer'],
+            properties: {
+                correctAnswer: { type: 'string', description: 'The correct answer text (must match one of the 4 options)' }
+            }
+        }
+    })
+    @ApiResponse({ status: 200, description: 'Question verified successfully.' })
+    @ApiResponse({ status: 404, description: 'Question not found.' })
+    async verifierReponseQuestion(
+        @Param('id') id: string,
+        @Body() body: { correctAnswer: string }
+    ) {
+        return this.entrepriseService.verifierReponseQuestion(+id, body.correctAnswer);
+    }
+
+    /**
+     * POST /api/Entreprise/offres/:id/recommandation-ia
+     * Génère une recommandation (forces, faiblesses, conseils) basée sur les résultats d'un test pour cette offre.
+     */
+    @Post('offres/:id/recommandation-ia')
+    @ApiOperation({ summary: 'Generate AI recommendation from test results on an offer' })
+    @ApiParam({ name: 'id', description: 'ID of the offre' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                results: {
+                    type: 'array',
+                    items: {
+                        type: 'object',
+                        properties: {
+                            question: { type: 'string' },
+                            selectedAnswer: { type: 'string' },
+                            correctAnswer: { type: 'string' },
+                            isCorrect: { type: 'boolean' }
+                        }
+                    }
+                }
+            }
+        }
+    })
+    @ApiResponse({ status: 200, description: 'Recommendation generated.' })
+    @ApiResponse({ status: 404, description: 'Offre not found.' })
+    async recommandationIA(
+        @Param('id') id: string,
+        @Body() body: { results: any[] },
+        @Request() req: any
+    ) {
+        return this.entrepriseService.recommandationIA(id, req.user.userId, body.results || []);
+    }
+
     // ─── Candidats ────────────────────────────────────────────────────────────
 
     /**

@@ -191,8 +191,11 @@
                 <h3>Évaluation des candidats</h3>
                 <p class="field-hint" style="margin:0">Paramétrez le test de présélection automatique</p>
               </div>
-              <button type="button" class="btn-generate-qcm" @click="generateQCM">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Générer QCM avec l'IA
+              <button type="button" class="btn-generate-qcm" @click="generateQCM" :disabled="qcmLoading">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> 
+                <span v-if="qcmLoading">Génération...</span>
+                <span v-else-if="generatedQuestions.length > 0">Regénérer QCM</span>
+                <span v-else>Générer QCM avec l'IA</span>
               </button>
             </div>
 
@@ -209,6 +212,26 @@
                 <label>Score de passage (%)</label>
                 <input v-model.number="form.mcqPassScore" type="number" min="0" max="100" placeholder="70" />
               </div>
+            </div>
+
+            <!-- Affichage des questions générées -->
+            <div v-if="qcmLoading" class="qcm-loading" style="margin-top: 15px; text-align: center; color: #2563EB;">
+               <i class="fa-solid fa-spinner fa-spin"></i> Génération des questions en cours...
+            </div>
+            
+            <div v-if="generatedQuestions.length > 0" class="generated-questions-container" style="margin-top: 20px;">
+               <h4 style="font-size: 14px; font-weight: 700; color: #1e3a8a; margin-bottom: 15px;">Questions générées ({{ generatedQuestions.length }})</h4>
+               <div style="max-height: 300px; overflow-y: auto; padding-right: 10px;">
+                  <div v-for="(q, idx) in generatedQuestions" :key="idx" style="background: #fff; padding: 12px; border-radius: 8px; border: 1px solid #bfdbfe; margin-bottom: 10px;">
+                     <p style="font-weight: 600; font-size: 13px; color: #1e293b; margin: 0 0 8px;">Q{{idx+1}}: {{ q.question || q.contenu?.question || q.text }}</p>
+                     <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #475569;">
+                        <li v-for="(opt, oIdx) in (q.options || q.contenu?.options)" :key="oIdx" 
+                            :style="(q.reponses?.includes(opt) || q.correctAnswers?.includes(opt) || (q.correct === oIdx)) ? 'color: #10B981; font-weight: 700; list-style-type: disc;' : 'list-style-type: circle;'">
+                           {{ opt }}
+                        </li>
+                     </ul>
+                  </div>
+               </div>
             </div>
           </div>
 
@@ -246,12 +269,17 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import { generateQuestionsForOffre, regenerateQuestionsForOffre } from '../services/entrepriseService';
 
 const router = useRouter();
 
 const step       = ref(1);
 const publishing = ref(false);
 const toastVisible = ref(false);
+
+const qcmLoading = ref(false);
+const generatedQuestions = ref<any[]>([]);
+const createdOffreId = ref<number | null>(null);
 
 const form = ref({
   title:             '',
@@ -314,7 +342,14 @@ const submitPost = async () => {
         dateLimite: form.value.deadline ? new Date(form.value.deadline).toISOString() : null
      };
 
-     await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
+     let finalOffreId = createdOffreId.value;
+
+     if (!finalOffreId) {
+       await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
+     } else {
+       // Si brouillon auto-save a déjà créé l'offre, on fait un update
+       await axios.put(`http://localhost:5173/api/Entreprise/offres/${finalOffreId}`, payload, config);
+     }
 
      toastVisible.value = true;
      setTimeout(() => {
@@ -329,16 +364,74 @@ const submitPost = async () => {
   }
 };
 
-const saveDraft = () => {
-  alert('Brouillon sauvegardé localement.');
+const saveDraft = async () => {
+  try {
+     const token = localStorage.getItem('userToken');
+     const config = { headers: { Authorization: `Bearer ${token}` } };
+     const payload = {
+        titre: form.value.title || 'Brouillon Offre',
+        categorie: form.value.category || 'tech',
+        localisation: form.value.location || 'Tunis',
+        typeDeContrat: form.value.contractType || 'CDI',
+        experienceRequise: form.value.experience || 'junior',
+        salaire: form.value.salary ? parseFloat(form.value.salary) : undefined,
+        description: form.value.description || 'Description brouillon',
+        competences: form.value.requirements || '',
+        icon: form.value.icon,
+        iconColor: form.value.iconColor,
+        nbPost: form.value.positions,
+        dateLimite: form.value.deadline ? new Date(form.value.deadline).toISOString() : new Date().toISOString()
+     };
+     
+     if (!createdOffreId.value) {
+       const response = await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
+       createdOffreId.value = response.data.id;
+     } else {
+       await axios.put(`http://localhost:5173/api/Entreprise/offres/${createdOffreId.value}`, payload, config);
+     }
+     alert('Brouillon sauvegardé !');
+  } catch (e) {
+     console.error('Erreur sauve brouillon', e);
+     alert('Erreur lors de la sauvegarde du brouillon.');
+  }
 };
 
-const generateQCM = () => {
+const generateQCM = async () => {
   if (!form.value.title || !form.value.description) {
     alert('Remplissez d\'abord le titre et la description pour générer un QCM.');
     return;
   }
-  alert(`✨ QCM IA en cours de génération pour "${form.value.title}"…\nFonctionnalité disponible bientôt !`);
+  
+  qcmLoading.value = true;
+  try {
+     // Si l'offre n'a pas encore été créée (auto-save brouillon)
+     if (!createdOffreId.value) {
+        await saveDraft();
+     }
+
+     if (!createdOffreId.value) {
+       throw new Error("L'ID de l'offre n'a pas pu être récupéré.");
+     }
+
+     let response;
+     if (generatedQuestions.value.length > 0) {
+        response = await regenerateQuestionsForOffre(createdOffreId.value);
+     } else {
+        response = await generateQuestionsForOffre(createdOffreId.value);
+     }
+     
+     if (response.success && response.data?.questions) {
+        generatedQuestions.value = response.data.questions;
+        form.value.mcqQuestionsCount = generatedQuestions.value.length;
+     } else {
+        alert(response.error || "Une erreur est survenue lors de la communication avec l'IA.");
+     }
+  } catch(e: any) {
+     console.error("Erreur inattendue", e);
+     alert("Une erreur inattendue est survenue.");
+  } finally {
+     qcmLoading.value = false;
+  }
 };
 </script>
 

@@ -296,6 +296,9 @@
                                                    <button @click.stop="renameJob(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                                                        <PencilSquareIcon class="w-4 h-4 text-gray-400" /> Renommer la poste
                                                    </button>
+                                                   <button @click.stop="showRecommendations(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors">
+                                                       <SparklesIcon class="w-4 h-4 text-blue-600" /> Recommandations IA
+                                                   </button>
                                                    <button @click.stop="deleteJob(job.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
                                                        <TrashIcon class="w-4 h-4" /> Supprimer
                                                    </button>
@@ -365,6 +368,52 @@
               <div class="modal-actions">
                   <button class="modal-btn modal-btn-cancel" @click="showDeleteConfirm = false">Annuler</button>
                   <button class="modal-btn modal-btn-delete" @click="confirmDeleteJob">Supprimer</button>
+              </div>
+          </div>
+      </div>
+
+      <!-- AI Recommendations Modal -->
+      <div v-if="showRecommendationsModal" class="modal-overlay" @click="showRecommendationsModal = false">
+          <div class="modal-dialog" style="max-width: 600px;" @click.stop>
+              <div class="modal-icon-wrapper" style="margin-bottom: 1rem;">
+                  <div class="modal-icon-bg" style="background: #eff6ff;">
+                      <SparklesIcon class="w-8 h-8 text-blue-600" />
+                  </div>
+              </div>
+              <h3 class="modal-title" style="margin-bottom: 0.5rem;">Recommandations IA</h3>
+              <p class="modal-description" style="margin-bottom: 1.5rem;">Analyse des résultats des tests pour cette offre.</p>
+              
+              <div class="modal-body-content" style="min-height: 200px; display: flex; flex-direction: column;">
+                  <div v-if="recommendationsLoading" class="flex flex-col items-center justify-center py-8">
+                     <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+                     <p class="text-gray-500 text-sm">Génération des recommandations...</p>
+                  </div>
+                  <div v-else-if="currentRecommendations" class="bg-gray-50 p-4 rounded-xl border border-gray-100">
+                     <div class="mb-4">
+                        <span class="text-xs font-bold text-gray-500 uppercase">Score Moyen</span>
+                        <p class="text-lg font-bold text-blue-600">{{ currentRecommendations.score }}</p>
+                     </div>
+                     <div class="mb-4">
+                        <span class="text-xs font-bold text-gray-500 uppercase">Points forts</span>
+                        <ul class="list-disc pl-5 mt-1 text-sm text-gray-700">
+                           <li v-for="(str, i) in currentRecommendations.strengths" :key="i">{{ str }}</li>
+                        </ul>
+                     </div>
+                     <div class="mb-4">
+                        <span class="text-xs font-bold text-gray-500 uppercase">Points faibles à surveiller</span>
+                        <ul class="list-disc pl-5 mt-1 text-sm text-gray-700">
+                           <li v-for="(wk, i) in currentRecommendations.weaknesses" :key="i">{{ wk }}</li>
+                        </ul>
+                     </div>
+                     <div>
+                        <span class="text-xs font-bold text-gray-500 uppercase">Conseil de l'IA</span>
+                        <p class="mt-1 text-sm text-gray-700 font-medium">{{ currentRecommendations.advice }}</p>
+                     </div>
+                  </div>
+              </div>
+              
+              <div class="modal-actions" style="margin-top: 1.5rem;">
+                  <button class="modal-btn modal-btn-cancel w-full" @click="showRecommendationsModal = false">Fermer</button>
               </div>
           </div>
       </div>
@@ -453,7 +502,7 @@ import ListeCondidat from './liste_condidat.vue';
 import ListePosteEntreprise from './liste_poste_entreprise.vue';
 import { getEntrepriseDashboard } from '../services/dashboardService';
 import type { EntrepriseDashboardDto } from '../services/dashboardService';
-import { getMesOffres, type OffreEmploiResponse } from '../services/entrepriseService';
+import { getMesOffres, type OffreEmploiResponse, getRecommandationsForOffre } from '../services/entrepriseService';
 import { 
     Squares2X2Icon, 
     BriefcaseIcon, 
@@ -464,7 +513,8 @@ import {
     Cog6ToothIcon, 
     ArrowRightOnRectangleIcon,
     TrashIcon,
-    PencilSquareIcon
+    PencilSquareIcon,
+    SparklesIcon
 } from '@heroicons/vue/24/outline';
 
 // Auth info
@@ -486,6 +536,11 @@ const showRenameModal = ref(false);
 const jobToDelete = ref<number | null>(null);
 const jobToRename = ref<any>(null);
 const newJobTitle = ref('');
+
+// AI Recommendations Info
+const showRecommendationsModal = ref(false);
+const recommendationsLoading = ref(false);
+const currentRecommendations = ref<any>(null);
 
 // Profile Edit Modal
 const showEditProfile = ref(false);
@@ -598,6 +653,35 @@ const confirmDeleteJob = () => {
         console.log("Delete job API pending for id:", jobToDelete.value);
         showDeleteConfirm.value = false;
         jobToDelete.value = null;
+    }
+};
+
+const showRecommendations = async (job: any) => {
+    activeJobMenu.value = null;
+    showRecommendationsModal.value = true;
+    recommendationsLoading.value = true;
+    currentRecommendations.value = null;
+    
+    try {
+        const response = await getRecommandationsForOffre(job.id);
+        
+        if (response.success && response.data) {
+           currentRecommendations.value = response.data;
+        } else {
+           console.warn("Erreur reco IA:", response.error);
+           throw new Error(response.error || "Impossible d'analyser le profil de ce poste.");
+        }
+    } catch (e: any) {
+        console.error("Erreur reco IA fallback", e);
+        // Fallback mock structuré en cas d'erreur de connexion à l'IA
+        currentRecommendations.value = {
+           score: "N/A",
+           strengths: ["L'analyse détaillée n'a pu aboutir."],
+           weaknesses: ["Veuillez réessayer ultérieurement."],
+           advice: `L'IA a rencontré un problème technique : ${e.message}`
+        };
+    } finally {
+        recommendationsLoading.value = false;
     }
 };
 
