@@ -438,6 +438,8 @@ import { TrashIcon } from '@heroicons/vue/24/outline';
 import axios from 'axios';
 import { generateQuestionsForOffre, regenerateQuestionsForOffre } from '../services/entrepriseService';
 
+const router = useRouter();
+
 const props = defineProps({
     searchQuery: {
         type: String,
@@ -787,7 +789,7 @@ const generateQCM = async () => {
     // Étape 2 : appel à l'endpoint IA avec l'ID de l'offre
     const response = await generateQuestionsForOffre(createdOffreId.value!);
 
-    if (response.success && (response.data?.questions?.length ?? 0) > 0) {
+    if (response.success && response.data && response.data.questions && response.data.questions.length > 0) {
       generatedQuestions.value = response.data.questions.map((q: any) => ({
         text: q.question || q.contenu?.question || '',
         options: q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'],
@@ -819,7 +821,7 @@ const regenerateQCM = async () => {
   generatedQuestions.value = [];
   try {
     const response = await regenerateQuestionsForOffre(createdOffreId.value);
-    if (response.success && (response.data?.questions?.length ?? 0) > 0) {
+    if (response.success && response.data && (response.data.questions?.length ?? 0) > 0) {
       generatedQuestions.value = response.data.questions.map((q: any) => ({
         text: q.question || q.contenu?.question || '',
         options: q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'],
