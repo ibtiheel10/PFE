@@ -389,9 +389,19 @@
                      <p class="text-gray-500 text-sm">Génération des recommandations...</p>
                   </div>
                   <div v-else-if="currentRecommendations" class="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                     <div class="mb-4">
-                        <span class="text-xs font-bold text-gray-500 uppercase">Score Moyen</span>
-                        <p class="text-lg font-bold text-blue-600">{{ currentRecommendations.score }}</p>
+                     <div class="flex gap-4 mb-4">
+                        <div class="flex-1">
+                           <span class="text-xs font-bold text-gray-500 uppercase">Score Moyen</span>
+                           <p class="text-lg font-bold text-blue-600">{{ currentRecommendations.score }}%</p>
+                        </div>
+                        <div class="flex-1" v-if="currentRecommendations.niveau">
+                           <span class="text-xs font-bold text-gray-500 uppercase">Niveau Global</span>
+                           <p class="text-lg font-bold" :class="{
+                              'text-green-600': currentRecommendations.niveau === 'Avancé',
+                              'text-blue-600': currentRecommendations.niveau === 'Intermédiaire',
+                              'text-orange-600': currentRecommendations.niveau === 'Débutant'
+                           }">{{ currentRecommendations.niveau }}</p>
+                        </div>
                      </div>
                      <div class="mb-4">
                         <span class="text-xs font-bold text-gray-500 uppercase">Points forts</span>

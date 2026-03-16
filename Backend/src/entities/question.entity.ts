@@ -11,17 +11,11 @@ export class Question {
     @Column({ type: 'jsonb' })
     contenu: {
         question: string;
-        options: string[];  // always exactly 4 items
+        options: { text: string; isCorrect: boolean }[];
     };
 
     @Column({ type: 'int' })
-    chronometre: number; // minutes
-
-    @Column({ type: 'simple-array' })
-    reponses: string[];
-
-    @Column({ type: 'timestamp' })
-    dateEvaluation: Date;
+    chronometre: number; // seconds (updated from minutes representation)
 
     @Column({ type: 'varchar', default: 'Moyen' })
     niveauDifficulte: QuestionNiveau;

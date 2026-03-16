@@ -703,49 +703,7 @@ interface QCMQuestion {
 }
 const generatedQuestions = ref<QCMQuestion[]>([]);
 
-// Mock question templates per difficulty
-const mockQuestions = (title: string, difficulty: string): QCMQuestion[] => {
-  const base = [
-    {
-      text: `Quelle compétence est la plus importante pour un(e) ${title} ?`,
-      options: ['Communication', 'Expertise technique', 'Gestion du temps', 'Leadership'],
-      correct: 1
-    },
-    {
-      text: 'Comment gérez-vous les délais serrés dans un projet ?',
-      options: ['En ignorant certaines tâches', 'En priorisant les tâches critiques', 'En demandant une extension', 'En travaillant seul'],
-      correct: 1
-    },
-    {
-      text: `Dans le contexte du poste ${title}, quelle méthodologie préférez-vous ?`,
-      options: ['Agile / Scrum', 'Cascade (Waterfall)', 'Kanban', 'RAD'],
-      correct: 0
-    },
-    {
-      text: 'Comment assurez-vous la qualité de votre travail ?',
-      options: ['Revue par les pairs', 'Tests automatisés', 'Checklist personnelle', 'Les trois à la fois'],
-      correct: 3
-    },
-    {
-      text: 'Quelle est votre approche face à un problème complexe inconnu ?',
-      options: ['Demander immédiatement de l\'aide', 'Rechercher et analyser avant d\'agir', 'Ignorer jusqu\'à ce qu\'il devienne urgent', 'Appliquer une solution précédente sans analyse'],
-      correct: 1
-    }
-  ];
-  const extraHard = [
-    {
-      text: 'Expliquez la différence entre scalabilité verticale et horizontale.',
-      options: ['Aucune différence', 'Verticale = + ressources sur un serveur ; Horizontale = + serveurs', 'Horizontale = + RAM ; Verticale = + serveurs', 'Ce sont des termes marketing'],
-      correct: 1
-    },
-    {
-      text: 'Quel pattern architectural sépare la lecture et l\'écriture des données ?',
-      options: ['MVC', 'CQRS', 'REST', 'SOLID'],
-      correct: 1
-    }
-  ];
-  return difficulty === 'difficile' || difficulty === 'expert' ? [...base, ...extraHard] : base;
-};
+// mockQuestions trait removed
 
 /**
  * Génère le QCM via l'IA.
@@ -789,12 +747,18 @@ const generateQCM = async () => {
     // Étape 2 : appel à l'endpoint IA avec l'ID de l'offre
     const response = await generateQuestionsForOffre(createdOffreId.value!);
 
-    if (response.success && response.data && response.data.questions && response.data.questions.length > 0) {
-      generatedQuestions.value = response.data.questions.map((q: any) => ({
-        text: q.question || q.contenu?.question || '',
-        options: q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'],
-        correct: 0
-      }));
+    const questions = response.data?.questions || [];
+    if (response.success && questions.length > 0) {
+      generatedQuestions.value = questions.map((q: any) => {
+        const opts = q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'];
+        const correctStr = q.correctAnswer || q.contenu?.correctAnswer;
+        const correctIdx = correctStr ? opts.findIndex((opt: string) => opt === correctStr) : 0;
+        return {
+          text: q.question || q.contenu?.question || '',
+          options: opts,
+          correct: correctIdx >= 0 ? correctIdx : 0
+        };
+      });
     } else {
       alert(response.error || "L'IA n'a retourné aucune question.");
       showQCMDialog.value = false;
@@ -821,12 +785,18 @@ const regenerateQCM = async () => {
   generatedQuestions.value = [];
   try {
     const response = await regenerateQuestionsForOffre(createdOffreId.value);
-    if (response.success && response.data && (response.data.questions?.length ?? 0) > 0) {
-      generatedQuestions.value = response.data.questions.map((q: any) => ({
-        text: q.question || q.contenu?.question || '',
-        options: q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'],
-        correct: 0
-      }));
+    const questions = response.data?.questions || [];
+    if (response.success && questions.length > 0) {
+      generatedQuestions.value = questions.map((q: any) => {
+        const opts = q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'];
+        const correctStr = q.correctAnswer || q.contenu?.correctAnswer;
+        const correctIdx = correctStr ? opts.findIndex((opt: string) => opt === correctStr) : 0;
+        return {
+          text: q.question || q.contenu?.question || '',
+          options: opts,
+          correct: correctIdx >= 0 ? correctIdx : 0
+        };
+      });
     } else {
       alert(response.error || "L'IA n'a retourné aucune question.");
     }

@@ -9,7 +9,7 @@ import Result from '@/components/Result.vue'
 
 import Evaluation from '@/components/Evaluation.vue'
 import JobBoard from '@/components/JobBoard.vue'
-import JobDetailEntreprise from '@/components/job_detail_entreprise.vue'
+import JobDetailEntreprise from '@/components/job_details_&_test_info.vue'
 import EmployerDashboard from '@/components/employer_dashboard.vue'
 import Tarifs from '@/components/tarifs.vue'
 import VoirDemo from '@/components/Voirdemo.vue'

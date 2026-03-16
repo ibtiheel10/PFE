@@ -36,6 +36,9 @@ export class GenerateQuestionsDto {
   @IsEnum(['facile', 'moyen', 'difficile'])
   @IsOptional()
   difficulty?: DifficultyLevel = 'moyen';
+
+  @IsOptional()
+  timer?: number;
 }
 
 export class RegenerateQuestionsDto {
@@ -51,6 +54,9 @@ export class RegenerateQuestionsDto {
   @IsString({ each: true })
   @IsOptional()
   previousQuestions?: string[] = [];
+
+  @IsOptional()
+  timer?: number;
 }
 
 export class TestResultItemDto implements TestResult {
@@ -102,12 +108,13 @@ export class AiController {
   })
   async generateQuestions(
     @Body() dto: GenerateQuestionsDto,
-  ): Promise<{ questions: QuizQuestion[] }> {
-    const questions = await this.aiService.generateQuestions(
+  ): Promise<any> {
+    const rawQuestions = await this.aiService.generateQuestions(
       dto.jobDescription,
       dto.difficulty ?? 'moyen',
+      null,
     );
-    return { questions };
+    return this.formatQuestionsResponse(rawQuestions);
   }
 
   // ── POST /ai/regenerate-questions ────────────────────────────────────────────
@@ -123,13 +130,39 @@ export class AiController {
   })
   async regenerateQuestions(
     @Body() dto: RegenerateQuestionsDto,
-  ): Promise<{ questions: QuizQuestion[] }> {
-    const questions = await this.aiService.regenerateQuestions(
+  ): Promise<any> {
+    const rawQuestions = await this.aiService.regenerateQuestions(
       dto.jobDescription,
       dto.difficulty ?? 'moyen',
       dto.previousQuestions ?? [],
     );
-    return { questions };
+    return this.formatQuestionsResponse(rawQuestions);
+  }
+
+  private formatQuestionsResponse(questions: any[]): any {
+    const formattedQuestions = questions.map((q) => {
+      // Handle both Question entity and QuizQuestion interface
+      const questionText = q.contenu ? q.contenu.question : q.question;
+      const options = q.contenu ? q.contenu.options : q.options;
+
+      return {
+        id: q.id,
+        question: questionText,
+        options: options.map((opt: any) => ({
+          text: typeof opt === 'string' ? opt : opt.text,
+          isCorrect: typeof opt === 'object' ? !!opt.isCorrect : false,
+        })),
+        niveauDifficulte: q.niveauDifficulte || 'Moyen',
+        chronometre: q.chronometre || 30,
+        createdAt: q.createdAt || new Date().toISOString(),
+      };
+    });
+
+    return {
+      message: 'Questions générées avec succès',
+      totalQuestions: formattedQuestions.length,
+      questions: formattedQuestions,
+    };
   }
 
   // ── POST /ai/recommendation ──────────────────────────────────────────────────

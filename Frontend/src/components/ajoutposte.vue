@@ -226,7 +226,7 @@
                      <p style="font-weight: 600; font-size: 13px; color: #1e293b; margin: 0 0 8px;">Q{{idx+1}}: {{ q.question || q.contenu?.question || q.text }}</p>
                      <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #475569;">
                         <li v-for="(opt, oIdx) in (q.options || q.contenu?.options)" :key="oIdx" 
-                            :style="(q.reponses?.includes(opt) || q.correctAnswers?.includes(opt) || (q.correct === oIdx)) ? 'color: #10B981; font-weight: 700; list-style-type: disc;' : 'list-style-type: circle;'">
+                            :style="(q.reponses?.includes(opt) || q.correctAnswers?.includes(opt) || q.correctAnswer === opt || q.contenu?.correctAnswer === opt || (q.correct === oIdx)) ? 'color: #10B981; font-weight: 700; list-style-type: disc;' : 'list-style-type: circle;'">
                            {{ opt }}
                         </li>
                      </ul>
@@ -420,9 +420,10 @@ const generateQCM = async () => {
         response = await generateQuestionsForOffre(createdOffreId.value);
      }
      
-     if (response.success && response.data?.questions) {
-        generatedQuestions.value = response.data.questions;
-        form.value.mcqQuestionsCount = generatedQuestions.value.length;
+     const questions = response.data?.questions || [];
+     if (response.success && questions.length > 0) {
+        generatedQuestions.value = questions;
+        form.value.mcqQuestionsCount = questions.length;
      } else {
         alert(response.error || "Une erreur est survenue lors de la communication avec l'IA.");
      }
