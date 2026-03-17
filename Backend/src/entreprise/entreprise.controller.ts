@@ -210,6 +210,7 @@ export class EntrepriseController {
         @Body() body: { difficulte?: 'Facile' | 'Moyen' | 'Difficile' },
         @Request() req: any
     ) {
+        console.log(`[EntrepriseController] Reçu requête de génération IA pour offre ID: ${id}`);
         return this.entrepriseService.genererQuestionsIA(id, req.user.userId, body.difficulte || 'Moyen');
     }
 

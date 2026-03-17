@@ -42,8 +42,8 @@ export class AiService {
     private readonly questionRepository: Repository<Question>,
   ) { }
 
-  private readonly ollamaUrl = 'http://localhost:11434/api/generate';
-  private readonly model = 'phi3';
+  private readonly ollamaUrl = 'http://127.0.0.1:11434/api/generate';
+  private readonly model = 'phi3:mini';
 
   // ── Private helper: call Ollama (plain text, no JSON format) ─────────────────
 
@@ -110,18 +110,9 @@ export class AiService {
 
   // ── Private helper: generate N questions via JSON parsing with custom filtering ─
 
-  private isTechnology(option: string): boolean {
-    const techKeywords = ["docker", "kubernetes", "aws", "azure", "react", "java", "python", "angular", "node", "sql", "git", "spring"];
-    // Return true if the option IS JUST a technology name (very short expression containing the tech)
-    // but allow sentences that mention technologies in a broader responsibility context (e.g., "Deploy applications using Docker and AWS")
-    // For simplicity following user logic: if option length is short (< 20 chars) and contains tech keyword -> reject
-    const isShort = option.length < 30;
-    return isShort && techKeywords.some(t => option.toLowerCase().includes(t));
-  }
-
   private parseJsonQuestion(raw: any, index: number): QuizQuestion | null {
     if (!raw || !raw.question || !Array.isArray(raw.options) || !raw.correctAnswer) {
-      this.logger.warn(`Question ignorée à l'index ${index} : JSON invalide.`);
+      this.logger.warn(`Question ignored at index ${index}: invalid JSON.`);
       return null;
     }
 
@@ -131,27 +122,28 @@ export class AiService {
     for (const opt of raw.options) {
       if (typeof opt !== 'string') continue;
       const cleaned = opt.replace(/^[A-Da-d][).\s]+/, '').trim();
-      if (cleaned.length < 3) continue;          // Ignore trop court
-      if (seen.has(cleaned.toLowerCase())) continue; // Ignore doublons
-      if (this.isTechnology(cleaned)) continue;      // Ignore technologies seules
+      if (cleaned.length < 2) continue;              // skip empty strings only
+      if (seen.has(cleaned.toLowerCase())) continue;  // skip duplicates
       filtered.push(cleaned);
       seen.add(cleaned.toLowerCase());
-      if (filtered.length === 4) break;         // Limite a 4 options
+      if (filtered.length === 4) break;
     }
 
-    if (filtered.length !== 4) {
-      this.logger.warn(`Question "${raw.question.substring(0, 30)}..." ignorée car elle n'a pas exactement 4 options valides après filtrage (${filtered.length} trouvées).`);
-      return null; // Ignore question si <4 options
+    if (filtered.length < 2) {
+      this.logger.warn(`Question "${raw.question.substring(0, 30)}..." ignored: less than 2 options (${filtered.length} found).`);
+      return null;
     }
 
-    // Determine correct answer from the filtered list (or fallback to the first)
+    // Pad to 4 options if needed
+    while (filtered.length < 4) filtered.push('N/A');
+
     const rawCorrect = raw.correctAnswer.replace(/^[A-Da-d][).\s]+/, '').trim();
     const correctMatch = filtered.find(opt => opt.toLowerCase() === rawCorrect.toLowerCase());
 
     return {
       id: index + 1,
       question: raw.question.trim(),
-      options: filtered,
+      options: filtered.slice(0, 4),
       correctAnswer: correctMatch ? correctMatch : filtered[0],
       isCorrectVerified: false
     };
@@ -235,38 +227,21 @@ export class AiService {
   ): Promise<QuizQuestion[]> {
     const avoidPart =
       previousQuestions.length > 0
-        ? '\n\nIMPORTANT: Do NOT generate questions similar to:\n' +
-        previousQuestions.map((q, i) => (i + 1) + '. ' + q).join('\n') +
-        '\nGenerate completely different questions.'
+        ? '\nDo NOT repeat these questions:\n' +
+        previousQuestions.map((q, i) => (i + 1) + '. ' + q).join('\n')
         : '';
 
     const prompt =
-      'Génère un objet JSON contenant exactement ' + count + ' question(s) à choix multiples basé sur ce rôle.' +
+      'Generate exactly ' + count + ' multiple choice questions for a job interview.\n' +
+      'Each question must have exactly 4 options and 1 correct answer.\n' +
+      'Return ONLY valid JSON with no extra text or markdown.\n\n' +
+      'Job Description:\n' + jobDescription.substring(0, 800) +
       avoidPart +
-      '\n\nDESCRIPTION DU POSTE :\n' +
-      jobDescription.substring(0, 1000) +
-      '\n\nCONSIGNES STRICTES :' +
-      '\n- Le JSON doit contenir une clé "questions" avec un tableau des questions.' +
-      '\n- Chaque question doit avoir exactement 3 clés : question, options, correctAnswer.' +
-      '\n- L\'attribut "options" doit contenir exactement 4 strings.' +
-      '\n- Chaque option doit être une RESPONSABILITÉ, ACTION ou COMPÉTENCE du rôle.' +
-      '\n- N’inclus jamais de noms de technologies seules (ex: Docker, AWS, React…).' +
-      '\n- Évite les doublons ou options trop courtes.' +
-      '\n- Marque clairement la bonne réponse dans l\'attribut "correctAnswer".' +
-      '\n- Retourne UNIQUEMENT l\'objet JSON, pas de texte supplémentaire.' +
-      '\n\nExemple de format attendu :\n' +
-      '{\n' +
-      '  "questions": [\n' +
-      '    {\n' +
-      '      "question": "Texte de la question",\n' +
-      '      "options": ["Option A", "Option B", "Option C", "Option D"],\n' +
-      '      "correctAnswer": "Texte exact de l’option correcte"\n' +
-      '    }\n' +
-      '  ]\n' +
-      '}';
+      '\n\nRequired JSON format:\n' +
+      '{"questions":[{"question":"...","options":["option1","option2","option3","option4"],"correctAnswer":"option1"}]}';
 
     try {
-      const text = await this.callOllama(prompt); // Changed to callOllama for JSON format
+      const text = await this.callOllamaText(prompt); // Changed to callOllamaText
       this.logger.log('Raw AI response (first 600): ' + text.substring(0, 600));
 
       let rawJson: any;
@@ -321,9 +296,9 @@ export class AiService {
     difficulty: DifficultyLevel = 'moyen',
     offre: any = null,
   ): Promise<any[]> {
-    this.logger.log('Generating 4 questions with text parsing');
+    this.logger.log('Generating 2 questions with text parsing');
 
-    const aiQuestions = await this.generateTextQuestions(jobDescription, 4);
+    const aiQuestions = await this.generateTextQuestions(jobDescription, 2);
 
     if (offre && aiQuestions.length > 0) {
       const entities: Question[] = aiQuestions.map((q) => {
