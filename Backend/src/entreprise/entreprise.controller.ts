@@ -6,7 +6,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNotEmpty, IsOptional, IsNumber, Min } from 'class-validator';
 
-export class CreateOffreDto {
+export class EntrepriseCreateOffreDto {
     @ApiProperty({ example: 'Développeur Full Stack' })
     @IsString()
     @IsNotEmpty()
@@ -137,9 +137,9 @@ export class EntrepriseController {
      */
     @Post('offres')
     @ApiOperation({ summary: 'Create a new job offer' })
-    @ApiBody({ type: CreateOffreDto })
+    @ApiBody({ type: EntrepriseCreateOffreDto })
     @ApiResponse({ status: 201, description: 'Offre created.' })
-    async createOffre(@Body() body: CreateOffreDto, @Request() req: any) {
+    async createOffre(@Body() body: EntrepriseCreateOffreDto, @Request() req: any) {
         return this.entrepriseService.createOffre({ ...body, userId: req.user.userId });
     }
 
@@ -150,7 +150,7 @@ export class EntrepriseController {
     @Put('offres/:id')
     @ApiOperation({ summary: 'Update a job offer' })
     @ApiParam({ name: 'id', description: 'UUID of the offre' })
-    @ApiBody({ type: CreateOffreDto })
+    @ApiBody({ type: EntrepriseCreateOffreDto })
     @ApiResponse({ status: 200, description: 'Offre updated.' })
     @ApiResponse({ status: 404, description: 'Offre not found.' })
     async updateOffre(@Param('id') id: string, @Body() body: any, @Request() req: any) {

@@ -83,7 +83,7 @@ export class AiService {
           prompt,
           stream: false,
           format: 'json',
-          options: { temperature: 0.7, num_predict: 1024 },
+          options: { temperature: 0.7, num_predict: 800 },
         },
         { timeout: 600000 },
       );
@@ -130,7 +130,7 @@ export class AiService {
       this.logger.error('Invalid JSON content received from AI:', raw);
       throw new HttpException(
         "L'IA n'a pas retourné un JSON valide ou le texte est tronqué. Veuillez réessayer.",
-        HttpStatus.UNPROCESSABLE_ENTITY,
+        HttpStatus.BAD_GATEWAY,
       );
     }
   }
@@ -138,19 +138,36 @@ export class AiService {
   // ── Private helper: generate N questions via JSON parsing with custom filtering ─
 
   private parseJsonQuestion(raw: any, index: number): QuizQuestion | null {
-    if (!raw || !raw.question || !Array.isArray(raw.options) || raw.options.length < 4) {
-      this.logger.warn(`Question ignorée à l'index ${index} : JSON invalide ou moins de 4 options brutes.`);
+    // Determine the text of the question
+    const questionText = raw?.question || raw?.titre || raw?.texte || raw?.q;
+    // Determine the options array
+    let rawOptions = raw?.options || raw?.reponses || raw?.choix || raw?.answers;
+
+    if (!raw || !questionText || !Array.isArray(rawOptions) || rawOptions.length < 2) {
+      this.logger.warn(`Question ignorée à l'index ${index} : JSON invalide ou moins de 2 options brutes. Content: ${JSON.stringify(raw)}`);
       return null;
     }
 
     const seen = new Set<string>();
     const filtered: QuizOption[] = [];
 
-    for (const opt of raw.options) {
-      const text = typeof opt === 'string' ? opt : opt.text;
-      const isCorrect = typeof opt === 'object' ? !!opt.isCorrect : false;
+    // Support case where correctAnswer is a separate field at the question level
+    const globalCorrectAnswer = raw?.correctAnswer || raw?.bonne_reponse || raw?.reponse_correcte;
+
+    for (const opt of rawOptions) {
+      const text = typeof opt === 'string' ? opt : opt.texte || opt.text || opt.libelle || opt.value || opt.reponse;
+      // Determine if option is correct (either boolean field or matches global correct answer)
+      let isCorrect = typeof opt === 'object' ? (!!opt.isCorrect || !!opt.estCorrect || !!opt.correct) : false;
 
       if (typeof text !== 'string') continue;
+
+      if (!isCorrect && globalCorrectAnswer && typeof globalCorrectAnswer === 'string') {
+        // If global correct answer is matching this option text
+        if (text.toLowerCase().includes(globalCorrectAnswer.toLowerCase())) {
+          isCorrect = true;
+        }
+      }
+
       // Strip leading A) B) C) D) labels if present
       const cleaned = text.replace(/^[A-Da-d][).\\s]+/, '').trim();
       if (cleaned.length < 3) {
@@ -166,9 +183,9 @@ export class AiService {
       if (filtered.length === 4) break;
     }
 
-    // Strictly require 4 options — reject the question otherwise
-    if (filtered.length !== 4) {
-      this.logger.warn(`Question à l'index ${index} ignorée : ${filtered.length} option(s) valide(s) après nettoyage (4 requises).`);
+    // Strictly require at least 2 options — reject the question otherwise
+    if (filtered.length < 2) {
+      this.logger.warn(`Question à l'index ${index} ignorée : ${filtered.length} option(s) valide(s) après nettoyage (au moins 2 requises).`);
       return null;
     }
 
@@ -191,7 +208,7 @@ export class AiService {
 
     return {
       id: index + 1,
-      question: raw.question.trim(),
+      question: questionText.trim(),
       options: filtered,
       isCorrectVerified: false
     };
@@ -243,7 +260,7 @@ export class AiService {
     const answers: string[] = [];
     for (const raw of rawAnswerLines) {
       const cleaned = this.cleanOption(raw);
-      if (cleaned.length < 3) continue;              // skip empty / too short
+      if (cleaned.length < 1) continue;              // skip empty
       const key = cleaned.toLowerCase();
       if (seen.has(key)) continue;                   // skip duplicates
       seen.add(key);
@@ -287,49 +304,25 @@ export class AiService {
       : '';
 
     const prompt =
-      'Tu es un expert technique en développement logiciel et en recrutement IT.\n\n' +
-      'Ta tâche est de générer des questions QCM techniques pour évaluer un candidat selon une description de poste.\n\n' +
+      'Génère 4 questions QCM techniques courtes (maximum 1 phrase par question) pour ce poste.\n' +
+      'Format JSON attendu strict (tableau, 4 options par question, une seule option correcte) :\n' +
+      '[\n' +
+      '  {\n' +
+      '    "question": "question 1 ?",\n' +
+      '    "options": [\n' +
+      '      {"text": "réponse A", "isCorrect": true},\n' +
+      '      {"text": "réponse B", "isCorrect": false},\n' +
+      '      {"text": "réponse C", "isCorrect": false},\n' +
+      '      {"text": "réponse D", "isCorrect": false}\n' +
+      '    ]\n' +
+      '  }\n' +
+      ']\n\n' +
       avoidBlock +
-      'Instructions strictes :\n\n' +
-      '- Générer exactement 4 questions.\n' +
-      '- Chaque question doit contenir exactement 4 options.\n' +
-      '- Il doit y avoir obligatoirement 4 options : ni plus ni moins.\n' +
-      '- Une seule option doit avoir "isCorrect": true.\n' +
-      '- Les 3 autres options doivent avoir "isCorrect": false.\n' +
-      '- Chaque option doit contenir uniquement un texte court (maximum 15 mots).\n' +
-      '- Ne jamais laisser une option vide.\n' +
-      '- Ne jamais ajouter d\'explication.\n' +
-      '- Ne jamais ajouter de texte hors du JSON.\n\n' +
-      'IMPORTANT :\n' +
-      'Le JSON doit être strictement valide.\n\n' +
-      'Format obligatoire :\n\n' +
-      '{\n' +
-      '  "questions": [\n' +
-      '    {\n' +
-      '      "question": "texte de la question",\n' +
-      '      "options": [\n' +
-      '        {"text": "option 1", "isCorrect": false},\n' +
-      '        {"text": "option 2", "isCorrect": false},\n' +
-      '        {"text": "option 3", "isCorrect": true},\n' +
-      '        {"text": "option 4", "isCorrect": false}\n' +
-      '      ]\n' +
-      '    },\n' +
-      '    {\n' +
-      '      "question": "texte de la question",\n' +
-      '      "options": [\n' +
-      '        {"text": "option 1", "isCorrect": false},\n' +
-      '        {"text": "option 2", "isCorrect": true},\n' +
-      '        {"text": "option 3", "isCorrect": false},\n' +
-      '        {"text": "option 4", "isCorrect": false}\n' +
-      '      ]\n' +
-      '    }\n' +
-      '  ]\n' +
-      '}\n\n' +
-      'Description du poste :\n' +
-      jobDescription.substring(0, 1500) +
+      'Poste :\n' +
+      jobDescription.substring(0, 400) +
       competencesBlock;
 
-    const maxAttempts = 3;
+    const maxAttempts = 2;
     let attempts = 0;
     let allParsed: QuizQuestion[] = [];
 
@@ -364,6 +357,7 @@ export class AiService {
           continue;
         }
 
+        const initialParsedLength = allParsed.length;
         for (const item of jsonArray) {
           const q = this.parseJsonQuestion(item, allParsed.length);
           if (q) {
@@ -374,13 +368,19 @@ export class AiService {
           }
           if (allParsed.length >= count) break;
         }
+
+        // If we didn't manage to parse any NEW valid questions from this attempt, break to prevent infinite loops with the same prompt.
+        if (allParsed.length === initialParsedLength) {
+          this.logger.warn(`Attempt ${attempts} yielded no new valid questions. Breaking to avoid strict retry loops that cause timeouts.`);
+          break;
+        }
       } catch (error) {
         this.logger.error(`Attempt ${attempts} threw error: ${error.message}`);
       }
     }
 
     if (allParsed.length === 0) {
-      throw new HttpException("L'IA n'a pas pu générer de questions valides après plusieurs tentatives. Veuillez réessayer.", HttpStatus.SERVICE_UNAVAILABLE);
+      throw new HttpException("L'IA n'a pas pu générer de questions valides après plusieurs tentatives. Veuillez réessayer.", HttpStatus.BAD_GATEWAY);
     }
 
     return allParsed.slice(0, count);
