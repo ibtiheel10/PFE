@@ -226,8 +226,8 @@
                      <p style="font-weight: 600; font-size: 13px; color: #1e293b; margin: 0 0 8px;">Q{{idx+1}}: {{ q.question || q.contenu?.question || q.text }}</p>
                      <ul style="margin: 0; padding-left: 20px; font-size: 12px; color: #475569;">
                         <li v-for="(opt, oIdx) in (q.options || q.contenu?.options)" :key="oIdx" 
-                            :style="(q.reponses?.includes(opt) || q.correctAnswers?.includes(opt) || q.correctAnswer === opt || q.contenu?.correctAnswer === opt || (q.correct === oIdx)) ? 'color: #10B981; font-weight: 700; list-style-type: disc;' : 'list-style-type: circle;'">
-                           {{ opt }}
+                            :style="(opt.isCorrect || q.reponses?.includes(opt) || q.correctAnswers?.includes(opt) || q.correctAnswer === opt || q.contenu?.correctAnswer === opt || (q.correct === oIdx)) ? 'color: #10B981; font-weight: 700; list-style-type: disc;' : 'list-style-type: circle;'">
+                           {{ opt.text || opt }}
                         </li>
                      </ul>
                   </div>
@@ -307,13 +307,13 @@ function nextStep(current: number) {
   if (current === 1) {
     if (!form.value.title || !form.value.category || !form.value.contractType ||
         !form.value.location || !form.value.company || !form.value.experience) {
-      alert('Veuillez remplir tous les champs obligatoires (*) avant de continuer.');
+      console.warn('Veuillez remplir tous les champs obligatoires (*) avant de continuer.');
       return;
     }
   }
   if (current === 2) {
     if (!form.value.description || !form.value.requirements) {
-      alert('Veuillez remplir la description et les compétences requises.');
+      console.warn('Veuillez remplir la description et les compétences requises.');
       return;
     }
   }
@@ -359,7 +359,7 @@ const submitPost = async () => {
      }, 1800);
   } catch (error) {
      console.error(error);
-     alert("Erreur lors de la création de l'offre !");
+     console.error("Erreur lors de la création de l'offre !");
      publishing.value = false;
   }
 };
@@ -389,16 +389,16 @@ const saveDraft = async () => {
      } else {
        await axios.put(`http://localhost:5173/api/Entreprise/offres/${createdOffreId.value}`, payload, config);
      }
-     alert('Brouillon sauvegardé !');
+     console.log('Brouillon sauvegardé !');
   } catch (e) {
      console.error('Erreur sauve brouillon', e);
-     alert('Erreur lors de la sauvegarde du brouillon.');
+     console.error('Erreur lors de la sauvegarde du brouillon.');
   }
 };
 
 const generateQCM = async () => {
   if (!form.value.title || !form.value.description) {
-    alert('Remplissez d\'abord le titre et la description pour générer un QCM.');
+    console.warn('Remplissez d\'abord le titre et la description pour générer un QCM.');
     return;
   }
   
@@ -425,11 +425,11 @@ const generateQCM = async () => {
         generatedQuestions.value = questions;
         form.value.mcqQuestionsCount = questions.length;
      } else {
-        alert(response.error || "Une erreur est survenue lors de la communication avec l'IA.");
+        console.error(response.error || "Une erreur est survenue lors de la communication avec l'IA.");
      }
   } catch(e: any) {
      console.error("Erreur inattendue", e);
-     alert("Une erreur inattendue est survenue.");
+     console.error("Une erreur inattendue est survenue.");
   } finally {
      qcmLoading.value = false;
   }

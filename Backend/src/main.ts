@@ -38,8 +38,18 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = process.env.PORT ?? 5000;
+  const port = process.env.PORT ?? 3000;
   await app.listen(port);
+  
+  // Set timeout to 10 minutes (600,000 ms) for long-running LLM generation requests
+  const server = app.getHttpServer();
+  server.setTimeout(600000);
+  server.keepAliveTimeout = 600000;
+  server.headersTimeout = 600000;
+  if ('requestTimeout' in server) {
+    server.requestTimeout = 600000;
+  }
+
   console.log(`🚀 SkillVia API is running on: http://localhost:${port}/api`);
 }
 
