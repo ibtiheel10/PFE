@@ -71,17 +71,12 @@
 
         <!-- Right Side -->
         <div class="flex items-center gap-6">
-            <!-- Dark Mode Toggle -->
-             <button @click="toggleDarkMode" class="p-2 rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all dark:hover:bg-gray-800 dark:hover:text-white active:scale-95" :title="isDarkMode ? 'Passer au mode clair' : 'Passer au mode sombre'">
-                 <MoonIcon v-if="!isDarkMode" class="w-6 h-6" />
-                 <SunIcon v-else class="w-6 h-6 text-yellow-500" />
-             </button>
 
             <!-- Notifications -->
             <div class="relative">
                 <button @click="toggleNotifications" class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all dark:hover:bg-gray-800 dark:hover:text-white active:scale-95">
                     <BellIcon class="w-6 h-6" />
-                    <span v-if="hasNotifications" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full dark:border-gray-900 animate-pulse"></span>
+                    <span v-if="unreadCount > 0" class="absolute top-1.5 right-1.5 flex items-center justify-center w-3.5 h-3.5 bg-red-500 border-2 border-white text-white text-[8px] font-bold rounded-full dark:border-gray-900 animate-pulse">{{ unreadCount }}</span>
                 </button>
 
                 <!-- Notifications Dropdown -->
@@ -89,13 +84,19 @@
                     <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 dark:bg-gray-800 dark:border-gray-700 backdrop-blur-sm">
                         <div class="px-4 py-3 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center">
                             <h3 class="text-sm font-bold text-gray-900 dark:text-white">Notifications</h3>
-                            <button @click="hasNotifications = false" class="text-xs text-blue-600 hover:underline">Tout lire</button>
+                            <button @click="markAllNotificationsRead" class="text-xs text-blue-600 hover:underline">Tout lire</button>
                         </div>
                         <div class="max-h-96 overflow-y-auto">
-                            <div v-for="notif in notifications" :key="notif.id" class="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 border-b border-gray-50 dark:border-gray-700 last:border-0 transition-colors cursor-pointer">
-                                <p class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ notif.title }}</p>
-                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{{ notif.desc }}</p>
-                                <span class="text-[10px] text-gray-400 font-medium uppercase mt-1 block">{{ notif.time }}</span>
+                            <div v-if="notifications.length === 0" class="px-4 py-6 text-center text-sm text-gray-500">
+                                Aucune notification.
+                            </div>
+                            <div v-for="notif in notifications" :key="notif.id" 
+                                 @click="markNotificationRead(notif.id)"
+                                 class="px-4 py-3 border-b border-gray-50 dark:border-gray-700 last:border-0 transition-colors cursor-pointer"
+                                 :class="!notif.lu ? 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                                <p class="text-sm font-bold" :class="!notif.lu ? 'text-blue-900 dark:text-blue-100' : 'text-gray-800 dark:text-gray-200'">{{ notif.titre }}</p>
+                                <p class="text-xs mt-0.5 whitespace-pre-line" :class="!notif.lu ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'">{{ notif.message }}</p>
+                                <span class="text-[10px] font-medium uppercase mt-1 block" :class="!notif.lu ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400'">{{ formatNotificationTime(notif.createdAt) }}</span>
                             </div>
                         </div>
                     </div>
@@ -105,9 +106,9 @@
             <!-- Profile -->
             <div class="relative" ref="profileDropdownRef">
                 <button @click="toggleProfileMenu" class="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full border border-transparent hover:border-gray-200 transition-all dark:hover:bg-gray-800 dark:hover:border-gray-700">
-                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">AR</div>
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">{{ adminInitials }}</div>
                     <div class="hidden md:flex flex-col items-start">
-                        <span class="text-sm font-bold text-gray-700 leading-none dark:text-gray-200">Admin</span>
+                        <span class="text-sm font-bold text-gray-700 leading-none dark:text-gray-200">{{ adminName }}</span>
                         <span class="text-[11px] font-medium text-blue-600 mt-1">Super Admin</span>
                     </div>
                     <ChevronDownIcon class="w-4 h-4 text-gray-400" />
@@ -116,8 +117,8 @@
                  <!-- Dropdown -->
                      <div v-if="showProfileMenu" class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 dark:bg-gray-800 dark:border-gray-700 backdrop-blur-sm">
                         <div class="px-4 py-3 border-b border-gray-50 dark:border-gray-700">
-                            <p class="text-sm font-bold text-gray-900 dark:text-white">Alex Rivera</p>
-                            <p class="text-xs text-gray-500 truncate dark:text-gray-400">alex.rivera@admin.com</p>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">{{ adminName }}</p>
+                            <p class="text-xs text-gray-500 truncate dark:text-gray-400">{{ adminEmail }}</p>
                         </div>
                         <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-blue-400">
                             <Cog6ToothIcon class="w-4 h-4" /> Paramètres
@@ -516,6 +517,52 @@
             </div>
         </div>
 
+        <!-- Messages Contact Module -->
+        <div v-else-if="activeNav === 'Messages Contact'" class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Messages de Contact</h2>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div v-if="contactMessages.length === 0" class="p-8 text-center text-gray-500">
+                    Aucun message de contact.
+                </div>
+                <div v-else class="divide-y divide-gray-50 dark:divide-gray-700">
+                    <div v-for="msg in contactMessages" :key="msg.id" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" :class="{ 'bg-blue-50/30 dark:bg-blue-900/10': msg.statut === 'Non lu'}">
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                            <div class="flex-1 space-y-2">
+                                <div class="flex items-center gap-3">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ msg.firstName }} {{ msg.lastName }}</h3>
+                                    <span class="text-sm text-gray-500">&lt;{{ msg.email }}&gt;</span>
+                                    <span v-if="msg.statut === 'Non lu'" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wide">Nouveau</span>
+                                    <span v-else-if="msg.statut === 'Traité'" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 uppercase tracking-wide">Traité</span>
+                                </div>
+                                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ msg.subject }}</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{{ msg.message }}</p>
+                                <div v-if="msg.fileName" class="text-xs text-blue-600 font-medium">
+                                    <span class="mr-1">📎</span> Pièce jointe: {{ msg.fileName }}
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:items-end gap-2 shrink-0">
+                                <span class="text-xs text-gray-400 font-medium">{{ new Date(msg.createdAt).toLocaleString('fr-FR') }}</span>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <button v-if="msg.statut === 'Non lu'" @click="handleMarkContactRead(msg.id)" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors border border-blue-100">
+                                        Marquer comme lu
+                                    </button>
+                                    <button v-if="msg.statut !== 'Traité'" @click="handleMarkContactTreated(msg.id)" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors border border-green-100">
+                                        Marquer traité
+                                    </button>
+                                    <button @click="handleDeleteContact(msg.id)" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-100" title="Supprimer">
+                                        <TrashIcon class="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Construction State for other pages -->
         <div v-else class="flex flex-col items-center justify-center h-full text-gray-500 animate-fade-in-up">
             <div class="bg-white p-8 rounded-full mb-6 shadow-lg border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
@@ -608,11 +655,10 @@ import {
     ClipboardDocumentListIcon, 
     Cog6ToothIcon,
     BellIcon,
+    EnvelopeIcon,
     ChevronDownIcon,
     UserCircleIcon,
     ArrowRightOnRectangleIcon,
-    SunIcon,
-    MoonIcon,
     UsersIcon,
     ArrowTrendingUpIcon,
     ClipboardDocumentCheckIcon,
@@ -628,7 +674,6 @@ const router = useRouter();
 const activeNav = ref('Tableau de bord');
 const activePeriod = ref('Cette semaine');
 const isDarkMode = ref(false);
-const hasNotifications = ref(true);
 const isSidebarCollapsed = ref(false);
 const showProfileMenu = ref(false);
 const showNotifications = ref(false);
@@ -638,20 +683,29 @@ const navItems = [
     { name: 'Gestion Utilisateurs', icon: UserGroupIcon },
     { name: 'Gestion Entreprises', icon: BuildingOfficeIcon },
     { name: 'Logs Système', icon: ClipboardDocumentListIcon },
+    { name: 'Messages Contact', icon: EnvelopeIcon },
 ];
+
+// --- User Profile Data ---
+const sessionInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+const adminName = ref(sessionInfo.nom || 'Admin');
+const adminEmail = ref(sessionInfo.email || 'admin@skillvia.com');
+const adminInitials = computed(() => {
+    if (!adminName.value) return 'A';
+    const parts = adminName.value.split(' ').filter((p: string) => p.length > 0);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return adminName.value.substring(0, Math.min(2, adminName.value.length)).toUpperCase();
+});
 
 // --- Mock Data for Modules ---
 const users = ref<any[]>([]);
 const companies = ref<any[]>([]);
 const logs = ref<any[]>([]);
+const contactMessages = ref<any[]>([]);
+const notifications = ref<any[]>([]);
+const unreadCount = computed(() => notifications.value.filter(n => !n.lu).length);
 const isLoadingData = ref(false);
 const fetchError = ref('');
-
-const notifications = ref([
-    { id: 1, title: 'Nouvelle entreprise inscrite', desc: 'Innovate SA attend votre validation.', time: 'À l\'instant' },
-    { id: 2, title: 'Alerte Système', desc: 'Pic de trafic détecté sur le serveur principal.', time: 'il y a 5 min' },
-    { id: 3, title: 'Rapport mensuel', desc: 'Le rapport de Janvier est disponible.', time: 'il y a 1h' },
-]);
 
 const dashboardStats = ref({
     totalUtilisateurs: 0,
@@ -673,13 +727,27 @@ const formatNumber = (num: number) => {
 const formatCurrency = (num: number) => {
     return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(num || 0);
 };
+const formatNotificationTime = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'À l\'instant';
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    if (diffDays === 1) return 'Hier';
+    return date.toLocaleDateString('fr-FR');
+};
 
 // --- Methods ---
 
 const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
 const toggleNotifications = () => {
     showNotifications.value = !showNotifications.value;
-    if (showNotifications.value) hasNotifications.value = false;
 };
 const toggleProfileMenu = () => showProfileMenu.value = !showProfileMenu.value;
 
@@ -723,11 +791,6 @@ const chartData = computed(() => {
     };
 });
 
-const toggleDarkMode = () => {
-    isDarkMode.value = !isDarkMode.value;
-    localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light');
-};
-
 // ── API base ──────────────────────────────────────────────
 const API_BASE = ''; // Vite proxy redirige /api/* vers localhost:5173
 
@@ -766,11 +829,12 @@ const fetchAdminData = async () => {
 
         const config = { headers: { Authorization: `Bearer ${token}` } };
         
-        const [statsRes, usersRes, companiesRes, logsRes] = await Promise.all([
+        const [statsRes, usersRes, companiesRes, logsRes, contactRes] = await Promise.all([
             axios.get(`${API_BASE}/api/admin/dashboard/stats`, config),
             axios.get(`${API_BASE}/api/admin/users`, config),
             axios.get(`${API_BASE}/api/admin/entreprises`, config),
-            axios.get(`${API_BASE}/api/admin/logs`, config)
+            axios.get(`${API_BASE}/api/admin/logs`, config),
+            axios.get(`${API_BASE}/api/contact`, config)
         ]);
 
         dashboardStats.value = statsRes.data;
@@ -800,6 +864,8 @@ const fetchAdminData = async () => {
             type: l.action?.toLowerCase().includes('login') ? 'Auth' : 
                   l.action?.toLowerCase().includes('delete') ? 'Error' : 'Action'
         }));
+
+        contactMessages.value = contactRes.data;
 
     } catch (e: any) {
         const status = e?.response?.status;
@@ -847,6 +913,44 @@ const submitCreateUser = async () => {
         createUserError.value = msg;
     } finally {
         isCreatingUser.value = false;
+    }
+};
+
+// ── Contact Messages Actions ──────────────────────────────
+const handleMarkContactRead = async (id: number) => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        // The GET /:id route automatically marks it as read in the backend.
+        await axios.get(`${API_BASE}/api/contact/${id}`, config);
+        const msg = contactMessages.value.find(m => m.id === id);
+        if (msg) msg.statut = 'Lu';
+    } catch (e) {
+        console.error('Erreur mark read', e);
+    }
+};
+
+const handleMarkContactTreated = async (id: number) => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.patch(`${API_BASE}/api/contact/${id}/statut`, {}, config);
+        const msg = contactMessages.value.find(m => m.id === id);
+        if (msg) msg.statut = 'Traité';
+    } catch (e) {
+        console.error('Erreur mark treated', e);
+    }
+};
+
+const handleDeleteContact = async (id: number) => {
+    if (!confirm('Voulez-vous vraiment supprimer ce message ?')) return;
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.delete(`${API_BASE}/api/contact/${id}`, config);
+        contactMessages.value = contactMessages.value.filter(m => m.id !== id);
+    } catch (e) {
+        console.error('Erreur delete contact', e);
     }
 };
 

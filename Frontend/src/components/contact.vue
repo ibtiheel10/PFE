@@ -204,7 +204,7 @@ import { ref, computed } from 'vue';
 import axios from 'axios';
 import Navbar from './Navbar.vue';
 
-const API_URL = 'http://localhost:3000/api';
+const API_URL = '/api';
 
 // Info items
 const infoItems = [
@@ -279,8 +279,9 @@ const removeFile = () => {
 };
 
 const subjects = [
-  'Support Technique',
-  'Demande Commerciale',
+  'Question générale',
+  'Réclamation',
+  'Support technique',
   'Partenariat',
   'Autre'
 ];
@@ -296,14 +297,14 @@ const sendMessage = async () => {
 
   try {
     const formData = new FormData();
-    formData.append('FirstName', contactForm.value.firstName);
-    formData.append('LastName', contactForm.value.lastName);
-    formData.append('Email', contactForm.value.email);
-    formData.append('Subject', contactForm.value.subject);
-    formData.append('Message', contactForm.value.message);
+    formData.append('firstName', contactForm.value.firstName);
+    formData.append('lastName', contactForm.value.lastName);
+    formData.append('email', contactForm.value.email);
+    formData.append('subject', contactForm.value.subject);
+    formData.append('message', contactForm.value.message);
 
     if (contactForm.value.file) {
-      formData.append('File', contactForm.value.file);
+      formData.append('file', contactForm.value.file);
     }
 
     await axios.post(`${API_URL}/contact`, formData, {

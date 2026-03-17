@@ -353,7 +353,7 @@ const navItems = [
     { name: 'Tableau de bord', icon: Squares2X2Icon },
     { name: 'Offres', icon: BriefcaseIcon, badge: '3' },
     { name: 'Historique des Candidatures', icon: ClockIcon },
-    { name: 'Résultats', icon: ChartBarIcon }
+    { name: 'Mes Résultats', icon: ChartBarIcon }
 ];
 
 onMounted(async () => {
@@ -375,7 +375,7 @@ onMounted(async () => {
 const handleNav = (itemName: string) => {
     if (itemName === 'Offres') {
         router.push('/jobs');
-    } else if (itemName === 'Résultats') {
+    } else if (itemName === 'Mes Résultats') {
         router.push('/result');
     } else {
         activeNav.value = itemName;

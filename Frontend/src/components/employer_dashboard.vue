@@ -221,7 +221,7 @@
                                 </div>
                                 <div class="time-period-tabs">
                                     <button 
-                                        v-for="period in ['Last 3 months', 'Last 30 days', 'Last 7 days']" 
+                                        v-for="period in ['3 derniers mois', '30 derniers jours', '7 derniers jours']" 
                                         :key="period"
                                         class="period-tab" 
                                         :class="{ active: activePeriod === period }"
@@ -282,7 +282,7 @@
                            </div>
                            
                            <div class="jobs-list">
-                               <div class="job-item" v-for="job in displayJobs" :key="job.title">
+                               <div class="job-item" v-for="job in displayJobs.slice(0, 3)" :key="job.title">
                                    <div class="job-header">
                                        <h4 @click="goToJobDetails(job.id)" style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='inherit'">{{ job.title }}</h4>
                                        <div class="relative">
@@ -534,7 +534,7 @@ const userEmail = ref(userInfo.email || 'entreprise@example.com');
 
 // State
 const activeNav = ref('Tableau de bord');
-const activePeriod = ref('Last 30 days');
+const activePeriod = ref('30 derniers jours');
 const searchQuery = ref('');
 const hasNotifications = ref(true);
 const showProfileMenu = ref(false);
@@ -746,17 +746,27 @@ const chartPaths = computed(() => {
     let points = [0, 0, 0, 0, 0, 0, 0];
     let labels = ['', '', '', '', '', '', ''];
     
-    if (dashboardData.value && dashboardData.value.candidaturesParMois) {
-        const parMois = dashboardData.value.candidaturesParMois;
-        // Prendre les 7 derniers mois s'ils existent (ou moins)
-        const recent = parMois.slice(-7);
-        points = recent.map(m => m.count);
-        labels = recent.map(m => m.mois);
-        
-        // Si vide, mettre des valeurs par défaut pour l'UI
-        if (points.length === 0) {
-            points = [0, 0, 0, 0, 0, 0, 0];
-            labels = ['-6m', '-5m', '-4m', '-3m', '-2m', '-1m', 'Ce mois'];
+    if (dashboardData.value) {
+        let periodData = [];
+        if (activePeriod.value === '3 derniers mois') {
+            periodData = dashboardData.value.candidaturesLast3Months || [];
+        } else if (activePeriod.value === '7 derniers jours') {
+            periodData = dashboardData.value.candidaturesLast7Days || [];
+        } else {
+            // Default to 30 derniers jours
+            periodData = dashboardData.value.candidaturesLast30Days || [];
+        }
+
+        // Limit to 10 points max for UI clarity if there are many days
+        if (periodData.length > 10) {
+           // Take the latest 10 or distribute them evenly
+           const step = Math.ceil(periodData.length / 10);
+           periodData = periodData.filter((_, i) => i % step === 0 || i === periodData.length - 1);
+        }
+
+        if (periodData.length > 0) {
+            points = periodData.map(m => m.count);
+            labels = periodData.map(m => m.period);
         }
     }
 
@@ -1617,14 +1627,18 @@ const displayJobs = computed(() => {
 
 
 /* Edit Profile Dialog */
-.edit-profile-overlay {
+.modal-overlay, .edit-profile-overlay {
     position: fixed;
     inset: 0;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
     background: rgba(0, 0, 0, 0.75);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 100;
+    z-index: 9999;
     backdrop-filter: blur(4px);
 }
 

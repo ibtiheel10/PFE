@@ -395,7 +395,7 @@ const navItems = [
     { name: 'Offres d\'emploi',  icon: BriefcaseIcon,  path: '/candidat/jobs',      sub: 'Parcourez les offres' },
     { name: 'Mes Candidatures', icon: ClockIcon,       path: '/mes-candidatures',   sub: 'Historique & statuts' },
     { name: 'Évaluations',      icon: ClipboardDocumentCheckIcon, path: '/candidat/evaluations', sub: 'Vos tests techniques' },
-    { name: 'Résultats',        icon: ChartBarIcon,    path: '/resultats',   sub: 'Scores & évaluations' },
+    { name: 'Mes Résultats',    icon: ChartBarIcon,    path: '/resultats',   sub: 'Scores & évaluations' },
 ];
 
 const pageTitle = computed(() => {

@@ -21,11 +21,19 @@ export interface TopCandidatDto {
     statut: string | null;
 }
 
+export interface CandidaturesParPeriodeDto {
+    period: string;
+    count: number;
+}
+
 export interface EntrepriseDashboardDto {
     totalCandidatures: number;
     offresActives: number;
     totalOffres: number;
     candidaturesParMois: CandidaturesParMoisDto[];
+    candidaturesLast3Months: CandidaturesParPeriodeDto[];
+    candidaturesLast30Days: CandidaturesParPeriodeDto[];
+    candidaturesLast7Days: CandidaturesParPeriodeDto[];
     meilleursCandidats: TopCandidatDto[];
 }
 

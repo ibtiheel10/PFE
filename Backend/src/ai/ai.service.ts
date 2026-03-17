@@ -138,78 +138,43 @@ export class AiService {
   // ── Private helper: generate N questions via JSON parsing with custom filtering ─
 
   private parseJsonQuestion(raw: any, index: number): QuizQuestion | null {
-    // Determine the text of the question
-    const questionText = raw?.question || raw?.titre || raw?.texte || raw?.q;
-    // Determine the options array
-    let rawOptions = raw?.options || raw?.reponses || raw?.choix || raw?.answers;
-
-    if (!raw || !questionText || !Array.isArray(rawOptions) || rawOptions.length < 2) {
-      this.logger.warn(`Question ignorée à l'index ${index} : JSON invalide ou moins de 2 options brutes. Content: ${JSON.stringify(raw)}`);
+    if (!raw || !raw.question || !Array.isArray(raw.options) || !raw.correctAnswer) {
+      this.logger.warn(`Question ignored at index ${index}: invalid JSON.`);
       return null;
     }
 
     const seen = new Set<string>();
-    const filtered: QuizOption[] = [];
+    const filtered: string[] = [];
 
-    // Support case where correctAnswer is a separate field at the question level
-    const globalCorrectAnswer = raw?.correctAnswer || raw?.bonne_reponse || raw?.reponse_correcte;
-
-    for (const opt of rawOptions) {
-      const text = typeof opt === 'string' ? opt : opt.texte || opt.text || opt.libelle || opt.value || opt.reponse;
-      // Determine if option is correct (either boolean field or matches global correct answer)
-      let isCorrect = typeof opt === 'object' ? (!!opt.isCorrect || !!opt.estCorrect || !!opt.correct) : false;
-
-      if (typeof text !== 'string') continue;
-
-      if (!isCorrect && globalCorrectAnswer && typeof globalCorrectAnswer === 'string') {
-        // If global correct answer is matching this option text
-        if (text.toLowerCase().includes(globalCorrectAnswer.toLowerCase())) {
-          isCorrect = true;
-        }
-      }
-
-      // Strip leading A) B) C) D) labels if present
-      const cleaned = text.replace(/^[A-Da-d][).\\s]+/, '').trim();
-      if (cleaned.length < 3) {
-        this.logger.debug(`Option rejetée (trop courte) : "${cleaned}"`);
-        continue;
-      }
-      if (seen.has(cleaned.toLowerCase())) {
-        this.logger.debug(`Option rejetée (doublon) : "${cleaned}"`);
-        continue;
-      }
-      filtered.push({ text: cleaned, isCorrect });
+    for (const opt of raw.options) {
+      if (typeof opt !== 'string') continue;
+      const cleaned = opt.replace(/^[A-Da-d][).\s]+/, '').trim();
+      if (cleaned.length < 2) continue;              // skip empty strings only
+      if (seen.has(cleaned.toLowerCase())) continue;  // skip duplicates
+      filtered.push(cleaned);
       seen.add(cleaned.toLowerCase());
       if (filtered.length === 4) break;
     }
 
-    // Strictly require at least 2 options — reject the question otherwise
     if (filtered.length < 2) {
-      this.logger.warn(`Question à l'index ${index} ignorée : ${filtered.length} option(s) valide(s) après nettoyage (au moins 2 requises).`);
+      this.logger.warn(`Question "${raw.question.substring(0, 30)}..." ignored: less than 2 options (${filtered.length} found).`);
       return null;
     }
 
-    // Ensure exactly ONE option is correct
-    const correctCount = filtered.filter(o => o.isCorrect).length;
-    if (correctCount !== 1) {
-      this.logger.debug(`Correction du nombre d'options correctes (${correctCount} trouvées → forcé à 1).`);
-      let foundFirst = false;
-      for (const opt of filtered) {
-        if (opt.isCorrect && !foundFirst) {
-          foundFirst = true;
-        } else {
-          opt.isCorrect = false;
-        }
-      }
-      if (!foundFirst) {
-        filtered[0].isCorrect = true;
-      }
-    }
+    // Pad to 4 options if needed
+    while (filtered.length < 4) filtered.push('N/A');
+
+    const rawCorrect = raw.correctAnswer.replace(/^[A-Da-d][).\s]+/, '').trim();
+    const correctMatch = filtered.find(opt => opt.toLowerCase() === rawCorrect.toLowerCase());
+    const finalCorrectAnswer = correctMatch ? correctMatch : filtered[0];
 
     return {
       id: index + 1,
-      question: questionText.trim(),
-      options: filtered,
+      question: raw.question.trim(),
+      options: filtered.slice(0, 4).map(opt => ({
+        text: opt,
+        isCorrect: opt === finalCorrectAnswer
+      })),
       isCorrectVerified: false
     };
   }

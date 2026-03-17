@@ -2,12 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Notification, NotificationType } from '../entities/notification.entity';
+import { User } from '../entities/user.entity';
 
 @Injectable()
 export class NotificationsService {
     constructor(
         @InjectRepository(Notification)
         private readonly notifRepo: Repository<Notification>,
+        @InjectRepository(User)
+        private readonly userRepo: Repository<User>,
     ) { }
 
     async createForUser(
@@ -183,5 +186,21 @@ export class NotificationsService {
             `Une nouvelle offre qui correspond à votre profil est disponible : "${titrePoste}".`,
             'OFFRE_RECOMMANDEE',
         );
+    }
+
+    async notifyNouveauMessageContact(expediteur: string, sujet: string) {
+        const admins = await this.userRepo.find({ where: { role: 'Admin' } });
+        const notifications = admins.map(admin =>
+            this.notifRepo.create({
+                userId: admin.id,
+                titre: '📩 Nouveau message de contact',
+                message: `Vous avez reçu un nouveau message de ${expediteur} concernant "${sujet}".`,
+                type: 'NOUVEAU_MESSAGE_CONTACT',
+                lu: false,
+            })
+        );
+        if (notifications.length > 0) {
+            await this.notifRepo.save(notifications);
+        }
     }
 }

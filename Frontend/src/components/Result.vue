@@ -1,115 +1,199 @@
 <template>
-  <div class="page-wrapper">
-    <!-- Main Content -->
-    <div class="result-page">
-      <div class="result-container">
-        
-        <div class="result-grid">
-            <!-- Left Column: Main Details -->
-            <div class="details-column">
-                <div class="large-result-card animate-fade-in-up">
-                    <div class="card-header-status">
-                         <div class="status-badge-large" :class="isSuccess ? 'success' : 'failure'">
-                            <i :class="isSuccess ? 'fa-solid fa-check-circle' : 'fa-solid fa-circle-xmark'"></i>
-                            {{ isSuccess ? 'Réussite' : 'Échec' }}
-                         </div>
-                         <span class="date-badge">13 Fév 2024</span>
-                    </div>
+  <div class="result-page-wrapper">
 
-                    <div class="main-score-section">
-                        <div class="score-circular">
-                            <apexchart type="radialBar" height="280" :options="radialChartOptions" :series="radialChartSeries"></apexchart>
-                        </div>
-                        <div class="score-message">
-                            <h2>{{ isSuccess ? 'Excellent Travail !' : 'Continuez vos efforts' }}</h2>
-                            <p>Vous avez obtenu un score supérieur à <strong>85%</strong> des candidats. Votre performance en <strong>Vue.js</strong> est particulièrement remarquable.</p>
-                        </div>
-                    </div>
+    <!-- Animated background orbs -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
 
-                    <div class="stats-grid-large">
-                        <div class="stat-box">
-                            <div class="stat-icon bg-blue-50 text-blue-600">
-                                <i class="fa-solid fa-clock"></i>
-                            </div>
-                            <div>
-                                <span class="stat-label">Temps Écoulé</span>
-                                <span class="stat-value">{{ evalStats.tempsEcoule }}</span>
-                            </div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-icon bg-emerald-50 text-emerald-600">
-                                <i class="fa-solid fa-bullseye"></i>
-                            </div>
-                            <div>
-                                <span class="stat-label">Réponses Correctes</span>
-                                <span class="stat-value">{{ evalStats.bonnesReponses }}</span>
-                            </div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-icon bg-purple-50 text-purple-600">
-                                <i class="fa-solid fa-bolt"></i>
-                            </div>
-                            <div>
-                                <span class="stat-label">Rapidité</span>
-                                <span class="stat-value">{{ evalStats.topPercent }}</span>
-                            </div>
-                        </div>
-                    </div>
+    <div class="result-content">
 
-                    <div class="competencies-section" v-if="competencies.length > 0">
-                        <h3 class="section-title">
-                            <i class="fa-solid fa-list-check"></i> Détails par Compétence
-                        </h3>
-                        <div class="competency-list">
-                            <div class="competency-item" v-for="comp in competencies" :key="comp.name">
-                                <div class="competency-header">
-                                    <span class="competency-name">{{ comp.name }}</span>
-                                    <span class="competency-score">{{ comp.score }}%</span>
-                                </div>
-                                <div class="progress-bar">
-                                    <div class="progress-fill" :style="{ width: comp.score + '%' }"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+      <!-- ── Top Hero Banner ── -->
+      <div class="hero-banner" :class="isSuccess ? 'success-hero' : 'failure-hero'">
+        <div class="hero-inner">
+          <div class="hero-icon-wrap" :class="isSuccess ? 'success-icon-bg' : 'failure-icon-bg'">
+            <svg v-if="isSuccess" class="hero-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <svg v-else class="hero-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="hero-title">{{ isSuccess ? 'Excellent Travail !' : 'Continuez vos efforts' }}</h1>
+            <p class="hero-subtitle">
+              {{ isSuccess
+                ? 'Vous avez validé les compétences requises. Votre profil a été transmis aux recruteurs.'
+                : 'Ne vous découragez pas. Continuez à vous entraîner pour améliorer votre score.'
+              }}
+            </p>
+          </div>
+        </div>
+        <div class="date-chip">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          {{ new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) }}
+        </div>
+      </div>
 
-                    <div class="action-buttons-large">
-                        <button class="btn btn-primary" @click="goToJobs">
-                            Voir d'autres offres
-                             <i class="fa-solid fa-arrow-right"></i>
-                        </button>
+      <!-- ── Main Layout Grid ── -->
+      <div class="main-grid">
 
-                    </div>
+        <!-- Left column: Score + Stats + Competencies -->
+        <div class="left-col">
+
+          <!-- Score Card -->
+          <div class="glass-card score-card animate-fade-up">
+            <div class="score-layout">
+              <!-- Circular Score -->
+              <div class="score-circle-wrap">
+                <div class="score-circle-outer" :class="isSuccess ? 'success-ring' : 'failure-ring'">
+                  <apexchart type="radialBar" height="200" :options="radialChartOptions" :series="radialChartSeries"></apexchart>
                 </div>
+                <div class="score-status-label" :class="isSuccess ? 'success-label' : 'failure-label'">
+                  {{ isSuccess ? 'Réussi' : 'Échoué' }}
+                </div>
+              </div>
+
+              <!-- Stats Grid -->
+              <div class="stats-panel">
+                <h3 class="stats-panel-title">Aperçu de la performance</h3>
+                <div class="stats-grid">
+                  <div class="stat-item">
+                    <div class="stat-icon-wrap blue">
+                      <svg class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span class="stat-name">Temps écoulé</span>
+                      <span class="stat-val">{{ evalStats.tempsEcoule }}</span>
+                    </div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-icon-wrap emerald">
+                      <svg class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span class="stat-name">Réponses correctes</span>
+                      <span class="stat-val">{{ evalStats.bonnesReponses }}</span>
+                    </div>
+                  </div>
+                  <div class="stat-item">
+                    <div class="stat-icon-wrap purple">
+                      <svg class="stat-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                      </svg>
+                    </div>
+                    <div>
+                      <span class="stat-name">Classement</span>
+                      <span class="stat-val">{{ evalStats.topPercent }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
+          </div>
 
-            <!-- Right Column: Analytics Charts -->
-            <div class="charts-column space-y-6">
-                
-                <!-- Progression Chart -->
-                <div class="chart-card-small">
-                    <h3 class="chart-title-small">
-                        <i class="fa-solid fa-chart-line text-blue-500"></i> Progression
-                    </h3>
-                    <div class="h-[180px]">
-                         <apexchart type="area" height="100%" :options="lineChartOptions" :series="lineChartSeries"></apexchart>
-                    </div>
-                </div>
-
-                <!-- Evaluation Categories -->
-                <div class="chart-card-small">
-                    <h3 class="chart-title-small">
-                        <i class="fa-solid fa-chart-pie text-purple-500"></i> Répartition
-                    </h3>
-                     <div class="h-[180px] flex items-center justify-center">
-                        <apexchart type="donut" height="200" :options="donutChartOptions" :series="donutChartSeries"></apexchart>
-                    </div>
-                </div>
-
+          <!-- Competencies Card -->
+          <div v-if="competencies.length > 0" class="glass-card animate-fade-up" style="animation-delay: 0.1s">
+            <div class="card-section-header">
+              <div class="section-icon-wrap">
+                <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                </svg>
+              </div>
+              <h3 class="card-section-title">Analyse par compétence</h3>
             </div>
+            <div class="competency-list">
+              <div v-for="comp in competencies" :key="comp.name" class="competency-item">
+                <div class="competency-header">
+                  <span class="competency-name">{{ comp.name }}</span>
+                  <span class="competency-pct" :class="comp.score >= 70 ? 'text-emerald-600' : comp.score >= 50 ? 'text-amber-500' : 'text-red-500'">{{ comp.score }}%</span>
+                </div>
+                <div class="progress-track">
+                  <div
+                    class="progress-bar-fill"
+                    :class="comp.score >= 70 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500' : comp.score >= 50 ? 'bg-gradient-to-r from-amber-400 to-amber-500' : 'bg-gradient-to-r from-red-400 to-red-500'"
+                    :style="{ width: comp.score + '%' }">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- CTA Buttons -->
+          <div class="action-row animate-fade-up" style="animation-delay: 0.2s">
+            <button class="btn-primary" @click="goToJobs">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              Voir d'autres offres
+            </button>
+            <button class="btn-secondary" @click="goToDashboard">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              Mon Dashboard
+            </button>
+          </div>
         </div>
 
+        <!-- Right column: Charts -->
+        <div class="right-col">
+
+          <!-- Progression Chart -->
+          <div class="glass-card animate-fade-up" style="animation-delay: 0.05s">
+            <div class="card-section-header">
+              <div class="section-icon-wrap">
+                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                </svg>
+              </div>
+              <h3 class="card-section-title">Progression des scores</h3>
+            </div>
+            <apexchart type="area" height="180" :options="lineChartOptions" :series="lineChartSeries"></apexchart>
+          </div>
+
+          <!-- Distribution Chart -->
+          <div class="glass-card animate-fade-up" style="animation-delay: 0.15s">
+            <div class="card-section-header">
+              <div class="section-icon-wrap purple-icon">
+                <svg class="w-4 h-4 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+                </svg>
+              </div>
+              <h3 class="card-section-title">Répartition candidatures</h3>
+            </div>
+            <div class="donut-center">
+              <apexchart type="donut" height="200" :options="donutChartOptions" :series="donutChartSeries"></apexchart>
+            </div>
+            <div class="donut-legend">
+              <div class="legend-item"><span class="dot blue-dot"></span> En cours</div>
+              <div class="legend-item"><span class="dot green-dot"></span> Accepté</div>
+              <div class="legend-item"><span class="dot red-dot"></span> Refusé</div>
+            </div>
+          </div>
+
+          <!-- Tips Card -->
+          <div class="tips-card animate-fade-up" style="animation-delay: 0.2s">
+            <div class="tips-icon">
+              <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <div>
+              <p class="tips-title">Conseil Skillvia</p>
+              <p class="tips-text">{{ isSuccess ? 'Votre profil est maintenant visible par les recruteurs. Complétez votre profil pour maximiser vos chances.' : 'Révisez les compétences clés et repassez l\'évaluation dans quelques jours pour améliorer votre score.' }}</p>
+            </div>
+          </div>
+        </div>
       </div>
+
     </div>
   </div>
 </template>
@@ -124,7 +208,6 @@ const router = useRouter();
 const score = ref(0);
 const candidature = ref<CandidatureResponse | null>(null);
 
-// Parsed evaluation details
 const evalStats = ref({
     tempsEcoule: 'N/A',
     bonnesReponses: '0/0',
@@ -133,17 +216,14 @@ const evalStats = ref({
 
 onMounted(async () => {
   try {
-      // Prioritize candidatureId from route query
       const candidatureIdParam = route.query.candidatureId;
       let targetCandidatureId: number | null = null;
       
       if (candidatureIdParam) {
           targetCandidatureId = Number(candidatureIdParam);
       } else {
-          // Fallback: Fetch all candidatures and pick the latest one with a score
           const allCandidatures = await (await import('../services/candidatureService')).getMesCandidatures();
           const evaluatedCandidatures = (allCandidatures || []).filter(c => c.statut === 'Évalué' || c.score !== null);
-          
           if (evaluatedCandidatures && evaluatedCandidatures.length > 0) {
               targetCandidatureId = evaluatedCandidatures[0]?.id || null;
           }
@@ -160,7 +240,6 @@ onMounted(async () => {
                   evalStats.value.tempsEcoule = details.Temps || 'N/A';
                   evalStats.value.bonnesReponses = `${details.CorrectAnswers}/${details.TotalQuestions}`;
                   evalStats.value.topPercent = details.TopPercent ? `Top ${details.TopPercent}%` : 'N/A';
-                  
                   if (details.ScoreParCompetence) {
                       competencies.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
                           name: key,
@@ -168,198 +247,85 @@ onMounted(async () => {
                       }));
                   }
               } catch (e) {
-                  console.error("Error parsing evaluation details", e);
+                  console.error('Error parsing evaluation details', e);
               }
           }
       }
 
-      // Fetch Stats for charts
       const resStats = await getMesStats();
-      
-      // Update Donut Chart: [En attente, Accepté, Refusé]
       donutChartSeries.value = [resStats.stats.enAttente, resStats.stats.acceptées, resStats.stats.refusées];
       
-      // Update Line Chart (Progression)
       if (resStats.progression && resStats.progression.length > 0) {
-          const dates = resStats.progression.map(p => new Date(p.date).toLocaleDateString());
+          const dates = resStats.progression.map(p => new Date(p.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
           const scores = resStats.progression.map(p => p.score);
-          
-          // @ts-ignore
-          lineChartOptions.value = {
-              ...lineChartOptions.value,
-              xaxis: {
-                  ...lineChartOptions.value.xaxis,
-                  categories: dates
-              }
-          };
-          
-          lineChartSeries.value = [
-              { name: 'Évolution Score', data: scores }
-          ];
+          lineChartOptions.value = { ...lineChartOptions.value, xaxis: { ...lineChartOptions.value.xaxis, categories: dates } };
+          lineChartSeries.value = [{ name: 'Score', data: scores }];
       }
   } catch (err) {
-      console.error("Error loading result data:", err);
+      console.error('Error loading result data:', err);
   }
 });
 
 const isSuccess = computed(() => score.value >= 70);
+const competencies = ref<{name: string, score: number}[]>([]);
 
-// --- Chart Data ---
+// ── Charts ──────────────────────────────
 
-// 1. Line Area Chart
-const lineChartSeries = ref<any[]>([
-    {
-        name: 'Activité',
-        data: []
-    }
-]);
-
+const lineChartSeries = ref<any[]>([{ name: 'Score', data: [] }]);
 const lineChartOptions = ref({
-    chart: {
-        type: 'area',
-        toolbar: { show: false },
-        background: 'transparent',
-        fontFamily: 'Inter, sans-serif',
-    },
-    colors: ['#3b82f6', '#94a3b8'],
-    stroke: {
-        curve: 'smooth',
-        width: 3
-    },
+    chart: { type: 'area', toolbar: { show: false }, background: 'transparent', fontFamily: 'Inter, sans-serif', sparkline: { enabled: false } },
+    colors: ['#3b82f6'],
+    stroke: { curve: 'smooth', width: 2.5 },
     dataLabels: { enabled: false },
-    fill: {
-        type: 'gradient',
-        gradient: {
-            shadeIntensity: 1,
-            opacityFrom: 0.4,
-            opacityTo: 0.1,
-            stops: [0, 90, 100]
-        }
-    },
+    fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.3, opacityTo: 0.02, stops: [0, 90, 100] } },
     xaxis: {
         categories: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
-        labels: { style: { colors: '#64748b', fontSize: '12px' } },
-        axisBorder: { show: false },
-        axisTicks: { show: false }
+        labels: { style: { colors: '#94a3b8', fontSize: '11px', fontFamily: 'Inter, sans-serif' } },
+        axisBorder: { show: false }, axisTicks: { show: false }
     },
-    yaxis: {
-        labels: { style: { colors: '#64748b', fontSize: '12px' } }
-    },
-    grid: {
-        borderColor: '#f1f5f9',
-        strokeDashArray: 4,
-        yaxis: { lines: { show: true } }
-    },
+    yaxis: { labels: { style: { colors: '#94a3b8', fontSize: '11px', fontFamily: 'Inter, sans-serif' } }, min: 0, max: 100 },
+    grid: { borderColor: '#f1f5f9', strokeDashArray: 4, yaxis: { lines: { show: true } } },
     theme: { mode: 'light' },
-    legend: { position: 'top', horizontalAlign: 'left' }
+    tooltip: { theme: 'light', y: { formatter: (val: number) => `${val}%` } }
 });
 
-// 2. Radial Bar Chart
 const radialChartSeries = computed(() => [score.value]);
-
 const radialChartOptions = ref({
-    chart: {
-        type: 'radialBar',
-        background: 'transparent',
-    },
+    chart: { type: 'radialBar', background: 'transparent', fontFamily: 'Inter, sans-serif' },
     plotOptions: {
         radialBar: {
-            startAngle: -135,
-            endAngle: 135,
-            hollow: {
-                margin: 15,
-                size: '65%',
-                image: undefined,
-                imageWidth: 64,
-                imageHeight: 64,
-                imageClipped: false,
-            },
-            track: {
-                background: '#f1f5f9',
-                strokeWidth: '100%',
-                margin: 0,
-            },
+            startAngle: -130, endAngle: 130,
+            hollow: { margin: 10, size: '68%' },
+            track: { background: '#f1f5f9', strokeWidth: '100%', margin: 5 },
             dataLabels: {
                 show: true,
-                name: {
-                    offsetY: -10,
-                    show: true,
-                    color: '#94a3b8',
-                    fontSize: '14px',
-                    fontFamily: 'Inter, sans-serif',
-                },
-                value: {
-                    offsetY: 5,
-                    color: '#1e293b',
-                    fontSize: '36px',
-                    fontWeight: 700,
-                    show: true,
-                    fontFamily: 'Inter, sans-serif',
-                }
+                name: { offsetY: -8, show: true, color: '#94a3b8', fontSize: '12px', fontFamily: 'Inter, sans-serif' },
+                value: { offsetY: 8, color: '#1e293b', fontSize: '34px', fontWeight: 800, show: true, fontFamily: 'Inter, sans-serif', formatter: (val: number) => `${Math.round(val)}%` }
             }
         }
     },
     fill: {
         type: 'gradient',
-        gradient: {
-            shade: 'light',
-            type: 'horizontal',
-            shadeIntensity: 0.5,
-            gradientToColors: ['#3b82f6'],
-            inverseColors: true,
-            opacityFrom: 1,
-            opacityTo: 1,
-            stops: [0, 100]
-        }
+        gradient: { shade: 'light', type: 'horizontal', gradientToColors: ['#2563eb'], inverseColors: false, opacityFrom: 1, opacityTo: 1 }
     },
-    stroke: {
-        lineCap: 'round'
-    },
+    stroke: { lineCap: 'round' },
     labels: ['Score Final'],
 });
 
-// 3. Donut Chart (Evaluations)
-const donutChartSeries = ref([0, 0, 0]); // Active, Completed, Ended
-
+const donutChartSeries = ref([0, 0, 0]);
 const donutChartOptions = ref({
-    chart: {
-        type: 'donut',
-        background: 'transparent',
-    },
+    chart: { type: 'donut', background: 'transparent', fontFamily: 'Inter, sans-serif' },
     labels: ['En cours', 'Accepté', 'Refusé'],
-    colors: ['#3b82f6', '#10b981', '#f43f5e'], // Blue, Emerald, Rose
+    colors: ['#3b82f6', '#10b981', '#f43f5e'],
     plotOptions: {
         pie: {
             donut: {
-                size: '75%',
+                size: '72%',
                 labels: {
                     show: true,
                     name: { show: false },
-                    value: {
-                        show: true,
-                        fontSize: '32px',
-                        fontFamily: 'Inter, sans-serif',
-                        fontWeight: 700,
-                        color: '#1e293b',
-                        offsetY: 10,
-                        formatter: function (val: any) {
-                            return val;
-                        }
-                    },
-                    total: {
-                        show: true,
-                        showAlways: true,
-                        label: 'Total',
-                        fontSize: '14px',
-                        fontFamily: 'Inter, sans-serif',
-                        fontWeight: 500,
-                        color: '#94a3b8',
-                        formatter: function (w: any) {
-                            return w.globals.seriesTotals.reduce((a: any, b: any) => {
-                                return a + b
-                            }, 0)
-                        }
-                    }
+                    value: { show: true, fontSize: '28px', fontFamily: 'Inter, sans-serif', fontWeight: 700, color: '#1e293b', offsetY: 8 },
+                    total: { show: true, showAlways: true, label: 'Total', fontSize: '12px', fontFamily: 'Inter, sans-serif', fontWeight: 500, color: '#94a3b8', formatter: (w: any) => w.globals.seriesTotals.reduce((a: any, b: any) => a + b, 0) }
                 }
             }
         }
@@ -367,415 +333,276 @@ const donutChartOptions = ref({
     dataLabels: { enabled: false },
     stroke: { show: false },
     legend: { show: false },
-    tooltip: { enabled: true }
+    tooltip: { enabled: true, theme: 'light' }
 });
 
-
-const goToJobs = () => {
-    router.push('/candidat/jobs');
-};
-
-const competencies = ref<{name: string, score: number}[]>([]);
+const goToJobs = () => router.push('/candidat/jobs');
+const goToDashboard = () => router.push('/candidat/dashboard');
 </script>
 
 <style scoped>
-.page-wrapper {
+* { box-sizing: border-box; }
+
+.result-page-wrapper {
   min-height: 100vh;
-  background: #f8f9fb;
+  background: linear-gradient(135deg, #f0f4ff 0%, #fafbfe 50%, #f3f0ff 100%);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  position: relative;
+  overflow-x: hidden;
 }
 
-/* Header */
-.header {
+/* Animated background orbs */
+.bg-orb {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  background: white;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  z-index: 100;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+.orb-1 { width: 500px; height: 500px; background: rgba(59, 130, 246, 0.08); top: -150px; right: -150px; animation: float 8s ease-in-out infinite; }
+.orb-2 { width: 400px; height: 400px; background: rgba(139, 92, 246, 0.07); bottom: -100px; left: -100px; animation: float 10s ease-in-out infinite reverse; }
+.orb-3 { width: 300px; height: 300px; background: rgba(16, 185, 129, 0.06); top: 50%; left: 50%; animation: float 12s ease-in-out infinite; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  33% { transform: translateY(-20px) translateX(10px); }
+  66% { transform: translateY(10px) translateX(-15px); }
 }
 
-.header-container {
-  max-width: 1400px;
+.result-content {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
   margin: 0 auto;
-  height: 64px;
-  padding: 0 32px;
+  padding: 32px 24px 64px;
+}
+
+/* ── Hero Banner ── */
+.hero-banner {
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin-bottom: 28px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
-
-.logo img {
-  height: 28px;
-  display: block;
-}
-
-.nav-menu {
-  display: flex;
-  gap: 32px;
-  align-items: center;
-}
-
-.nav-link {
-  font-size: 14px;
-  font-weight: 500;
-  color: #64748b;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.nav-link:hover {
-  color: #1f5bff;
-}
-
-.header-actions {
-  display: flex;
-  align-items: center;
+  flex-wrap: wrap;
   gap: 16px;
 }
+.success-hero { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; }
+.failure-hero { background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; }
 
-.icon-btn {
-  width: 36px;
-  height: 36px;
-  border: none;
-  background: transparent;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: #64748b;
-  transition: all 0.2s;
+.hero-inner { display: flex; align-items: center; gap: 16px; }
+
+.hero-icon-wrap {
+  width: 52px; height: 52px;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.success-icon-bg { background: linear-gradient(135deg, #10b981, #059669); box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
+.failure-icon-bg { background: linear-gradient(135deg, #f43f5e, #dc2626); box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3); }
+.hero-icon { width: 26px; height: 26px; color: white; }
+
+.hero-title { font-size: 22px; font-weight: 800; color: #1e293b; margin: 0 0 4px; }
+.hero-subtitle { font-size: 13.5px; color: #475569; margin: 0; line-height: 1.5; max-width: 480px; }
+
+.date-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: white; border: 1px solid #e2e8f0;
+  padding: 6px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 600; color: #64748b;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  white-space: nowrap;
 }
 
-.icon-btn:hover {
-  background: #f1f5f9;
-  color: #1f5bff;
-}
-
-.icon-btn i {
-  font-size: 18px;
-}
-
-.profile-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 2px solid #e2e8f0;
-  cursor: pointer;
-}
-
-.profile-avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.result-page {
-  padding-top: 0;
-  min-height: 100vh;
-}
-
-.result-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px;
-}
-
-.result-grid {
+/* ── Grid Layout ── */
+.main-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr;
+  grid-template-columns: 3fr 2fr;
   gap: 24px;
 }
 
-/* Large Result Card */
-.large-result-card {
-  background: white;
+.left-col, .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Glass Cards ── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 20px;
-  padding: 32px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-  border: 1px solid #f1f5f9;
-  height: 100%;
+  padding: 28px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04), 0 1px 4px rgba(0, 0, 0, 0.03);
+  transition: box-shadow 0.3s ease;
+}
+.glass-card:hover { box-shadow: 0 8px 32px rgba(0, 0, 0, 0.07), 0 2px 8px rgba(0, 0, 0, 0.04); }
+
+/* ── Score Card ── */
+.score-card { }
+
+.score-layout {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.score-circle-wrap {
   display: flex;
   flex-direction: column;
-}
-
-.card-header-status {
-  display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 32px;
-}
-
-.status-badge-large {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 30px;
-  font-size: 14px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.status-badge-large.success {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #d1fae5;
-}
-
-.status-badge-large.failure {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fee2e2;
-}
-
-.date-badge {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
-  background: #f8fafc;
-  padding: 4px 12px;
-  border-radius: 6px;
-}
-
-.main-score-section {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  margin-bottom: 40px;
-}
-
-.score-circular {
   flex-shrink: 0;
 }
 
-.score-message h2 {
-  font-size: 24px;
+.score-circle-outer {
+  border-radius: 50%;
+  padding: 4px;
+}
+.success-ring { background: linear-gradient(135deg, #d1fae5, #a7f3d0); }
+.failure-ring { background: linear-gradient(135deg, #fee2e2, #fca5a5); }
+
+.score-status-label {
+  margin-top: 10px;
+  font-size: 11px;
   font-weight: 800;
-  color: #1e293b;
-  margin: 0 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  padding: 4px 12px;
+  border-radius: 20px;
 }
+.success-label { background: #ecfdf5; color: #059669; border: 1px solid #bbf7d0; }
+.failure-label { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 
-.score-message p {
-  font-size: 15px;
-  color: #64748b;
-  line-height: 1.6;
-  margin: 0;
-}
+/* ── Stats Panel ── */
+.stats-panel { flex: 1; }
+.stats-panel-title { font-size: 13px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 16px; }
 
-.score-message strong {
-  color: #1f5bff;
-}
+.stats-grid { display: flex; flex-direction: column; gap: 14px; }
 
-.stats-grid-large {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-  margin-bottom: 40px;
-  background: #f8fafc;
-  padding: 24px;
-  border-radius: 16px;
-}
+.stat-item { display: flex; align-items: center; gap: 14px; padding: 14px; background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 14px; }
 
-.stat-box {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
+.stat-icon-wrap {
+  width: 42px; height: 42px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
 }
+.blue { background: #eff6ff; }
+.blue .stat-icon { color: #3b82f6; }
+.emerald { background: #ecfdf5; }
+.emerald .stat-icon { color: #10b981; }
+.purple { background: #f5f3ff; }
+.purple .stat-icon { color: #8b5cf6; }
+.stat-icon { width: 20px; height: 20px; }
 
-.stat-label {
-  display: block;
-  font-size: 12px;
-  font-weight: 600;
-  color: #94a3b8;
-  margin-bottom: 2px;
+.stat-name { display: block; font-size: 11px; font-weight: 600; color: #94a3b8; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.3px; }
+.stat-val { display: block; font-size: 16px; font-weight: 800; color: #1e293b; }
+
+/* ── Card Section Header ── */
+.card-section-header {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 22px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
 }
-
-.stat-value {
-  display: block;
-  font-size: 16px;
-  font-weight: 700;
-  color: #1e293b;
+.section-icon-wrap {
+  width: 32px; height: 32px;
+  background: #eff6ff;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
 }
+.purple-icon { background: #f5f3ff; }
+.card-section-title { font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; }
 
-/* Competencies Section */
-.competencies-section {
-  margin-bottom: 32px;
-  padding-top: 24px;
-  border-top: 1px solid #f1f5f9;
+/* ── Competencies ── */
+.competency-list { display: flex; flex-direction: column; gap: 18px; }
+.competency-item { }
+.competency-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.competency-name { font-size: 13px; font-weight: 600; color: #374151; }
+.competency-pct { font-size: 13px; font-weight: 800; }
+
+.progress-track { height: 8px; background: #f1f5f9; border-radius: 4px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 4px; transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1); }
+
+/* ── Action Buttons ── */
+.action-row { display: flex; gap: 12px; }
+
+.btn-primary {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 20px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  color: white;
+  font-size: 14px; font-weight: 700;
+  border: none; border-radius: 13px;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+  transition: all 0.2s ease;
 }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45); }
+.btn-primary:active { transform: translateY(0); }
 
-.section-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.section-title i {
-  color: #1f5bff;
-}
-
-.competency-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.competency-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.competency-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.competency-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #475569;
-}
-
-.competency-score {
-  font-size: 14px;
-  font-weight: 700;
-  color: #1f5bff;
-}
-
-.progress-bar {
-  height: 8px;
-  background: #f1f5f9;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #3b82f6 0%, #1f5bff 100%);
-  border-radius: 4px;
-  transition: width 1s ease-out;
-}
-
-.action-buttons-large {
-  display: flex;
-  gap: 16px;
-  margin-top: auto;
-}
-
-/* Small Chart Cards */
-.chart-card-small {
+.btn-secondary {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 13px 20px;
   background: white;
+  color: #374151;
+  font-size: 14px; font-weight: 700;
+  border: 1.5px solid #e5e7eb; border-radius: 13px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  transition: all 0.2s ease;
+}
+.btn-secondary:hover { background: #f8fafc; border-color: #d1d5db; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+/* ── Donut Chart ── */
+.donut-center { display: flex; justify-content: center; }
+.donut-legend { display: flex; justify-content: center; gap: 20px; margin-top: 8px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; color: #64748b; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.blue-dot { background: #3b82f6; }
+.green-dot { background: #10b981; }
+.red-dot { background: #f43f5e; }
+
+/* ── Tips Card ── */
+.tips-card {
+  background: linear-gradient(135deg, #fefce8 0%, #fef9c3 100%);
+  border: 1px solid #fde68a;
   border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  border: 1px solid #f1f5f9;
+  padding: 18px 20px;
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.tips-icon {
+  width: 36px; height: 36px;
+  background: white;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+.tips-title { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 4px; }
+.tips-text { font-size: 12px; color: #78350f; line-height: 1.5; margin: 0; }
+
+/* ── Animations ── */
+.animate-fade-up {
+  opacity: 0;
+  transform: translateY(16px);
+  animation: fadeUp 0.5s forwards;
+}
+@keyframes fadeUp {
+  to { opacity: 1; transform: translateY(0); }
 }
 
-.chart-title-small {
-  font-size: 15px;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Responsive */
+/* ── Responsive ── */
 @media (max-width: 1024px) {
-  .result-grid {
-    grid-template-columns: 1fr;
-  }
+  .main-grid { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 768px) {
-  .stats-grid-large {
-    grid-template-columns: 1fr;
-  }
-  
-  .main-score-section {
-    flex-direction: column;
-    text-align: center;
-  }
-}
-
-@keyframes badgePulse {
-  0%, 100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
-  }
-}
-
-/* Button Enhancements */
-.btn-explore {
-  position: relative;
-  overflow: hidden;
-  gap: 0.5rem;
-}
-
-.btn-arrow {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  margin-left: auto;
-}
-
-.btn-explore:hover .btn-arrow {
-  transform: translateX(4px);
-}
-
-.btn-explore::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 0;
-  height: 0;
-  border-radius: 50%;
-  background: rgba(59, 130, 246, 0.2);
-  transform: translate(-50%, -50%);
-  transition: width 0.6s, height 0.6s;
-}
-
-.btn-explore:hover::before {
-  width: 300px;
-  height: 300px;
-}
-
-/* Charts Container Grid */
-.charts-container {
-  perspective: 1000px;
-}
-
-/* Accessibility */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
+  .result-content { padding: 20px 16px 48px; }
+  .hero-banner { flex-direction: column; align-items: flex-start; }
+  .score-layout { flex-direction: column; align-items: center; }
+  .action-row { flex-direction: column; }
+  .main-grid { gap: 16px; }
 }
 </style>

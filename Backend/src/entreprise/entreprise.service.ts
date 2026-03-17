@@ -104,7 +104,79 @@ export class EntrepriseService {
             .getRawMany();
 
         const candidaturesParMois = rawParMois.map((r) => ({
-            mois: r.mois,
+            period: r.mois,
+            count: parseInt(r.count, 10),
+        }));
+
+        // Fetch data for 3 Months (by week or month)
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 2); // 3 months including current
+        threeMonthsAgo.setDate(1);
+
+        const raw3Months = await this.candidatureRepo
+            .createQueryBuilder('c')
+            .leftJoin('c.offre', 'o')
+            .leftJoin('o.entreprise', 'ent')
+            .select(`TO_CHAR(c."datePostulation", 'Mon YY')`, 'mois')
+            .addSelect('COUNT(*)', 'count')
+            .where('ent.id = :userId', { userId })
+            .andWhere('c."datePostulation" >= :from', { from: threeMonthsAgo })
+            .groupBy(`DATE_TRUNC('month', c."datePostulation")`)
+            .addGroupBy(`TO_CHAR(c."datePostulation", 'Mon YY')`)
+            .orderBy(`DATE_TRUNC('month', c."datePostulation")`, 'ASC')
+            .getRawMany();
+
+        const candidaturesLast3Months = raw3Months.map((r) => ({
+            period: r.mois,
+            count: parseInt(r.count, 10),
+        }));
+
+        // Fetch data for 30 days (by week/day chunks)
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
+
+        // Group by 5-day intervals or just return daily and group in frontend, 
+        // Let's do daily but only return points that have data, or pad.
+        // For simplicity, we'll return daily aggregated data
+        const raw30Days = await this.candidatureRepo
+            .createQueryBuilder('c')
+            .leftJoin('c.offre', 'o')
+            .leftJoin('o.entreprise', 'ent')
+            .select(`TO_CHAR(c."datePostulation", 'DD Mon')`, 'jour')
+            .addSelect('COUNT(*)', 'count')
+            .addSelect(`DATE_TRUNC('day', c."datePostulation")`, 'date_val')
+            .where('ent.id = :userId', { userId })
+            .andWhere('c."datePostulation" >= :from', { from: thirtyDaysAgo })
+            .groupBy(`DATE_TRUNC('day', c."datePostulation")`)
+            .addGroupBy(`TO_CHAR(c."datePostulation", 'DD Mon')`)
+            .orderBy(`DATE_TRUNC('day', c."datePostulation")`, 'ASC')
+            .getRawMany();
+
+        const candidaturesLast30Days = raw30Days.map((r) => ({
+            period: r.jour,
+            count: parseInt(r.count, 10),
+        }));
+
+        // Fetch data for 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+
+        const raw7Days = await this.candidatureRepo
+            .createQueryBuilder('c')
+            .leftJoin('c.offre', 'o')
+            .leftJoin('o.entreprise', 'ent')
+            .select(`TO_CHAR(c."datePostulation", 'Dy DD')`, 'jour')
+            .addSelect('COUNT(*)', 'count')
+            .addSelect(`DATE_TRUNC('day', c."datePostulation")`, 'date_val')
+            .where('ent.id = :userId', { userId })
+            .andWhere('c."datePostulation" >= :from', { from: sevenDaysAgo })
+            .groupBy(`DATE_TRUNC('day', c."datePostulation")`)
+            .addGroupBy(`TO_CHAR(c."datePostulation", 'Dy DD')`)
+            .orderBy(`DATE_TRUNC('day', c."datePostulation")`, 'ASC')
+            .getRawMany();
+
+        const candidaturesLast7Days = raw7Days.map((r) => ({
+            period: r.jour,
             count: parseInt(r.count, 10),
         }));
 
@@ -129,7 +201,16 @@ export class EntrepriseService {
             statut: c.statut,
         }));
 
-        return { totalOffres, offresActives, totalCandidatures, candidaturesParMois, meilleursCandidats };
+        return {
+            totalOffres,
+            offresActives,
+            totalCandidatures,
+            candidaturesParMois,
+            candidaturesLast3Months,
+            candidaturesLast30Days,
+            candidaturesLast7Days,
+            meilleursCandidats
+        };
     }
 
     // ─── Mes Postes (OffreEmploi CRUD) ───────────────────────────────────────
@@ -296,8 +377,8 @@ Compétences: ${offre.competences || 'Non spécifié'}
         };
 
         const savedQuestions = await this.aiService.generateQuestions(
-            context, 
-            diffMap[difficulte] || 'moyen', 
+            context,
+            diffMap[difficulte] || 'moyen',
             offre
         );
 
@@ -334,7 +415,7 @@ Expérience Requise: ${offre.ExperienceRequise || 'Non spécifié'}
 Compétences: ${offre.competences || 'Non spécifié'}
         `.trim();
 
-        const diffMap: Record<QuestionNiveau, 'facile'|'moyen'|'difficile'> = {
+        const diffMap: Record<QuestionNiveau, 'facile' | 'moyen' | 'difficile'> = {
             Facile: 'facile',
             Moyen: 'moyen',
             Difficile: 'difficile'
