@@ -258,10 +258,10 @@ export class EntrepriseService {
 
         const questions = await this.questionRepo.find({
             where: { offre: { id: offreId } },
-            order: { dateEvaluation: 'ASC' },
+            order: { createdAt: 'ASC' },
         });
 
-        return questions;
+        return this.mapQuestionsResponse(questions);
     }
 
     // ─── Génération IA ────────────────────────────────────────────────────────
@@ -288,14 +288,27 @@ Expérience Requise: ${offre.ExperienceRequise || 'Non spécifié'}
 Compétences: ${offre.competences || 'Non spécifié'}
         `.trim();
 
-        // 3. Call AI Service (map QuestionNiveau 'Facile'|'Moyen'|'Difficile' to AiService's 'facile'|'moyen'|'difficile')
-        // 3. Call AI Service and let it save directly per user request
-        const savedQuestions = await this.aiService.generateQuestions(context, 'moyen', offre);
+        // 3. Call AI Service
+        const diffMap: Record<QuestionNiveau, 'facile' | 'moyen' | 'difficile'> = {
+            Facile: 'facile',
+            Moyen: 'moyen',
+            Difficile: 'difficile'
+        };
+
+        const savedQuestions = await this.aiService.generateQuestions(
+            context, 
+            diffMap[difficulte] || 'moyen', 
+            offre
+        );
 
         return {
-            message: 'Questions generees et sauvegardees avec succes.',
-            count: savedQuestions.length,
-            questions: savedQuestions
+            message: 'Questions générées et sauvegardées avec succès.',
+            totalQuestions: savedQuestions.length,
+            offre: {
+                id: offre.id,
+                TitreDePost: offre.TitreDePost
+            },
+            questions: this.mapQuestionsResponse(savedQuestions)
         };
     }
 
@@ -327,11 +340,23 @@ Compétences: ${offre.competences || 'Non spécifié'}
             Difficile: 'difficile'
         };
 
-        // 3. Generate new questions, avoiding previous ones
+        // 3. Load existing questions to avoid regenerating duplicates
+        const existingQuestions = await this.questionRepo.find({
+            where: { offre: { id: offreId } },
+            select: ['contenu'],
+        });
+        const existingTexts = existingQuestions
+            .map(q => q.contenu?.question)
+            .filter(Boolean) as string[];
+
+        // Merge with any additional previousQuestions passed by the caller
+        const allPreviousQuestions = [...new Set([...existingTexts, ...previousQuestions])];
+
+        // 4. Generate new questions, avoiding previous ones
         const newAiQuestions = await this.aiService.regenerateQuestions(
             context,
             diffMap[difficulte],
-            previousQuestions
+            allPreviousQuestions
         );
 
         // 4. (Optionnel) Delete existing questions for this offer if we want a fresh batch:
@@ -344,9 +369,7 @@ Compétences: ${offre.competences || 'Non spécifié'}
                     question: q.question,
                     options: q.options,
                 },
-                chronometre: 2,
-                reponses: [q.correctAnswer],
-                dateEvaluation: new Date(),
+                chronometre: 30,
                 niveauDifficulte: difficulte,
                 isCorrectVerified: false,
                 offre: { id: offre.id } as OffreEmploi,
@@ -356,9 +379,13 @@ Compétences: ${offre.competences || 'Non spécifié'}
         const savedQuestions = await this.questionRepo.save(questionsEntities);
 
         return {
-            message: 'Questions regenerees et remplacees avec succes.',
-            count: savedQuestions.length,
-            questions: savedQuestions,
+            message: 'Questions régénérées et remplacées avec succès.',
+            totalQuestions: savedQuestions.length,
+            offre: {
+                id: offre.id,
+                TitreDePost: offre.TitreDePost
+            },
+            questions: this.mapQuestionsResponse(savedQuestions),
         };
     }
 
@@ -386,8 +413,13 @@ Compétences: ${offre.competences || 'Non spécifié'}
         const question = await this.questionRepo.findOneBy({ id: questionId });
         if (!question) throw new NotFoundException(`Question ${questionId} introuvable.`);
 
-        // Update correct answer and mark as verified
-        question.reponses = [correctAnswer];
+        // Update correct answer and mark as verified inside jsonb content
+        if (question.contenu && question.contenu.options) {
+            question.contenu.options = question.contenu.options.map(opt => ({
+                ...opt,
+                isCorrect: opt.text === correctAnswer
+            }));
+        }
         question.isCorrectVerified = true;
         await this.questionRepo.save(question);
         return {
@@ -441,5 +473,20 @@ Compétences: ${offre.competences || 'Non spécifié'}
         if (decision !== undefined) candidature.decision = decision;
         await this.candidatureRepo.save(candidature);
         return { message: 'Statut mis à jour.', statut };
+    }
+
+    private mapQuestionsResponse(questions: Question[]) {
+        return questions.map(q => ({
+            id: q.id,
+            question: q.contenu?.question ?? '',
+            options: (q.contenu?.options ?? []).map((opt: any) => ({
+                text: opt.text,
+                isCorrect: !!opt.isCorrect,
+            })),
+            chronometre: q.chronometre,
+            niveauDifficulte: q.niveauDifficulte,
+            isCorrectVerified: q.isCorrectVerified,
+            createdAt: q.createdAt
+        }));
     }
 }

@@ -24,10 +24,19 @@ export class QuestionsService {
       throw new ForbiddenException("Vous n'êtes pas autorisé à consulter ces questions.");
     }
 
-    return this.questionRepo.find({
+    const questions = await this.questionRepo.find({
       where: { offre: { id: offreId } },
-      order: { dateEvaluation: 'ASC' }, // Sort conceptually or by whichever column makes sense
+      order: { createdAt: 'ASC' }, // Sort conceptually or by whichever column makes sense
     });
+
+    return questions.map(q => ({
+      id: q.id,
+      contenu: q.contenu,
+      chronometre: q.chronometre,
+      niveauDifficulte: q.niveauDifficulte,
+      isCorrectVerified: q.isCorrectVerified,
+      createdAt: q.createdAt
+    }));
   }
 
   async createQuestion(data: any, userId: number) {
@@ -47,15 +56,22 @@ export class QuestionsService {
 
     const newQuestion = this.questionRepo.create({
       contenu: data.contenu,
-      reponses: data.reponses,
       niveauDifficulte: data.niveauDifficulte || 'Moyen',
-      chronometre: data.chronometre || 2,
-      dateEvaluation: new Date(),
+      chronometre: data.chronometre || 30,
       isCorrectVerified: true, // Assuming the recruiter validates it during generation
       offre: offre,
     });
 
-    return await this.questionRepo.save(newQuestion);
+    const saved = await this.questionRepo.save(newQuestion);
+
+    return {
+      id: saved.id,
+      contenu: saved.contenu,
+      chronometre: saved.chronometre,
+      niveauDifficulte: saved.niveauDifficulte,
+      isCorrectVerified: saved.isCorrectVerified,
+      createdAt: saved.createdAt
+    };
   }
 
   async deleteQuestion(id: number, userId: number) {
