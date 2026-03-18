@@ -269,7 +269,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import { generateQuestionsForOffre, regenerateQuestionsForOffre } from '../services/entrepriseService';
+import { generateQuestionsForOffre, regenerateQuestionsForOffre, saveQuestionsForOffre } from '../services/entrepriseService';
 
 const router = useRouter();
 
@@ -320,7 +320,6 @@ function nextStep(current: number) {
   step.value = current + 1;
 }
 
-// ── Submit ──
 const submitPost = async () => {
   publishing.value = true;
   try {
@@ -345,10 +344,24 @@ const submitPost = async () => {
      let finalOffreId = createdOffreId.value;
 
      if (!finalOffreId) {
-       await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
+       const res = await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
+       finalOffreId = res.data.id;
      } else {
        // Si brouillon auto-save a déjà créé l'offre, on fait un update
        await axios.put(`http://localhost:5173/api/Entreprise/offres/${finalOffreId}`, payload, config);
+     }
+
+     // 🟢 Sauvegarder les questions IA UNIQUEMENT lors de la validation finale
+     if (generatedQuestions.value.length > 0 && finalOffreId) {
+       // Assurez-vous d'avoir ajouté mcqDuration et mcqPassScore si nécessaire au Payload des questions ou dans l'offre.
+       const questionsData = generatedQuestions.value.map(q => ({
+         ...q,
+         chronometre: form.value.mcqDuration || 20 
+       }));
+       const difficulte = form.value.experience === 'junior' ? 'Facile' 
+                        : form.value.experience === 'senior' ? 'Difficile' : 'Moyen';
+       
+       await saveQuestionsForOffre(finalOffreId, questionsData, difficulte);
      }
 
      toastVisible.value = true;

@@ -371,7 +371,17 @@
             <!-- Loading state -->
             <div v-if="qcmLoading" class="qcm-loading">
               <div class="qcm-spinner"></div>
-              <p>Génération des questions en cours…</p>
+              <p>{{ qcmStatus || 'Génération des questions en cours…' }}</p>
+            </div>
+
+            <!-- Error state -->
+            <div v-else-if="qcmError" style="margin-top: 20px; padding: 14px 18px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 10px; color: #b91c1c; font-size: 13px; font-weight: 500; line-height: 1.5;">
+              {{ qcmError }}
+              <div style="margin-top: 10px;">
+                <button type="button" class="btn-regenerate" @click="generateQCM" style="background: #b91c1c; color: #fff; border: none;">
+                  Réessayer
+                </button>
+              </div>
             </div>
 
             <!-- Questions list -->
@@ -435,8 +445,8 @@
 import { ref, computed, nextTick, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { TrashIcon } from '@heroicons/vue/24/outline';
-import axios from 'axios';
-import { generateQuestionsForOffre, regenerateQuestionsForOffre } from '../services/entrepriseService';
+import api from '../services/axios';
+import { generateQuestionsForOffre, regenerateQuestionsForOffre, saveQuestionsForOffre } from '../services/entrepriseService';
 
 const router = useRouter();
 
@@ -467,9 +477,7 @@ const deleteJob = (id: string) => {
 const confirmDeleteJob = async () => {
     if (jobToDelete.value !== null) {
         try {
-            const token = localStorage.getItem('userToken');
-            const config = { headers: { Authorization: `Bearer ${token}` } };
-            await axios.delete(`http://localhost:5173/api/Entreprise/offres/${jobToDelete.value}`, config);
+            await api.delete(`/Entreprise/offres/${jobToDelete.value}`);
             showDeleteConfirm.value = false;
             jobToDelete.value = null;
             fetchMyJobs();
@@ -575,8 +583,7 @@ const fetchMyJobs = async () => {
     try {
         const token = localStorage.getItem('userToken');
         if (!token) return;
-        const config = { headers: { Authorization: `Bearer ${token}` } };
-        const res = await axios.get('http://localhost:5173/api/Entreprise/mes-offres', config);
+        const res = await api.get('/Entreprise/mes-offres');
         jobsList.value = res.data;
     } catch (e) { console.error("Erreur de récupération des offres", e); }
 };
@@ -659,8 +666,6 @@ const saveDraft = () => {
 
 const submitPost = async () => {
     try {
-        const token = localStorage.getItem('userToken');
-        const config = { headers: { Authorization: `Bearer ${token}` } };
         const payload = {
             titre: formData.value.title,
             categorie: formData.value.category,
@@ -678,11 +683,18 @@ const submitPost = async () => {
         };
         
         if (isEditing.value && currentEditId.value) {
-            await axios.put(`http://localhost:5173/api/Entreprise/offres/${currentEditId.value}`, payload, config);
+            await api.put(`/Entreprise/offres/${currentEditId.value}`, payload);
             alert('Poste modifié avec succès !');
         } else {
-            await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
-            alert('Poste publié avec succès !');
+            // Check if backend already created it during QCM Generation to avoid duplicate
+            if (createdOffreId.value) {
+              await api.put(`/Entreprise/offres/${createdOffreId.value}`, payload);
+              alert('Poste publié avec succès !');
+              createdOffreId.value = null;
+            } else {
+              await api.post('/Entreprise/offres', payload);
+              alert('Poste publié avec succès !');
+            }
         }
         
         closeCreateModal();
@@ -693,8 +705,10 @@ const submitPost = async () => {
 // ─── QCM Dialog state ────────────────────────────────────────────
 const showQCMDialog = ref(false);
 const qcmLoading = ref(false);
+const qcmStatus = ref(''); // étape en cours affichée dans le panel
+const qcmError = ref('');  // message d'erreur visible dans le panel
 const qcmConfig = ref({ timer: 30, difficulty: 'moyen' });
-const createdOffreId = ref<number | null>(null); // ID de l'offre créée pour lier le QCM
+const createdOffreId = ref<number | null>(null);
 
 interface QCMQuestion {
   text: string;
@@ -703,12 +717,30 @@ interface QCMQuestion {
 }
 const generatedQuestions = ref<QCMQuestion[]>([]);
 
-// mockQuestions trait removed
+/**
+ * Mappe un tableau de questions retournées par le backend vers le format local.
+ */
+const mapApiQuestions = (questions: any[]): QCMQuestion[] => {
+  return questions.map((q: any) => {
+    const rawOpts: any[] = q.options || [];
+    const opts: string[] = rawOpts.map((opt: any) =>
+      typeof opt === 'object' && opt !== null ? (opt.text ?? String(opt)) : String(opt)
+    );
+    let correctIdx = rawOpts.findIndex((opt: any) => opt?.isCorrect === true);
+    if (correctIdx < 0) {
+      const correctStr = q.correctAnswer ?? '';
+      correctIdx = opts.findIndex((o: string) => o === correctStr);
+    }
+    return {
+      text: q.question ?? '',
+      options: opts.length >= 2 ? opts : ['Option A', 'Option B', 'Option C', 'Option D'],
+      correct: correctIdx >= 0 ? correctIdx : 0,
+    };
+  });
+};
 
 /**
  * Génère le QCM via l'IA.
- * Si le poste n'est pas encore créé, on le crée d'abord
- * puis on appelle /api/Entreprise/offres/{id}/generer-questions-ia
  */
 const generateQCM = async () => {
   if (!formData.value.title) {
@@ -717,18 +749,19 @@ const generateQCM = async () => {
   }
   showQCMDialog.value = true;
   generatedQuestions.value = [];
+  qcmError.value = '';
   qcmLoading.value = true;
 
   try {
-    // Étape 1 : créer ou réutiliser l'offre pour obtenir son ID
+    // ── Étape 1 : créer l'offre si pas encore fait ──────────────────
     if (!createdOffreId.value) {
-      const token = localStorage.getItem('userToken');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      qcmStatus.value = '📄 Création de l\'offre en cours…';
+      console.log('[QCM] Étape 1 : création de l\'offre');
       const payload = {
         titre: formData.value.title || 'Nouveau poste',
         categorie: formData.value.category || 'tech',
         localisation: formData.value.location || 'Non spécifié',
-        typeDeContact: formData.value.contractType || 'CDI',
+        typeDeContrat: formData.value.contractType || 'CDI',
         modeDeTravail: formData.value.remote || 'onsite',
         experienceRequise: formData.value.experience || 'junior',
         salaire: formData.value.salary ? parseFloat(formData.value.salary) : undefined,
@@ -737,36 +770,41 @@ const generateQCM = async () => {
         icon: 'fa-solid fa-briefcase',
         iconColor: '#3b82f6',
         nbPost: formData.value.positions || 1,
-        dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString()
+        dateLimite: formData.value.deadline
+          ? new Date(formData.value.deadline).toISOString()
+          : new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),
       };
-      const res = await axios.post('http://localhost:5173/api/Entreprise/offres', payload, config);
-      createdOffreId.value = res.data.id;
-      fetchMyJobs(); // Refresh la liste en arrière-plan
+      const res = await api.post('/Entreprise/offres', payload);
+      createdOffreId.value = res.data?.id ?? null;
+      console.log('[QCM] Offre créée, ID =', createdOffreId.value);
+      if (!createdOffreId.value) throw new Error("L'offre a été créée mais son ID n'a pas été retourné.");
+      fetchMyJobs();
     }
 
-    // Étape 2 : appel à l'endpoint IA avec l'ID de l'offre
+    // ── Étape 2 : appel IA ──────────────────────────────────────────
+    qcmStatus.value = '🤖 Génération des questions par l\'IA… (peut prendre 1-2 min)';
+    console.log('[QCM] Étape 2 : appel IA pour offre', createdOffreId.value);
     const response = await generateQuestionsForOffre(createdOffreId.value!);
+    console.log('[QCM] Réponse reçue :', response);
 
-    const questions = response.data?.questions || [];
-    if (response.success && questions.length > 0) {
-      generatedQuestions.value = questions.map((q: any) => {
-        const opts = q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'];
-        const correctStr = q.correctAnswer || q.contenu?.correctAnswer;
-        const correctIdx = correctStr ? opts.findIndex((opt: string) => opt === correctStr) : 0;
-        return {
-          text: q.question || q.contenu?.question || '',
-          options: opts,
-          correct: correctIdx >= 0 ? correctIdx : 0
-        };
-      });
-    } else {
-      alert(response.error || "L'IA n'a retourné aucune question.");
-      showQCMDialog.value = false;
+    if (!response.success) {
+      throw new Error(response.error || "L'IA n'a pas pu générer les questions.");
     }
+
+    const questions: any[] = response.data?.questions ?? [];
+    console.log('[QCM] Nombre de questions reçues :', questions.length, questions);
+
+    if (questions.length === 0) {
+      throw new Error("L'IA n'a retourné aucune question. Vérifiez que la description du poste est renseignée.");
+    }
+
+    generatedQuestions.value = mapApiQuestions(questions);
+    qcmStatus.value = '';
+
   } catch (e: any) {
-    console.error('Erreur génération QCM', e);
-    alert('Erreur lors de la création de l\'offre ou de la génération du QCM.');
-    showQCMDialog.value = false;
+    console.error('[QCM] Erreur complète :', e);
+    const msg = e?.response?.data?.message ?? e?.message ?? 'Erreur inconnue';
+    qcmError.value = `❌ ${msg}`;
   } finally {
     qcmLoading.value = false;
   }
@@ -777,40 +815,68 @@ const generateQCM = async () => {
  */
 const regenerateQCM = async () => {
   if (!createdOffreId.value) {
-    // Premier appel = générer
     await generateQCM();
     return;
   }
   qcmLoading.value = true;
+  qcmError.value = '';
   generatedQuestions.value = [];
+  qcmStatus.value = '🤖 Régénération des questions…';
   try {
+    console.log('[QCM] Régénération pour offre', createdOffreId.value);
     const response = await regenerateQuestionsForOffre(createdOffreId.value);
-    const questions = response.data?.questions || [];
-    if (response.success && questions.length > 0) {
-      generatedQuestions.value = questions.map((q: any) => {
-        const opts = q.options || q.contenu?.options || ['Option A', 'Option B', 'Option C', 'Option D'];
-        const correctStr = q.correctAnswer || q.contenu?.correctAnswer;
-        const correctIdx = correctStr ? opts.findIndex((opt: string) => opt === correctStr) : 0;
-        return {
-          text: q.question || q.contenu?.question || '',
-          options: opts,
-          correct: correctIdx >= 0 ? correctIdx : 0
-        };
-      });
-    } else {
-      alert(response.error || "L'IA n'a retourné aucune question.");
-    }
-  } catch (e) {
-    console.error('Erreur regénération QCM', e);
-    alert('Erreur lors de la regénération.');
+    console.log('[QCM] Réponse régénération :', response);
+    if (!response.success) throw new Error(response.error || "L'IA n'a pas pu régénérer les questions.");
+    const questions: any[] = response.data?.questions ?? [];
+    if (questions.length === 0) throw new Error("L'IA n'a retourné aucune question lors de la régénération.");
+    generatedQuestions.value = mapApiQuestions(questions);
+    qcmStatus.value = '';
+  } catch (e: any) {
+    console.error('[QCM] Erreur régénération :', e);
+    qcmError.value = `❌ ${e?.response?.data?.message ?? e?.message ?? 'Erreur inconnue'}`;
   } finally {
     qcmLoading.value = false;
   }
 };
 
-const saveQCM = () => {
-  formData.value.hasQCM = true;
-  showQCMDialog.value = false;
+const saveQCM = async () => {
+  if (generatedQuestions.value.length === 0 || !createdOffreId.value) {
+    alert("Aucune question générée à valider ou offre non créée.");
+    return;
+  }
+
+  qcmLoading.value = true;
+  qcmStatus.value = '💾 Sauvegarde des questions dans la base de données...';
+  qcmError.value = '';
+
+  try {
+    // Transformer les questions au format attendu par le backend
+    const questionsToSave = generatedQuestions.value.map((q) => {
+      return {
+        question: q.text,
+        options: q.options.map((opt, optIndex) => ({
+          text: opt,
+          isCorrect: optIndex === q.correct
+        })),
+        chronometre: qcmConfig.value.timer * 60, // Convert minutes to seconds
+      };
+    });
+
+    const response = await saveQuestionsForOffre(createdOffreId.value, questionsToSave, qcmConfig.value.difficulty);
+
+    if (!response.success) {
+      throw new Error(response.error || "Erreur lors de la sauvegarde du QCM.");
+    }
+
+    formData.value.hasQCM = true;
+    showQCMDialog.value = false;
+    alert("Questions générées avec succès et enregistrées pour cette offre !");
+  } catch (e: any) {
+    console.error('[QCM] Erreur lors de la sauvegarde :', e);
+    qcmError.value = `❌ ${e.message || 'Erreur pendant la sauvegarde'}`;
+  } finally {
+    qcmLoading.value = false;
+  }
 };
 
 const goToJobDetails = (id: number) => {

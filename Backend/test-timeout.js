@@ -1,6 +1,6 @@
 const http = require('http');
 
-const req = http.request('http://localhost:3000/api/Entreprise/offres/1/generer-questions-ia', {
+const req = http.request('http://localhost:3333/api/Entreprise/offres/1/generer-questions-ia', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json'

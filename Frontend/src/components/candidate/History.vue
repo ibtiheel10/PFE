@@ -247,7 +247,7 @@ const getStatusIcon = (status: string) => {
 
 const showToast = (msg: string) => {
     toastMessage.value = msg;
-    setTimeout(() => { toastMessage.value = ''; }, 3000);
+    setTimeout(() => { toastMessage.value = ''; }, 3333);
 };
 
 const handleCancel = async (appId: number) => {

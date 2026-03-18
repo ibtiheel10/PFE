@@ -36,7 +36,7 @@ export class EntrepriseCreateOffreDto {
     @IsString()
     modeDeTravail?: string;
 
-    @ApiProperty({ example: 3000, required: false })
+    @ApiProperty({ example: 3333, required: false })
     @IsOptional()
     @IsNumber()
     @Min(0, { message: 'Le salaire ne peut pas être négatif.' })
@@ -243,6 +243,38 @@ export class EntrepriseController {
             req.user.userId,
             body.difficulte || 'Moyen',
             body.previousQuestions || []
+        );
+    }
+
+    /**
+     * POST /api/Entreprise/offres/:id/sauvegarder-questions-ia
+     * Sauvegarde les questions générées pour l'offre spécifiée, une fois validées par le recruteur.
+     */
+    @Post('offres/:id/sauvegarder-questions-ia')
+    @ApiOperation({ summary: 'Save generated AI questions for a job offer' })
+    @ApiParam({ name: 'id', description: 'ID of the offre' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                difficulte: { type: 'string', enum: ['Facile', 'Moyen', 'Difficile'], default: 'Moyen' },
+                questions: { type: 'array', items: { type: 'object' } },
+            }
+        }
+    })
+    @ApiResponse({ status: 200, description: 'Questions saved successfully.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
+    @ApiResponse({ status: 404, description: 'Offre not found.' })
+    async sauvegarderQuestionsIA(
+        @Param('id') id: string,
+        @Body() body: { difficulte?: 'Facile' | 'Moyen' | 'Difficile', questions: any[] },
+        @Request() req: any
+    ) {
+        return this.entrepriseService.sauvegarderQuestionsIA(
+            id,
+            req.user.userId,
+            body.questions || [],
+            body.difficulte || 'Moyen'
         );
     }
 

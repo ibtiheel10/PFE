@@ -359,37 +359,29 @@ export class EntrepriseService {
             throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
         }
 
-        // 2. Prepare description context
-        const safeDescription = offre.Description ? offre.Description.substring(0, 800) + (offre.Description.length > 800 ? '...' : '') : '';
-        const context = `
-Titre du poste: ${offre.TitreDePost}
-Description: ${safeDescription}
-Catégorie: ${offre.Categorie}
-Expérience Requise: ${offre.ExperienceRequise || 'Non spécifié'}
-Compétences: ${offre.competences || 'Non spécifié'}
-        `.trim();
+        // 2. Prepare simple topic for the strict prompt
+        const topic = `${offre.TitreDePost} (Compétences: ${offre.competences || 'Générales'})`;
 
-        // 3. Call AI Service
-        const diffMap: Record<QuestionNiveau, 'facile' | 'moyen' | 'difficile'> = {
-            Facile: 'facile',
-            Moyen: 'moyen',
-            Difficile: 'difficile'
-        };
+        // 3. Call AI Service with the robust text generator (does NOT save since we pass offre = null)
+        const robustQuestions = await this.aiService.generateQuestions(topic, 'moyen', null, offre.competences || '');
 
-        const savedQuestions = await this.aiService.generateQuestions(
-            context,
-            diffMap[difficulte] || 'moyen',
-            offre
-        );
+        // 4. Normalize the output for the frontend
+        const normalizedQuestions = robustQuestions.map(q => ({
+            question: q.question,
+            options: q.options, // already normalized to { text, isCorrect } in ai.service.ts
+            correctAnswer: q.options.find(o => o.isCorrect)?.text || '',
+            chronometre: 30, // default
+            niveauDifficulte: difficulte
+        }));
 
         return {
-            message: 'Questions générées et sauvegardées avec succès.',
-            totalQuestions: savedQuestions.length,
+            message: 'Questions générées avec succès (non sauvegardées).',
+            totalQuestions: normalizedQuestions.length,
             offre: {
                 id: offre.id,
                 TitreDePost: offre.TitreDePost
             },
-            questions: this.mapQuestionsResponse(savedQuestions)
+            questions: normalizedQuestions
         };
     }
 
@@ -405,52 +397,59 @@ Compétences: ${offre.competences || 'Non spécifié'}
             throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
         }
 
-        // 2. Prepare context
-        const safeDescription = offre.Description ? offre.Description.substring(0, 800) + (offre.Description.length > 800 ? '...' : '') : '';
-        const context = `
-Titre du poste: ${offre.TitreDePost}
-Description: ${safeDescription}
-Catégorie: ${offre.Categorie}
-Expérience Requise: ${offre.ExperienceRequise || 'Non spécifié'}
-Compétences: ${offre.competences || 'Non spécifié'}
-        `.trim();
+        // 2. Prepare simple topic
+        const topic = `${offre.TitreDePost} (Compétences: ${offre.competences || 'Générales'})`;
 
-        const diffMap: Record<QuestionNiveau, 'facile' | 'moyen' | 'difficile'> = {
-            Facile: 'facile',
-            Moyen: 'moyen',
-            Difficile: 'difficile'
-        };
-
-        // 3. Load existing questions to avoid regenerating duplicates
-        const existingQuestions = await this.questionRepo.find({
-            where: { offre: { id: offreId } },
-            select: ['contenu'],
-        });
-        const existingTexts = existingQuestions
-            .map(q => q.contenu?.question)
-            .filter(Boolean) as string[];
-
-        // Merge with any additional previousQuestions passed by the caller
-        const allPreviousQuestions = [...new Set([...existingTexts, ...previousQuestions])];
-
-        // 4. Generate new questions, avoiding previous ones
-        const newAiQuestions = await this.aiService.regenerateQuestions(
-            context,
-            diffMap[difficulte],
-            allPreviousQuestions
+        // 3. Generate new questions, avoiding previous ones (does NOT save)
+        const robustQuestions = await this.aiService.regenerateQuestions(
+            topic,
+            'moyen',
+            previousQuestions,
+            offre.competences || ''
         );
 
-        // 4. (Optionnel) Delete existing questions for this offer if we want a fresh batch:
+        // 4. Normalize the output
+        const normalizedQuestions = robustQuestions.map(q => ({
+            question: q.question,
+            options: q.options, // already {text, isCorrect}[]
+            correctAnswer: q.options.find(o => o.isCorrect)?.text || '',
+            chronometre: 30, // default
+            niveauDifficulte: difficulte
+        }));
+
+        return {
+            message: 'Questions régénérées avec succès (non sauvegardées).',
+            totalQuestions: normalizedQuestions.length,
+            offre: {
+                id: offre.id,
+                TitreDePost: offre.TitreDePost
+            },
+            questions: normalizedQuestions,
+        };
+    }
+
+    /** POST sauvegarder-questions-ia */
+    async sauvegarderQuestionsIA(offreId: string, userId: number, questions: any[], difficulte: QuestionNiveau = 'Moyen') {
+        const offre = await this.offreRepo.findOne({
+            where: { id: offreId },
+            relations: ['entreprise'],
+        });
+        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
+        if (offre.entreprise?.id !== userId) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
+        }
+
+        // Delete old questions
         await this.questionRepo.delete({ offre: { id: offreId } });
 
-        // 5. Save new questions
-        const questionsEntities = newAiQuestions.map(q => {
+        // Save new questions
+        const questionsEntities = questions.map(q => {
             return this.questionRepo.create({
                 contenu: {
                     question: q.question,
                     options: q.options,
                 },
-                chronometre: 30,
+                chronometre: q.chronometre || 30,
                 niveauDifficulte: difficulte,
                 isCorrectVerified: false,
                 offre: { id: offre.id } as OffreEmploi,
@@ -460,13 +459,9 @@ Compétences: ${offre.competences || 'Non spécifié'}
         const savedQuestions = await this.questionRepo.save(questionsEntities);
 
         return {
-            message: 'Questions régénérées et remplacées avec succès.',
+            message: 'Questions sauvegardées avec succès.',
             totalQuestions: savedQuestions.length,
-            offre: {
-                id: offre.id,
-                TitreDePost: offre.TitreDePost
-            },
-            questions: this.mapQuestionsResponse(savedQuestions),
+            questions: this.mapQuestionsResponse(savedQuestions)
         };
     }
 

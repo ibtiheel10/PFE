@@ -34,13 +34,13 @@ async function bootstrap() {
 
   // CORS for Vue.js frontend
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    origin: ['http://localhost:5173', 'http://localhost:3333'],
     credentials: true,
   });
 
-  const port = process.env.PORT ?? 3000;
+  const port = process.env.PORT ?? 3333;
   await app.listen(port);
-  
+
   // Set timeout to 10 minutes (600,000 ms) for long-running LLM generation requests
   const server = app.getHttpServer();
   server.setTimeout(600000);

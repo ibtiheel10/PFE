@@ -15,7 +15,7 @@ export interface QuizQuestion {
   id: number;
   question: string;
   options: QuizOption[];
-  isCorrectVerified: boolean; // false until manually validated by recruiter
+  isCorrectVerified: boolean;
   niveauDifficulte?: string;
   chronometre?: number;
   createdAt?: string;
@@ -51,7 +51,7 @@ export class AiService {
   ) { }
 
   private readonly ollamaUrl = 'http://127.0.0.1:11434/api/generate';
-  private readonly model = 'phi3:mini';
+  private readonly model = 'phi3';
 
   // ── Private helper: call Ollama (plain text, no JSON format) ─────────────────
 
@@ -72,7 +72,7 @@ export class AiService {
     }
   }
 
-  // ── Private helper: call Ollama (JSON format for recommendation) ─────────────
+  // ── Private helper: call Ollama (JSON format) ─────────────────────────────
 
   private async callOllama(prompt: string): Promise<string> {
     try {
@@ -83,9 +83,10 @@ export class AiService {
           prompt,
           stream: false,
           format: 'json',
-          options: { temperature: 0.7, num_predict: 800 },
+          // 🟢 Étape 6 : température basse pour une sortie JSON plus stable
+          options: { temperature: 0.2, num_predict: 800 },
         },
-        { timeout: 600000 },
+        { timeout: 600000 }, // 🟢 Étape 5 : 600s >> 120s minimum requis
       );
       return response.data?.response ?? '';
     } catch (error: any) {
@@ -135,25 +136,48 @@ export class AiService {
     }
   }
 
-  // ── Private helper: generate N questions via JSON parsing with custom filtering ─
+  // ── Private helper: parse one raw JSON item into a QuizQuestion ─────────────
 
   private parseJsonQuestion(raw: any, index: number): QuizQuestion | null {
-    if (!raw || !raw.question || !Array.isArray(raw.options) || !raw.correctAnswer) {
+    // Accept multiple shapes:
+    // 1) { question, options: ["A","B","C","D"], correctAnswer: "A" }
+    // 2) { question, options: [{ text: "A", isCorrect: true }, ...] }
+    if (!raw || !raw.question) {
       this.logger.warn(`Question ignored at index ${index}: invalid JSON.`);
       return null;
     }
 
+    const collected: string[] = [];
+    let inferredCorrect: string | null = null;
+    if (Array.isArray(raw.options)) {
+      for (const opt of raw.options) {
+        if (typeof opt === 'string') {
+          const cleaned = opt.replace(/^[A-Da-d][).\s]+/, '').trim();
+          if (cleaned.length < 2) continue;
+          if (!collected.map(c => c.toLowerCase()).includes(cleaned.toLowerCase())) {
+            collected.push(cleaned);
+          }
+        } else if (opt && typeof opt === 'object' && opt.text) {
+          const cleaned = opt.text.replace(/^[A-Da-d][).\s]+/, '').trim();
+          if (cleaned.length < 2) continue;
+          if (!collected.map(c => c.toLowerCase()).includes(cleaned.toLowerCase())) {
+            collected.push(cleaned);
+          }
+          if (opt.isCorrect === true && inferredCorrect == null) {
+            inferredCorrect = cleaned;
+          }
+        }
+      }
+    }
+
     const seen = new Set<string>();
     const filtered: string[] = [];
-
-    for (const opt of raw.options) {
-      if (typeof opt !== 'string') continue;
-      const cleaned = opt.replace(/^[A-Da-d][).\s]+/, '').trim();
-      if (cleaned.length < 2) continue;              // skip empty strings only
-      if (seen.has(cleaned.toLowerCase())) continue;  // skip duplicates
-      filtered.push(cleaned);
-      seen.add(cleaned.toLowerCase());
-      if (filtered.length === 4) break;
+    for (const opt of collected) {
+      const lower = opt.toLowerCase();
+      if (!seen.has(lower)) {
+        filtered.push(opt);
+        seen.add(lower);
+      }
     }
 
     if (filtered.length < 2) {
@@ -161,93 +185,26 @@ export class AiService {
       return null;
     }
 
-    // Pad to 4 options if needed
     while (filtered.length < 4) filtered.push('N/A');
 
-    const rawCorrect = raw.correctAnswer.replace(/^[A-Da-d][).\s]+/, '').trim();
-    const correctMatch = filtered.find(opt => opt.toLowerCase() === rawCorrect.toLowerCase());
-    const finalCorrectAnswer = correctMatch ? correctMatch : filtered[0];
+    const correctFromRaw = raw.correctAnswer
+      ? String(raw.correctAnswer).replace(/^[A-Da-d][).\s]+/, '').trim()
+      : null;
+    const finalCorrectGuess = inferredCorrect ? inferredCorrect : (correctFromRaw || filtered[0]);
+    const finalCorrect = filtered.find(o => o.toLowerCase() === finalCorrectGuess!.toLowerCase()) || filtered[0];
 
     return {
       id: index + 1,
       question: raw.question.trim(),
       options: filtered.slice(0, 4).map(opt => ({
         text: opt,
-        isCorrect: opt === finalCorrectAnswer
+        isCorrect: opt.toLowerCase() === finalCorrect!.toLowerCase(),
       })),
-      isCorrectVerified: false
+      isCorrectVerified: false,
     };
   }
 
-  // ── Private helper: clean and deduplicate a raw option string ──────────────
-
-  private cleanOption(raw: string): string {
-    return raw
-      .replace(/^[A-Da-d][).\\s]+/, '')  // strip leading letter+separator
-      .replace(/\([^)]*correct[^)]*\)/gi, '') // strip (correct answer is X)
-      .trim();
-  }
-
-  // ── Private helper: parse one Q&A text block into a QuizQuestion ─────────
-  //   Rules enforced here:
-  //   - exactly 4 options (discard block if < 4 after cleaning)
-  //   - deduplicate options (case-insensitive)
-  //   - discard empty / too-short options (< 3 chars)
-
-  private parseTextQuestion(text: string, index: number): QuizQuestion | null {
-    const lines = text.split('\n').filter((l: string) => l.trim() !== '');
-    if (lines.length < 2) return null;
-
-    const optionRegex = /^[A-Da-d][).\\s]/;
-    const questionLines: string[] = [];
-    const rawAnswerLines: string[] = [];
-    let foundOptions = false;
-
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (optionRegex.test(trimmed)) foundOptions = true;
-
-      if (!foundOptions) {
-        // Skip meta-lines like question numbers or separators
-        if (!/^(--|\d+[.)\\s])/.test(trimmed)) {
-          questionLines.push(trimmed);
-        }
-      } else if (optionRegex.test(trimmed)) {
-        rawAnswerLines.push(trimmed);
-      }
-    }
-
-    const questionText = questionLines.join(' ').trim();
-    if (!questionText || questionText.length < 5) return null;
-
-    // Clean, deduplicate, and filter options
-    const seen = new Set<string>();
-    const answers: string[] = [];
-    for (const raw of rawAnswerLines) {
-      const cleaned = this.cleanOption(raw);
-      if (cleaned.length < 1) continue;              // skip empty
-      const key = cleaned.toLowerCase();
-      if (seen.has(key)) continue;                   // skip duplicates
-      seen.add(key);
-      answers.push(cleaned);
-      if (answers.length === 4) break;               // keep exactly 4
-    }
-
-    // Need at least 2 valid options to be a real MCQ
-    if (answers.length < 2) return null;
-
-    // Always slice to max 4 (safety net)
-    const options = answers.slice(0, 4);
-
-    return {
-      id: index + 1,
-      question: questionText,
-      options: options.map((opt, i) => ({ text: opt, isCorrect: i === 0 })), // first option = correct by prompt convention
-      isCorrectVerified: false,              // recruiter must validate before publishing
-    };
-  }
-
-  // ── Private helper: generate N questions via improved prompt + text parsing ─
+  // ── Private helper: generate questions via strict JSON prompt (Étapes 3, 6) ──
 
   private async generateTextQuestions(
     jobDescription: string,
@@ -256,7 +213,6 @@ export class AiService {
     previousQuestions: string[] = [],
     competences: string = '',
   ): Promise<QuizQuestion[]> {
-    // For regeneration: inject a strong avoidance block
     const avoidBlock = previousQuestions.length > 0
       ? 'ATTENTION - RÉGÉNÉRATION : Génère des questions COMPLÈTEMENT DIFFÉRENTES des suivantes.\n' +
       'Ne réutilise aucun concept, sujet ni formulation similaire :\n' +
@@ -268,26 +224,29 @@ export class AiService {
       ? '\nCompétences requises :\n' + competences.substring(0, 500)
       : '';
 
+    // 🟢 Étape 3 : Prompt strict pour forcer un JSON valide avec correctAnswer
     const prompt =
-      'Génère 4 questions QCM techniques courtes (maximum 1 phrase par question) pour ce poste.\n' +
-      'Format JSON attendu strict (tableau, 4 options par question, une seule option correcte) :\n' +
+      'Tu es un générateur de QCM.\n\n' +
+      'Génère 4 questions QCM techniques pour ce poste:\n' +
+      jobDescription.substring(0, 400) +
+      competencesBlock +
+      (avoidBlock ? '\n\n' + avoidBlock : '') +
+      '\n\nRépond uniquement en JSON valide.\n\n' +
+      'Format STRICT:\n' +
       '[\n' +
       '  {\n' +
-      '    "question": "question 1 ?",\n' +
-      '    "options": [\n' +
-      '      {"text": "réponse A", "isCorrect": true},\n' +
-      '      {"text": "réponse B", "isCorrect": false},\n' +
-      '      {"text": "réponse C", "isCorrect": false},\n' +
-      '      {"text": "réponse D", "isCorrect": false}\n' +
-      '    ]\n' +
+      '    "question": "...",\n' +
+      '    "options": ["A", "B", "C", "D"],\n' +
+      '    "correctAnswer": "A"\n' +
       '  }\n' +
       ']\n\n' +
-      avoidBlock +
-      'Poste :\n' +
-      jobDescription.substring(0, 400) +
-      competencesBlock;
+      'RÈGLES:\n' +
+      '- Aucun texte avant ou après\n' +
+      '- Pas d\'explication\n' +
+      '- JSON valide uniquement\n' +
+      '- 4 options obligatoires';
 
-    const maxAttempts = 2;
+    const maxAttempts = 3;
     let attempts = 0;
     let allParsed: QuizQuestion[] = [];
 
@@ -326,7 +285,6 @@ export class AiService {
         for (const item of jsonArray) {
           const q = this.parseJsonQuestion(item, allParsed.length);
           if (q) {
-            // Deduplicate questions by text
             if (!allParsed.some(existing => existing.question.toLowerCase() === q.question.toLowerCase())) {
               allParsed.push(q);
             }
@@ -334,9 +292,8 @@ export class AiService {
           if (allParsed.length >= count) break;
         }
 
-        // If we didn't manage to parse any NEW valid questions from this attempt, break to prevent infinite loops with the same prompt.
         if (allParsed.length === initialParsedLength) {
-          this.logger.warn(`Attempt ${attempts} yielded no new valid questions. Breaking to avoid strict retry loops that cause timeouts.`);
+          this.logger.warn(`Attempt ${attempts} yielded no new valid questions. Breaking to avoid retry loops.`);
           break;
         }
       } catch (error) {
@@ -345,10 +302,42 @@ export class AiService {
     }
 
     if (allParsed.length === 0) {
-      throw new HttpException("L'IA n'a pas pu générer de questions valides après plusieurs tentatives. Veuillez réessayer.", HttpStatus.BAD_GATEWAY);
+      throw new HttpException(
+        "L'IA n'a pas pu générer de questions valides après plusieurs tentatives. Veuillez réessayer.",
+        HttpStatus.BAD_GATEWAY,
+      );
     }
 
     return allParsed.slice(0, count);
+  }
+
+  // 🟢 Étape 4 : Méthode publique generateQCM(topic) ─────────────────────────
+
+  async generateQCM(topic: string): Promise<any[]> {
+    const response = await axios.post(
+      this.ollamaUrl,
+      {
+        model: this.model,
+        prompt:
+          `Tu es un générateur de QCM.\n\nGénère 5 questions QCM sur le sujet: ${topic}\n\nRépond uniquement en JSON valide.\n\nFormat STRICT:\n[\n  {\n    "question": "...",\n    "options": ["A", "B", "C", "D"],\n    "correctAnswer": "A"\n  }\n]\n\nRÈGLES:\n- Aucun texte avant ou après\n- Pas d'explication\n- JSON valide uniquement\n- 4 options obligatoires`,
+        stream: false,
+        // 🟢 Étape 6 : température basse pour stabilité JSON
+        options: {
+          temperature: 0.2,
+        },
+      },
+      { timeout: 120000 }, // 🟢 Étape 5 : 2 minutes minimum
+    );
+
+    const content: string = response.data?.response ?? '';
+
+    try {
+      return JSON.parse(content);
+    } catch (error) {
+      this.logger.error('Erreur JSON brut reçu:', content);
+      // Tentative d'extraction du bloc JSON si le modèle a ajouté du texte parasite
+      return this.extractJson<any[]>(content);
+    }
   }
 
   // ── 1. Generate questions ─────────────────────────────────────────────────────
@@ -359,7 +348,7 @@ export class AiService {
     offre: any = null,
     competences: string = '',
   ): Promise<any[]> {
-    this.logger.log('Generating 2 questions with text parsing');
+    this.logger.log('Generating 4 questions with strict JSON prompt');
 
     const aiQuestions = await this.generateTextQuestions(jobDescription, 4, difficulty, [], competences);
 
@@ -379,7 +368,7 @@ export class AiService {
     return aiQuestions.map(q => ({
       ...q,
       niveauDifficulte: 'Moyen',
-      chronometre: 30, // default timer as per user example
+      chronometre: 30,
       createdAt: new Date().toISOString(),
     }));
   }

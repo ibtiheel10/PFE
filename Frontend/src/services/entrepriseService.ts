@@ -228,6 +228,19 @@ export const regenerateQuestionsForOffre = async (offreId: string | number): Pro
 };
 
 /**
+ * Sauvegarder des questions générées pour une offre.
+ * POST /api/Entreprise/offres/{id}/sauvegarder-questions-ia
+ */
+export const saveQuestionsForOffre = async (offreId: string | number, questions: any[], difficulte: string = 'Moyen'): Promise<AiResponse<any>> => {
+    try {
+        const response = await api.post(`/Entreprise/offres/${offreId}/sauvegarder-questions-ia`, { questions, difficulte }, { timeout: 30000 });
+        return { success: true, data: response.data };
+    } catch (error) {
+        return handleAiError(error);
+    }
+};
+
+/**
  * Obtenir des recommandations IA pour une offre après résultats de test.
  * GET /api/Entreprise/offres/{id}/recommandation-ia
  */
