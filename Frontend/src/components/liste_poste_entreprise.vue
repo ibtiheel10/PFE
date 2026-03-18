@@ -205,17 +205,7 @@
                 </div>
               </div>
 
-              <div class="form-row">
-                <div class="form-group full">
-                  <label for="benefits">Avantages</label>
-                  <textarea 
-                    id="benefits" 
-                    v-model="formData.benefits" 
-                    rows="3"
-                    placeholder="Décrivez les avantages offerts (télétravail, formations, tickets restaurant, etc.)..."
-                  ></textarea>
-                </div>
-              </div>
+
             </div>
 
             <!-- Tab 3: Paramètres du Recrutement -->
@@ -255,27 +245,7 @@
                 </div>
               </div>
 
-              <div class="form-row">
-                <div class="form-group full">
-                  <label class="checkbox-label">
-                    <input type="checkbox" v-model="formData.hasQCM">
-                    <span>Ajouter un QCM de présélection</span>
-                  </label>
-                  <p class="help-text">Les candidats devront passer un test avant d'être évalués</p>
-                </div>
-              </div>
 
-              <div class="form-row" v-if="formData.hasQCM">
-                <div class="form-group full">
-                  <label for="qcmId">Sélectionner un QCM existant</label>
-                  <select id="qcmId" v-model="formData.qcmId">
-                    <option value="">Choisir un QCM</option>
-                    <option value="1">QCM Développeur JavaScript</option>
-                    <option value="2">QCM Marketing Digital</option>
-                    <option value="3">QCM Design UX/UI</option>
-                  </select>
-                </div>
-              </div>
             </div>
           </form>
         </div>
@@ -285,9 +255,7 @@
           <button type="button" class="btn-cancel" @click="closeCreateModal">
             Annuler
           </button>
-          <button type="button" class="btn-draft" @click="saveDraft">
-            Sauvegarder comme Brouillon
-          </button>
+
           <button type="submit" form="create-post-form" class="btn-submit">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -341,8 +309,13 @@
           <div class="qcm-panel-body">
             <!-- Post description preview -->
             <div class="qcm-desc-box">
-              <p class="qcm-desc-label">Description du poste</p>
-              <p class="qcm-desc-text">{{ formData.description || 'Aucune description fournie.' }}</p>
+              <p class="qcm-desc-label" style="text-transform: uppercase; font-weight: bold; font-size: 0.85rem; color: #4F46E5; letter-spacing: 0.5px; margin-bottom: 8px;">Description du poste</p>
+              <p class="qcm-desc-text" style="color: #4b5563; font-size: 0.95rem; line-height: 1.5;">{{ formData.description || 'Aucune description fournie.' }}</p>
+              
+              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px dashed #e2e8f0;">
+                <p class="qcm-desc-label" style="text-transform: uppercase; font-weight: bold; font-size: 0.85rem; color: #4F46E5; letter-spacing: 0.5px; margin-bottom: 8px;">Compétences Requises</p>
+                <p class="qcm-desc-text" style="color: #4b5563; font-size: 0.95rem; line-height: 1.5; white-space: pre-wrap;">{{ formData.requirements || 'Aucune compétence spécifiée.' }}</p>
+              </div>
             </div>
 
             <!-- Config row: timer + difficulty -->
@@ -504,11 +477,8 @@ const editJob = (job: any) => {
       salary: raw.salaire ? raw.salaire.toString() : '',
       description: raw.description || '',
       requirements: raw.competences || '',
-      benefits: raw.avantages || '',
       deadline: raw.dateLimite ? (new Date(raw.dateLimite).toISOString().split('T')[0] || '') : '',
-      positions: raw.nbPost || 1,
-      hasQCM: false,
-      qcmId: ''
+      positions: raw.nbPost || 1
     };
     
     showCreateModal.value = true;
@@ -552,11 +522,8 @@ interface PostFormData {
   salary: string;
   description: string;
   requirements: string;
-  benefits: string;
   deadline: string;
   positions: number;
-  hasQCM: boolean;
-  qcmId: string;
 }
 
 // Form data
@@ -570,11 +537,8 @@ const formData = ref<PostFormData>({
   salary: '',
   description: '',
   requirements: '',
-  benefits: '',
   deadline: '',
-  positions: 1,
-  hasQCM: false,
-  qcmId: ''
+  positions: 1
 });
 
 const jobsList = ref<any[]>([]);
@@ -620,11 +584,8 @@ const createNewPost = () => {
       salary: '',
       description: '',
       requirements: '',
-      benefits: '',
       deadline: '',
-      positions: 1,
-      hasQCM: false,
-      qcmId: ''
+      positions: 1
     };
     
     showCreateModal.value = true;
@@ -647,11 +608,8 @@ const closeCreateModal = () => {
       salary: '',
       description: '',
       requirements: '',
-      benefits: '',
       deadline: '',
-      positions: 1,
-      hasQCM: false,
-      qcmId: ''
+      positions: 1
     };
 };
 
@@ -659,10 +617,7 @@ const switchTab = (tabId: string) => {
     currentTab.value = tabId;
 };
 
-const saveDraft = () => {
-    console.log('Saving draft:', formData.value);
-    alert('Brouillon sauvegardé avec succès !');
-};
+
 
 const submitPost = async () => {
     try {
@@ -868,7 +823,6 @@ const saveQCM = async () => {
       throw new Error(response.error || "Erreur lors de la sauvegarde du QCM.");
     }
 
-    formData.value.hasQCM = true;
     showQCMDialog.value = false;
     alert("Questions générées avec succès et enregistrées pour cette offre !");
   } catch (e: any) {
@@ -880,7 +834,7 @@ const saveQCM = async () => {
 };
 
 const goToJobDetails = (id: number) => {
-    router.push(`/job-details/${id}`);
+    router.push(`/job-qcm/${id}`);
 };
 
 // Watch for openModal prop changes

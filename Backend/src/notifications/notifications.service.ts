@@ -58,6 +58,15 @@ export class NotificationsService {
         );
     }
 
+    async notifyCandidatureRecue(userId: number, nomCandidat: string, titrePoste: string) {
+        return this.createForUser(
+            userId,
+            '📄 Nouvelle candidature',
+            `${nomCandidat} a postulé à votre offre "${titrePoste}".`,
+            'CANDIDATURE_RECUE',
+        );
+    }
+
     async notifyCandidatureAcceptee(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,

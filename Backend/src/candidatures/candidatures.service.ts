@@ -25,8 +25,11 @@ export class CandidaturesService {
             throw new NotFoundException('Candidat introuvable.');
         }
 
-        // 2. Vérifier si l'offre existe
-        const offre = await this.offreRepo.findOne({ where: { id: offreId } });
+        // 2. Vérifier si l'offre existe et charger l'entreprise
+        const offre = await this.offreRepo.findOne({
+            where: { id: offreId },
+            relations: ['entreprise'],
+        });
         if (!offre) {
             throw new NotFoundException('Offre d\'emploi introuvable.');
         }
@@ -56,6 +59,11 @@ export class CandidaturesService {
         // 5. Créer les notifications automatiques
         await this.notificationsService.notifyCandidatureEnvoyee(userId, offre.TitreDePost);
         await this.notificationsService.notifyCandidatureEnAttente(userId, offre.TitreDePost);
+
+        if (offre.entreprise && offre.entreprise.id) {
+            const nomComplet = [candidat.nom, candidat.prenom].filter(Boolean).join(' ') || 'Un candidat';
+            await this.notificationsService.notifyCandidatureRecue(offre.entreprise.id, nomComplet, offre.TitreDePost);
+        }
 
         return saved;
     }

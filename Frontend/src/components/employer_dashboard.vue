@@ -68,7 +68,9 @@
             <div class="relative">
                 <button @click="toggleNotifications" class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all">
                     <BellIcon class="w-6 h-6" />
-                    <span v-if="hasNotifications" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 border-2 border-white rounded-full"></span>
+                    <span v-if="unreadCount > 0" class="absolute top-1.5 right-1.5 flex items-center justify-center w-4 h-4 bg-red-500 text-white text-[9px] font-bold border-2 border-white rounded-full">
+                        {{ unreadCount > 9 ? '9+' : unreadCount }}
+                    </span>
                 </button>
 
                 <!-- Notifications Dropdown -->
@@ -76,14 +78,26 @@
                     <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
                         <div class="px-4 py-3 border-b border-gray-50 flex justify-between items-center">
                             <h3 class="text-sm font-bold text-gray-900">Notifications</h3>
-                            <button @click="hasNotifications = false" class="text-xs text-blue-600 hover:underline">Marquer comme lu</button>
+                            <button v-if="unreadCount > 0" @click="handleMarkAllRead" class="text-xs text-blue-600 hover:underline">Marquer tout comme lu</button>
                         </div>
-                        <div class="max-h-96 overflow-y-auto">
-                            <div v-for="app in recentApplications" :key="app.id" class="px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer">
-                                <p class="text-sm text-gray-800">New application from <span class="font-bold text-blue-600">{{ app.candidateName }}</span> for <span class="font-medium">{{ app.jobTitle }}</span></p>
-                                <span class="text-[10px] text-gray-400 font-medium uppercase mt-1 block">{{ app.time }}</span>
+                        <div class="max-h-[28rem] overflow-y-auto">
+                            <div 
+                                v-for="notif in notifications" 
+                                :key="notif.id" 
+                                @click="handleNotifClick(notif)"
+                                class="px-4 py-3 flex gap-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
+                                :class="!notif.lu ? 'bg-blue-50/30' : ''"
+                            >
+                                <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm" :class="getNotifBgClass(notif.type)">
+                                    {{ getNotifIcon(notif.type) }}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-medium" :class="!notif.lu ? 'text-gray-900 font-bold' : 'text-gray-800'">{{ notif.titre }}</p>
+                                    <p class="text-xs text-gray-600 mt-0.5 line-clamp-2">{{ notif.message }}</p>
+                                    <span class="text-[10px] font-medium uppercase mt-1 block" :class="!notif.lu ? 'text-blue-600' : 'text-gray-400'">{{ formatNotifTime(notif.createdAt) }}</span>
+                                </div>
                             </div>
-                            <div v-if="recentApplications.length === 0" class="px-4 py-8 text-center">
+                            <div v-if="notifications.length === 0" class="px-4 py-8 text-center">
                                 <p class="text-sm text-gray-500">Aucune nouvelle notification</p>
                             </div>
                         </div>
@@ -513,6 +527,8 @@ import ListePosteEntreprise from './liste_poste_entreprise.vue';
 import { getEntrepriseDashboard } from '../services/dashboardService';
 import type { EntrepriseDashboardDto } from '../services/dashboardService';
 import { getMesOffres, type OffreEmploiResponse, getRecommandationsForOffre } from '../services/entrepriseService';
+import { getNotifications, markAsRead, markAllNotificationsRead, getNotifIcon, getNotifBgClass, formatNotifTime } from '../services/notificationService';
+import type { Notification } from '../services/notificationService';
 import { 
     Squares2X2Icon, 
     BriefcaseIcon, 
@@ -566,6 +582,17 @@ const dashboardData = ref<EntrepriseDashboardDto | null>(null);
 const employerJobs = ref<OffreEmploiResponse[]>([]);
 const isLoadingData = ref(true);
 
+// --- Notifications State ---
+const notifications = ref<Notification[]>([]);
+const unreadCount = computed(() => notifications.value.filter(n => !n.lu).length);
+let notifInterval: any;
+
+const fetchNotifs = async () => {
+    try {
+        notifications.value = await getNotifications();
+    } catch (e) { console.error("Could not fetch notifications:", e); }
+};
+
 onMounted(async () => {
     try {
         isLoadingData.value = true;
@@ -580,6 +607,15 @@ onMounted(async () => {
     } finally {
         isLoadingData.value = false;
     }
+
+    // Start notification polling
+    fetchNotifs();
+    notifInterval = setInterval(fetchNotifs, 15000);
+});
+
+import { onUnmounted } from 'vue';
+onUnmounted(() => {
+    if (notifInterval) clearInterval(notifInterval);
 });
 
 const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
@@ -727,20 +763,28 @@ const goToJobDetails = (id: number) => {
 
 const toggleNotifications = () => {
     showNotifications.value = !showNotifications.value;
-    if (showNotifications.value) hasNotifications.value = false;
+    if (showNotifications.value && unreadCount.value === 0) {
+        hasNotifications.value = false;
+    }
 };
 
-const recentApplications = computed(() => {
-    // Si nous avions un endpoint "notifications", nous l'utiliserions. 
-    // Pour l'instant, on peut mapper les meilleurs candidats
-    if (!dashboardData.value || !dashboardData.value.meilleursCandidats) return [];
-    return dashboardData.value.meilleursCandidats.map((c) => ({
-        id: c.candidatId,
-        candidateName: c.prenom || 'Candidat inconnu',
-        jobTitle: 'Candidature récente',
-        time: 'Récemment'
-    }));
-});
+const handleNotifClick = async (notif: Notification) => {
+    if (!notif.lu) {
+        try {
+            await markAsRead(notif.id);
+            notif.lu = true;
+        } catch (e) { console.error(e); }
+    }
+    // Si la notif concerne une candidature, on pourrait rediriger vers le candidat, etc.
+    showNotifications.value = false;
+};
+
+const handleMarkAllRead = async () => {
+    try {
+        await markAllNotificationsRead();
+        notifications.value.forEach(n => n.lu = true);
+    } catch (e) { console.error(e); }
+};
 
 const chartPaths = computed(() => {
     let points = [0, 0, 0, 0, 0, 0, 0];

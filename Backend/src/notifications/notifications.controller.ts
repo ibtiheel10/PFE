@@ -21,25 +21,25 @@ export class NotificationsController {
     @Get()
     @ApiOperation({ summary: 'Get all notifications for the current user' })
     getMyNotifications(@Request() req: any) {
-        return this.notificationsService.getUserNotifications(req.user.id);
+        return this.notificationsService.getUserNotifications(req.user.userId);
     }
 
     @Get('unread-count')
     @ApiOperation({ summary: 'Get unread notification count' })
     async getUnreadCount(@Request() req: any) {
-        const count = await this.notificationsService.getUnreadCount(req.user.id);
+        const count = await this.notificationsService.getUnreadCount(req.user.userId);
         return { count };
     }
 
     @Patch(':id/read')
     @ApiOperation({ summary: 'Mark a notification as read' })
     markAsRead(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
-        return this.notificationsService.markAsRead(id, req.user.id);
+        return this.notificationsService.markAsRead(id, req.user.userId);
     }
 
     @Patch('mark-all-read')
     @ApiOperation({ summary: 'Mark all notifications as read' })
     markAllRead(@Request() req: any) {
-        return this.notificationsService.markAllRead(req.user.id);
+        return this.notificationsService.markAllRead(req.user.userId);
     }
 }

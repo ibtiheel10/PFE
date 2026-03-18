@@ -10,6 +10,7 @@ import Result from '@/components/Result.vue'
 import Evaluation from '@/components/Evaluation.vue'
 import JobBoard from '@/components/JobBoard.vue'
 import JobDetailEntreprise from '@/components/job_details_&_test_info.vue'
+import JobQCMEntreprise from '@/components/job_qcm_entreprise.vue'
 import EmployerDashboard from '@/components/employer_dashboard.vue'
 import Tarifs from '@/components/tarifs.vue'
 import VoirDemo from '@/components/Voirdemo.vue'
@@ -245,6 +246,12 @@ const routes: RouteRecordRaw[] = [
     path: '/job-details/:id',
     name: 'JobDetails',
     component: JobDetailEntreprise,
+    meta: { requiresAuth: true, role: 'entreprise' }
+  },
+  {
+    path: '/job-qcm/:id',
+    name: 'JobQCM',
+    component: JobQCMEntreprise,
     meta: { requiresAuth: true, role: 'entreprise' }
   },
 
