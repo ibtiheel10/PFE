@@ -305,6 +305,20 @@ export class EntrepriseController {
     }
 
     /**
+     * DELETE /api/Entreprise/questions/:id
+     * Supprime une question spécifique générée (Owner only).
+     */
+    @Delete('questions/:id')
+    @ApiOperation({ summary: 'Delete a specific generated question (Owner only)' })
+    @ApiParam({ name: 'id', description: 'ID of the question to delete' })
+    @ApiResponse({ status: 200, description: 'Question deleted successfully.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
+    @ApiResponse({ status: 404, description: 'Question not found.' })
+    async deleteQuestion(@Param('id') id: string, @Request() req: any) {
+        return this.entrepriseService.deleteQuestion(+id, req.user.userId);
+    }
+
+    /**
      * POST /api/Entreprise/offres/:id/recommandation-ia
      * Génère une recommandation (forces, faiblesses, conseils) basée sur les résultats d'un test pour cette offre.
      */

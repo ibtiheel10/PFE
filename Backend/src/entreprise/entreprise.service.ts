@@ -345,6 +345,22 @@ export class EntrepriseService {
         return this.mapQuestionsResponse(questions);
     }
 
+    /** DELETE a specific question (Owner only) */
+    async deleteQuestion(id: number, userId: number) {
+        const question = await this.questionRepo.findOne({
+            where: { id },
+            relations: ['offre', 'offre.entreprise'],
+        });
+        if (!question) throw new NotFoundException(`Question ${id} introuvable.`);
+
+        if (question.offre?.entreprise?.id !== userId) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à supprimer cette question.");
+        }
+
+        await this.questionRepo.remove(question);
+        return { message: 'Question supprimée avec succès.' };
+    }
+
     // ─── Génération IA ────────────────────────────────────────────────────────
 
     /** POST generer-questions-ia */
@@ -556,8 +572,8 @@ Compétences: ${offre.competences || 'Non spécifié'}
             id: q.id,
             question: q.contenu?.question ?? '',
             options: (q.contenu?.options ?? []).map((opt: any) => ({
-                text: opt.text,
-                isCorrect: !!opt.isCorrect,
+                text: typeof opt === 'string' ? opt : (opt.text ?? ''),
+                isCorrect: typeof opt === 'object' && opt !== null ? !!opt.isCorrect : false,
             })),
             chronometre: q.chronometre,
             niveauDifficulte: q.niveauDifficulte,
