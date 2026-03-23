@@ -62,7 +62,7 @@ export const getMesStats = async (): Promise<CandidatureStats> => {
  * Récupère une candidature par son ID.
  */
 export const getCandidatureById = async (id: number): Promise<CandidatureResponse> => {
-    const response = await api.get<CandidatureResponse>(`/candidatures/${id}`);
+    const response = await api.get<CandidatureResponse>(`/candidatures/${id}/result`);
     return response.data;
 };
 

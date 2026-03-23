@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Param, UseGuards, Request, HttpCode, HttpStatus, ConflictException } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, UseGuards, Request, HttpCode, HttpStatus, ConflictException, Body } from '@nestjs/common';
 import { CandidaturesService } from './candidatures.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -38,6 +38,45 @@ export class CandidaturesController {
     @ApiResponse({ status: 200, description: 'Statistiques récupérées avec succès.' })
     async getMyStats(@Request() req: any) {
         return await this.candidaturesService.getMyStats(req.user.userId);
+    }
+
+    @Get(':id/evaluation')
+    @Roles('Candidat')
+    @ApiOperation({ summary: 'Récupérer les questions d\'une évaluation' })
+    @ApiParam({ name: 'id', description: 'ID de la candidature' })
+    @ApiResponse({ status: 200, description: 'Questions récupérées avec succès.' })
+    async getEvaluationQuestions(@Param('id') id: string, @Request() req: any) {
+        return await this.candidaturesService.getEvaluationQuestions(+id, req.user.userId);
+    }
+
+    @Post(':id/evaluation')
+    @Roles('Candidat')
+    @ApiOperation({ summary: 'Soumettre les réponses d\'une évaluation' })
+    @ApiParam({ name: 'id', description: 'ID de la candidature' })
+    @ApiResponse({ status: 200, description: 'Évaluation soumise avec succès.' })
+    async submitEvaluation(
+        @Param('id') id: string,
+        @Body() body: any,
+        @Request() req: any,
+    ) {
+        console.log("--- [DEBUG] Controller received body:", JSON.stringify(body));
+
+        // Handle both: 
+        // 1. { "answers": { "43": 1 }, "tempsEcoule": "0:30" }
+        // 2. { "43": 1, "44": 1 } (flat body)
+        let answers = body.answers || body;
+        const tempsEcoule = body.tempsEcoule;
+
+        // If body represents the answers directly but also has tempsEcoule,
+        // we might need to remove tempsEcoule from the answers map if it exists
+        if (body.answers) {
+            answers = body.answers;
+        } else {
+            // It's a flat body, answers = body
+            // (The service will ignore non-numeric keys like "tempsEcoule" anyway)
+        }
+
+        return await this.candidaturesService.submitEvaluation(+id, req.user.userId, answers ?? {}, tempsEcoule);
     }
 
     @Get(':id/result')

@@ -53,7 +53,7 @@
         </div>
         <div class="stat-card">
           <div class="stat-icon orange"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-          <div><div class="stat-num">{{ job.positions }}</div><div class="stat-lbl">Postes ouverts</div></div>
+          <div><div class="stat-num">{{ job.qcmPasses }}</div><div class="stat-lbl">Candidats ayant passé le QCM</div></div>
         </div>
       </div>
 
@@ -129,10 +129,16 @@
 
       <!-- Footer -->
       <div class="footer">
-        <button class="btn-publish" :disabled="publishing || questions.length === 0" @click="publish">
+        <button 
+          class="btn-publish" 
+          :disabled="publishing || questions.length === 0 || qcmPublie" 
+          :class="{ 'btn-disabled': qcmPublie }"
+          @click="publish"
+        >
           <span v-if="publishing" class="spinner"></span>
-          <svg v-else width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-          {{ publishing ? 'Publication…' : 'Publier le QCM' }}
+          <svg v-if="!publishing && !qcmPublie" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
+          <svg v-if="qcmPublie" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          {{ publishing ? 'Publication…' : (qcmPublie ? 'QCM Déjà Publié' : 'Publier le QCM') }}
         </button>
       </div>
 
@@ -140,7 +146,7 @@
 
     <!-- Toast -->
     <transition name="toast">
-      <div v-if="toastVisible" class="toast">✓ QCM publié avec succès !</div>
+      <div v-if="toastVisible" class="toast">{{ toastMsg }}</div>
     </transition>
 
   </div>
@@ -158,14 +164,16 @@ const jobId  = String(route.params.id);
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Opt  { text: string; isCorrect: boolean }
 interface Q    { id?: number; text: string; options: Opt[]; difficulty: string; timer: number; verified: boolean }
-interface Job  { title: string; category: string; location: string; contractType: string; applicants: number; daysLeft: number; positions: number; status: string }
+interface Job  { title: string; category: string; location: string; contractType: string; applicants: number; daysLeft: number; positions: number; qcmPasses: number; status: string }
 
 // ─── State ────────────────────────────────────────────────────────────────────
 const loading      = ref(true);
 const error        = ref('');
 const publishing   = ref(false);
 const toastVisible = ref(false);
-const job = ref<Job>({ title:'', category:'', location:'', contractType:'', applicants:0, daysLeft:0, positions:1, status:'ACTIVE' });
+const toastMsg     = ref('QCM publié avec succès !');
+const qcmPublie    = ref(false);
+const job = ref<Job>({ title:'', category:'', location:'', contractType:'', applicants:0, daysLeft:0, positions:1, qcmPasses:0, status:'ACTIVE' });
 const questions = ref<Q[]>([]);
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
@@ -242,12 +250,14 @@ const loadData = async () => {
         applicants:   typeof offre.candidatures === 'number' ? offre.candidatures : (offre.candidatures?.length ?? 0),
         daysLeft:     offre.daysLeft  ?? 0,
         positions:    offre.nbPost    ?? 1,
+        qcmPasses:    offre.qcmPasses ?? 0,
         status:       offre.status    ?? 'ACTIVE',
       };
     }
 
     const rawQ: any[] = Array.isArray(qRes.data) ? qRes.data : (qRes.data?.questions ?? []);
-    questions.value = mapQ(rawQ);
+    qcmPublie.value   = qRes.data?.qcmPublie ?? false;
+    questions.value   = mapQ(rawQ);
 
   } catch (e: any) {
     error.value = e?.response?.data?.message ?? e?.message ?? 'Erreur de chargement.';
@@ -274,7 +284,13 @@ const deleteQuestion = async (qId?: number) => {
 const publish = async () => {
   if (!questions.value.length) return;
   publishing.value = true;
-  await new Promise(r => setTimeout(r, 800));
+  try {
+    const res = await api.post(`/Entreprise/offres/${jobId}/publier-qcm`);
+    toastMsg.value = res.data.message || 'QCM publié avec succès !';
+    qcmPublie.value = true;
+  } catch (e: any) {
+    toastMsg.value = e?.response?.data?.message ?? 'Erreur lors de la publication.';
+  }
   publishing.value   = false;
   toastVisible.value = true;
   setTimeout(() => { toastVisible.value = false; }, 3200);
@@ -643,7 +659,19 @@ html, body, #app { background: #F3F4F6 !important; }
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(37,99,235,0.38);
 }
-.btn-publish:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-publish:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.btn-publish.btn-disabled {
+  background: #E2E8F0 !important;
+  color: #64748B !important;
+  border-color: #CBD5E1 !important;
+  cursor: default;
+  transform: none !important;
+  box-shadow: none !important;
+}
 
 .spinner {
   width: 14px; height: 14px;

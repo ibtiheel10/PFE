@@ -105,9 +105,9 @@
                     :class="notif.lu ? 'hover:bg-gray-50' : 'bg-blue-50/40 hover:bg-blue-50'"
                     @click="handleMarkRead(notif.id)"
                   >
-                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-lg"
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                          :class="getNotifBgClass(notif.type)">
-                      {{ getNotifIcon(notif.type) }}
+                      <BellIcon class="w-5 h-5 opacity-70" :class="getNotifBgClass(notif.type).replace('bg-', 'text-').replace('-50', '-600')" />
                     </div>
                     <div class="flex-1 min-w-0">
                       <p class="text-[13px] font-semibold text-gray-800 leading-snug">{{ notif.titre }}</p>
@@ -311,7 +311,6 @@ import {
     getNotifications,
     markAsRead,
     markAllNotificationsRead,
-    getNotifIcon,
     getNotifBgClass,
     formatNotifTime,
     type Notification,

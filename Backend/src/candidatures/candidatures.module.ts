@@ -5,10 +5,12 @@ import { CandidaturesService } from './candidatures.service';
 import { Candidature } from '../entities/candidature.entity';
 import { User } from '../entities/user.entity';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
+import { Question } from '../entities/question.entity';
+import { ReponseCandidat } from '../entities/reponse-candidat.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Candidature, User, OffreEmploi]), NotificationsModule],
+  imports: [TypeOrmModule.forFeature([Candidature, User, OffreEmploi, Question, ReponseCandidat]), NotificationsModule],
   controllers: [CandidaturesController],
   providers: [CandidaturesService],
   exports: [CandidaturesService]

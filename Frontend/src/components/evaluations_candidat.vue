@@ -197,13 +197,14 @@ const handleEvaluationAction = (evaluation: any) => {
   }
 };
 
-const computeStatus = (statut: string, score: number | null, deadlineDate: Date | null): 'open' | 'closed' | 'expired' | 'done' => {
-  // A score or terminal statut means the QCM has been completed
-  if (score !== null || statut === 'Terminé' || statut === 'test passé' || statut === 'Accepter' || statut === 'Rejeter') return 'done';
-  const now = new Date();
-  if (deadlineDate && deadlineDate < now) return 'expired';
-  if (statut === 'En attente' || statut === 'En cours') return 'open';
-  return 'closed';
+const computeStatus = (c: any): 'open' | 'closed' | 'expired' | 'done' => {
+  // Completed evaluation
+  if (c.score !== null || c.statut === 'Terminé' || c.statut === 'test passé' || c.statut === 'Accepter' || c.statut === 'Rejeter'
+      || c.statut === 'Entretiens' || c.statut === 'Refusée') return 'done';
+  // QCM not yet published by the enterprise
+  if (!c.qcmDisponible) return 'closed';
+  // QCM is available — open
+  return 'open';
 };
 
 onMounted(async () => {
@@ -212,10 +213,7 @@ onMounted(async () => {
     const candidatures = await getMesCandidatures();
 
     evaluations.value = candidatures.map(c => {
-      // Use the offer's real DateLimite from the database
-      const rawDeadline = c.offre.DateLimite;
-      const deadlineDate = rawDeadline ? new Date(rawDeadline) : null;
-      const status = computeStatus(c.statut, c.score, deadlineDate);
+      const status = computeStatus(c);
 
       return {
         id: c.id,
@@ -223,7 +221,7 @@ onMounted(async () => {
         companyName: 'Skillvia Partner',
         status,
         description: `Évaluation technique pour le poste de ${c.offre.TitreDePost}.`,
-        deadline: deadlineDate ? deadlineDate.toLocaleDateString('fr-FR') : '—',
+        deadline: c.offre.DateLimite ? new Date(c.offre.DateLimite).toLocaleDateString('fr-FR') : '—',
         duration: 20,
         skills: [c.offre.Categorie].filter(Boolean),
         moreSkillsCount: 0,

@@ -51,6 +51,9 @@ export class OffreEmploi {
     @Column({ nullable: true })
     iconColor: string;
 
+    @Column({ type: 'boolean', default: false })
+    qcmPublie: boolean;
+
     @ManyToOne(() => User, { nullable: true })
     entreprise: User;
 

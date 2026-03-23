@@ -354,6 +354,21 @@ export class EntrepriseController {
         return this.entrepriseService.recommandationIA(id, req.user.userId, body.results || []);
     }
 
+    /**
+     * POST /api/Entreprise/offres/:id/publier-qcm
+     * Publie le QCM pour une offre: met qcmDisponible=true sur toutes les candidatures et envoie un email à chaque candidat.
+     */
+    @Post('offres/:id/publier-qcm')
+    @ApiOperation({ summary: 'Publish the QCM for an offer and notify all candidates' })
+    @ApiParam({ name: 'id', description: 'UUID of the offre' })
+    @ApiResponse({ status: 201, description: 'QCM published and candidates notified.' })
+    @ApiResponse({ status: 400, description: 'No questions found for this offer.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
+    @ApiResponse({ status: 404, description: 'Offre not found.' })
+    async publierQCM(@Param('id') id: string, @Request() req: any) {
+        return this.entrepriseService.publierQCM(id, req.user.userId);
+    }
+
     // ─── Candidats ────────────────────────────────────────────────────────────
 
     /**

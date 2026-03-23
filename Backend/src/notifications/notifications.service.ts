@@ -52,7 +52,7 @@ export class NotificationsService {
     async notifyCandidatureEnvoyee(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '✅ Candidature envoyée',
+            'Candidature envoyée',
             `Votre candidature pour le poste "${titrePoste}" a bien été envoyée.`,
             'CANDIDATURE_ENVOYEE',
         );
@@ -61,7 +61,7 @@ export class NotificationsService {
     async notifyCandidatureRecue(userId: number, nomCandidat: string, titrePoste: string) {
         return this.createForUser(
             userId,
-            '📄 Nouvelle candidature',
+            'Nouvelle candidature',
             `${nomCandidat} a postulé à votre offre "${titrePoste}".`,
             'CANDIDATURE_RECUE',
         );
@@ -70,7 +70,7 @@ export class NotificationsService {
     async notifyCandidatureAcceptee(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '🎉 Candidature acceptée',
+            'Candidature acceptée',
             `Félicitations ! Votre candidature pour "${titrePoste}" a été acceptée.`,
             'CANDIDATURE_ACCEPTEE',
         );
@@ -79,7 +79,7 @@ export class NotificationsService {
     async notifyCandidatureRefusee(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '❌ Candidature refusée',
+            'Candidature refusée',
             `Votre candidature pour le poste "${titrePoste}" n'a pas été retenue.`,
             'CANDIDATURE_REFUSEE',
         );
@@ -88,7 +88,7 @@ export class NotificationsService {
     async notifyCandidatureEnAttente(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '⏳ Candidature en attente',
+            'Candidature en attente',
             `Votre candidature pour "${titrePoste}" est en cours d'examen.`,
             'CANDIDATURE_EN_ATTENTE',
         );
@@ -97,7 +97,7 @@ export class NotificationsService {
     async notifyEvaluationDisponible(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '📝 Évaluation disponible',
+            'Évaluation disponible',
             `Une évaluation est disponible pour le poste "${titrePoste}". Connectez-vous pour la passer.`,
             'EVALUATION_DISPONIBLE',
         );
@@ -106,7 +106,7 @@ export class NotificationsService {
     async notifyEvaluationTerminee(userId: number, titrePoste: string, score: number) {
         return this.createForUser(
             userId,
-            '✔️ Évaluation terminée',
+            'Évaluation terminée',
             `Vous avez terminé l'évaluation pour "${titrePoste}". Score obtenu : ${score}%.`,
             'EVALUATION_TERMINEE',
         );
@@ -115,7 +115,7 @@ export class NotificationsService {
     async notifyScoreObtenu(userId: number, titrePoste: string, score: number) {
         return this.createForUser(
             userId,
-            `🏆 Score obtenu : ${score}%`,
+            `Score obtenu : ${score}%`,
             `Votre score pour l'évaluation "${titrePoste}" est de ${score}%.`,
             'SCORE_OBTENU',
         );
@@ -124,7 +124,7 @@ export class NotificationsService {
     async notifyCandidatSelectionne(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '⭐ Candidat sélectionné',
+            'Candidat sélectionné',
             `Félicitations ! Vous avez été sélectionné pour la prochaine étape du processus pour "${titrePoste}".`,
             'CANDIDAT_SELECTIONNE',
         );
@@ -133,7 +133,7 @@ export class NotificationsService {
     async notifyCandidatNonRetenu(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '😔 Candidat non retenu',
+            'Candidat non retenu',
             `Nous sommes désolés, vous n'avez pas été retenu pour le poste "${titrePoste}".`,
             'CANDIDAT_NON_RETENU',
         );
@@ -142,7 +142,7 @@ export class NotificationsService {
     async notifyProfilMisAJour(userId: number) {
         return this.createForUser(
             userId,
-            '👤 Profil mis à jour',
+            'Profil mis à jour',
             'Votre profil a été mis à jour avec succès.',
             'PROFIL_MIS_A_JOUR',
         );
@@ -151,20 +151,20 @@ export class NotificationsService {
     async notifyMotDePasseModifie(userId: number) {
         return this.createForUser(
             userId,
-            '🔒 Mot de passe modifié',
+            'Mot de passe modifié',
             'Votre mot de passe a été modifié avec succès.',
             'MOT_DE_PASSE_MODIFIE',
         );
     }
 
     async notifyMessageAdmin(userId: number, message: string) {
-        return this.createForUser(userId, '📢 Message de l\'administrateur', message, 'MESSAGE_ADMIN');
+        return this.createForUser(userId, 'Message de l\'administrateur', message, 'MESSAGE_ADMIN');
     }
 
     async notifyResultatDisponible(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '📊 Résultat disponible',
+            'Résultat disponible',
             `Votre résultat pour l'évaluation de "${titrePoste}" est maintenant disponible.`,
             'RESULTAT_DISPONIBLE',
         );
@@ -173,7 +173,7 @@ export class NotificationsService {
     async notifyEvaluationExpiree(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '⌛ Session expirée',
+            'Session expirée',
             `Votre session d'évaluation pour "${titrePoste}" a expiré.`,
             'EVALUATION_EXPIREE',
         );
@@ -182,7 +182,7 @@ export class NotificationsService {
     async notifyEvaluationRappel(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '⏰ Rappel d\'évaluation',
+            'Rappel d\'évaluation',
             `N'oubliez pas de compléter votre évaluation pour "${titrePoste}" avant la date limite.`,
             'EVALUATION_RAPPEL',
         );
@@ -191,7 +191,7 @@ export class NotificationsService {
     async notifyOffreRecommandee(userId: number, titrePoste: string) {
         return this.createForUser(
             userId,
-            '💡 Nouvelle offre recommandée',
+            'Nouvelle offre recommandée',
             `Une nouvelle offre qui correspond à votre profil est disponible : "${titrePoste}".`,
             'OFFRE_RECOMMANDEE',
         );
@@ -202,7 +202,7 @@ export class NotificationsService {
         const notifications = admins.map(admin =>
             this.notifRepo.create({
                 userId: admin.id,
-                titre: '📩 Nouveau message de contact',
+                titre: 'Nouveau message de contact',
                 message: `Vous avez reçu un nouveau message de ${expediteur} concernant "${sujet}".`,
                 type: 'NOUVEAU_MESSAGE_CONTACT',
                 lu: false,

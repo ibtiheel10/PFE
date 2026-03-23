@@ -16,6 +16,9 @@ export class Candidature {
     @Column({ type: 'float', nullable: true })
     score: number;
 
+    @Column({ type: 'boolean', default: false })
+    qcmDisponible: boolean;
+
     @Column({ nullable: true })
     decision: string;
 
@@ -30,6 +33,9 @@ export class Candidature {
 
     @Column({ nullable: true })
     rapidite: string;
+
+    @Column({ type: 'text', nullable: true })
+    evaluationDetails: string;
 
     @ManyToOne(() => User, (user) => user.id, { onDelete: 'CASCADE' })
     candidat: User;

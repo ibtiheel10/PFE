@@ -33,27 +33,27 @@ export async function markAllNotificationsRead(): Promise<void> {
  */
 export function getNotifIcon(type: string): string {
     const icons: Record<string, string> = {
-        CANDIDATURE_ENVOYEE: '📤',
-        CANDIDATURE_RECUE: '📬',
-        CANDIDATURE_ACCEPTEE: '🎉',
-        CANDIDATURE_REFUSEE: '❌',
-        CANDIDATURE_EN_ATTENTE: '⏳',
-        OFFRE_RECOMMANDEE: '💡',
-        EVALUATION_DISPONIBLE: '📝',
-        EVALUATION_COMMENCEE: '▶️',
-        EVALUATION_TERMINEE: '✔️',
-        EVALUATION_EXPIREE: '⌛',
-        EVALUATION_RAPPEL: '⏰',
-        EVALUATION_FERMEE: '🔒',
-        RESULTAT_DISPONIBLE: '📊',
-        SCORE_OBTENU: '🏆',
-        CANDIDAT_SELECTIONNE: '⭐',
-        CANDIDAT_NON_RETENU: '😔',
-        MOT_DE_PASSE_MODIFIE: '🔑',
-        PROFIL_MIS_A_JOUR: '👤',
-        MESSAGE_ADMIN: '📢',
+        CANDIDATURE_ENVOYEE: '',
+        CANDIDATURE_RECUE: '',
+        CANDIDATURE_ACCEPTEE: '',
+        CANDIDATURE_REFUSEE: '',
+        CANDIDATURE_EN_ATTENTE: '',
+        OFFRE_RECOMMANDEE: '',
+        EVALUATION_DISPONIBLE: '',
+        EVALUATION_COMMENCEE: '',
+        EVALUATION_TERMINEE: '',
+        EVALUATION_EXPIREE: '',
+        EVALUATION_RAPPEL: '',
+        EVALUATION_FERMEE: '',
+        RESULTAT_DISPONIBLE: '',
+        SCORE_OBTENU: '',
+        CANDIDAT_SELECTIONNE: '',
+        CANDIDAT_NON_RETENU: '',
+        MOT_DE_PASSE_MODIFIE: '',
+        PROFIL_MIS_A_JOUR: '',
+        MESSAGE_ADMIN: '',
     };
-    return icons[type] ?? '🔔';
+    return icons[type] ?? '';
 }
 
 /**

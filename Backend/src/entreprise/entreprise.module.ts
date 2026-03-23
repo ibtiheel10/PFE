@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { EntrepriseController } from './entreprise.controller';
 import { EntrepriseService } from './entreprise.service';
 import { User } from '../entities/user.entity';
@@ -11,6 +12,7 @@ import { AiModule } from '../ai/ai.module';
 @Module({
     imports: [
         TypeOrmModule.forFeature([User, OffreEmploi, Candidature, Question]),
+        ConfigModule,
         AiModule,
     ],
     controllers: [EntrepriseController],

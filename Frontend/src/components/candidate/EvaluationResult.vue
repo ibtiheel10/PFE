@@ -171,9 +171,12 @@ onMounted(async () => {
 
   try {
     const candidatureIdParam = route.query.candidatureId;
+    const routeId = route.params.id;
     let targetCandidatureId: number | null = null;
 
-    if (candidatureIdParam) {
+    if (routeId) {
+      targetCandidatureId = Number(routeId);
+    } else if (candidatureIdParam) {
       targetCandidatureId = Number(candidatureIdParam);
     } else {
       const allCandidatures = await getMesCandidatures();

@@ -164,7 +164,7 @@ const fetchApplications = async () => {
             jobTitle: app.offre.TitreDePost,
             company: 'Skillvia Partner',
             category: app.offre.Categorie,
-            status: app.statut === 'En attente' ? 'En cours' : app.statut,
+            status: app.statut === 'En attente' ? 'En cours' : (app.statut === 'Refusés' ? 'Refusée' : app.statut),
             date: app.datePostulation,
             dateDisplay: new Date(app.datePostulation).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
         }));
@@ -182,7 +182,7 @@ const tabs = [
     { id: 'En cours', label: 'En cours' },
     { id: 'Entretiens', label: 'Entretiens' },
     { id: 'Acceptée', label: 'Acceptées' },
-    { id: 'Refusés', label: 'Refusés' },
+    { id: 'Refusée', label: 'Refusées' },
     { id: 'Annulée', label: 'Annulées' },
 ];
 

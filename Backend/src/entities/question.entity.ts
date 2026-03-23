@@ -12,6 +12,7 @@ export class Question {
     contenu: {
         question: string;
         options: { text: string; isCorrect: boolean }[];
+        correctAnswer?: string;
     };
 
     @Column({ type: 'int' })

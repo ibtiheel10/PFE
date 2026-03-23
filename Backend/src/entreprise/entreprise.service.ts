@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, ForbiddenException, BadRequestException 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as nodemailer from 'nodemailer';
+import { ConfigService } from '@nestjs/config';
 import { User } from '../entities/user.entity';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { Candidature } from '../entities/candidature.entity';
@@ -20,7 +22,43 @@ export class EntrepriseService {
         @InjectRepository(Question)
         private readonly questionRepo: Repository<Question>,
         private readonly aiService: AiService,
+        private readonly configService: ConfigService,
     ) { }
+
+    private async sendQcmAvailableEmail(email: string, candidateName: string, offreTitle: string) {
+        const transporter = nodemailer.createTransport({
+            host: this.configService.get<string>('SMTP_HOST'),
+            port: this.configService.get<number>('SMTP_PORT'),
+            secure: false,
+            auth: {
+                user: this.configService.get<string>('SMTP_USER'),
+                pass: this.configService.get<string>('SMTP_PASS'),
+            },
+        });
+        const html = `
+          <div style="font-family: Arial, sans-serif; max-width: 520px; margin: auto;">
+            <h2 style="color: #4f46e5;">SkillVia — QCM Disponible !</h2>
+            <p>Bonjour <strong>${candidateName}</strong>,</p>
+            <p>Le questionnaire QCM pour le poste <strong>"${offreTitle}"</strong> est désormais disponible.</p>
+            <p>Connectez-vous à votre espace candidat pour passer l'évaluation dès maintenant.</p>
+            <a href="http://localhost:5173/candidat/evaluations"
+               style="display:inline-block;margin-top:16px;padding:12px 24px;background:#4f46e5;color:#fff;border-radius:8px;text-decoration:none;font-weight:bold;">
+              Accéder à mon évaluation
+            </a>
+            <p style="color:#888;font-size:12px;margin-top:24px;">Si vous n'attendiez pas cet email, ignorez-le.</p>
+          </div>
+        `;
+        try {
+            await transporter.sendMail({
+                from: `"SkillVia" <${this.configService.get('SMTP_FROM')}>`,
+                to: email,
+                subject: `[SkillVia] Le QCM pour "${offreTitle}" est disponible`,
+                html,
+            });
+        } catch (err) {
+            console.error('[EntrepriseService] Failed to send QCM email to', email, err);
+        }
+    }
 
     // ─── Profil ──────────────────────────────────────────────────────────────
 
@@ -228,6 +266,9 @@ export class EntrepriseService {
                 const count = await this.candidatureRepo.count({
                     where: { offre: { id: o.id } },
                 });
+                const qcmPassesCount = await this.candidatureRepo.count({
+                    where: { offre: { id: o.id }, score: require('typeorm').Not(require('typeorm').IsNull()) },
+                });
                 const now = new Date();
                 const deadline = o.DateLimite ? new Date(o.DateLimite) : null;
                 return {
@@ -247,6 +288,7 @@ export class EntrepriseService {
                     icon: o.icon,
                     iconColor: o.iconColor,
                     candidatures: count,
+                    qcmPasses: qcmPassesCount,
                     status: deadline && deadline < now ? 'EXPIRÉE' : 'ACTIVE',
                     daysLeft: deadline
                         ? Math.max(0, Math.ceil((deadline.getTime() - now.getTime()) / (1000 * 3600 * 24)))
@@ -342,7 +384,10 @@ export class EntrepriseService {
             order: { createdAt: 'ASC' },
         });
 
-        return this.mapQuestionsResponse(questions);
+        return {
+            questions: this.mapQuestionsResponse(questions),
+            qcmPublie: !!offre.qcmPublie
+        };
     }
 
     /** DELETE a specific question (Owner only) */
@@ -460,10 +505,47 @@ export class EntrepriseService {
 
         // Save new questions
         const questionsEntities = questions.map(q => {
+            // Normalize options to always be {text, isCorrect} objects
+            let normalizedOptions: { text: string; isCorrect: boolean }[] = [];
+            const correctAnswerText: string = (q.correctAnswer || '').trim();
+
+            if (Array.isArray(q.options)) {
+                normalizedOptions = q.options.map((opt: any) => {
+                    if (typeof opt === 'string') {
+                        const text = opt.replace(/^[A-Da-d][).:\s]+/, '').trim();
+                        return {
+                            text,
+                            isCorrect: correctAnswerText.length > 0 &&
+                                (text.toLowerCase() === correctAnswerText.toLowerCase() ||
+                                    correctAnswerText.toLowerCase().includes(text.toLowerCase().substring(0, 10))),
+                        };
+                    } else {
+                        return {
+                            text: (opt.text || '').replace(/^[A-Da-d][).:\s]+/, '').trim(),
+                            isCorrect: opt.isCorrect === true,
+                        };
+                    }
+                });
+            }
+
+            // If no option is marked correct, try to find it by correctAnswer text
+            const hasCorrect = normalizedOptions.some(o => o.isCorrect);
+            if (!hasCorrect && correctAnswerText) {
+                // Mark the first option whose text contains the correctAnswer as correct
+                for (const opt of normalizedOptions) {
+                    if (opt.text.toLowerCase().includes(correctAnswerText.toLowerCase().substring(0, 15)) ||
+                        correctAnswerText.toLowerCase().includes(opt.text.toLowerCase().substring(0, 15))) {
+                        opt.isCorrect = true;
+                        break;
+                    }
+                }
+            }
+
             return this.questionRepo.create({
                 contenu: {
                     question: q.question,
-                    options: q.options,
+                    options: normalizedOptions,
+                    correctAnswer: correctAnswerText,
                 },
                 chronometre: q.chronometre || 30,
                 niveauDifficulte: difficulte,
@@ -474,11 +556,71 @@ export class EntrepriseService {
 
         const savedQuestions = await this.questionRepo.save(questionsEntities);
 
+        // Notify all candidates for this offer that the QCM is now available
+        const candidatures = await this.candidatureRepo.find({
+            where: { offre: { id: offreId } },
+            relations: ['candidat'],
+        });
+
+        for (const cand of candidatures) {
+            // Only unlock if not yet done (score null = not yet passed)
+            if (!cand.qcmDisponible && cand.score === null) {
+                cand.qcmDisponible = true;
+                await this.candidatureRepo.save(cand);
+
+                if (cand.candidat?.email) {
+                    const name = [cand.candidat.prenom, cand.candidat.nom].filter(Boolean).join(' ') || 'Candidat';
+                    await this.sendQcmAvailableEmail(cand.candidat.email, name, offre.TitreDePost);
+                }
+            }
+        }
+
         return {
             message: 'Questions sauvegardées avec succès.',
             totalQuestions: savedQuestions.length,
             questions: this.mapQuestionsResponse(savedQuestions)
         };
+    }
+
+    /** POST publier-qcm */
+    async publierQCM(offreId: string, userId: number) {
+        const offre = await this.offreRepo.findOne({
+            where: { id: offreId },
+            relations: ['entreprise'],
+        });
+        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
+        if (offre.entreprise?.id !== userId) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à publier le QCM de cette offre.");
+        }
+
+        // Check questions exist
+        const count = await this.questionRepo.count({ where: { offre: { id: offreId } } });
+        if (count === 0) throw new BadRequestException('Aucune question QCM pour cette offre. Veuillez générer et sauvegarder le QCM d\'abord.');
+
+        const candidatures = await this.candidatureRepo.find({
+            where: { offre: { id: offreId } },
+            relations: ['candidat'],
+        });
+
+        let notified = 0;
+        for (const cand of candidatures) {
+            if (!cand.qcmDisponible && cand.score === null) {
+                cand.qcmDisponible = true;
+                await this.candidatureRepo.save(cand);
+
+                if (cand.candidat?.email) {
+                    const name = [cand.candidat.prenom, cand.candidat.nom].filter(Boolean).join(' ') || 'Candidat';
+                    await this.sendQcmAvailableEmail(cand.candidat.email, name, offre.TitreDePost);
+                }
+                notified++;
+            }
+        }
+
+        // Mark the offer as published
+        offre.qcmPublie = true;
+        await this.offreRepo.save(offre);
+
+        return { message: `QCM publié. ${notified} candidat(s) notifié(s).`, notified };
     }
 
     /** POST recommandation-ia */

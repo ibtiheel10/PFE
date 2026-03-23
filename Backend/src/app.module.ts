@@ -40,7 +40,13 @@ import { NotificationsModule } from './notifications/notifications.module';
         database: configService.get<string>('DB_NAME', 'skillvia_db_2'),
         entities: [User, OtpCode, OffreEmploi, Candidature, Question, ReponseCandidat, Notification, ContactMessage],
         synchronize: true, // Auto-creates tables — disable in production!
-        logging: true,
+        logging: false, // Disabled to reduce noise; enable temporarily for debugging
+        extra: {
+          max: 10,                     // Max connections in pool
+          min: 1,                      // Min connections kept open
+          idleTimeoutMillis: 10000,    // Close idle connections after 10s
+          connectionTimeoutMillis: 3000, // Fail fast if can't connect in 3s
+        },
       }),
     }),
 
