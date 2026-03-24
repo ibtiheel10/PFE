@@ -302,6 +302,24 @@ onMounted(() => {
 });
 </script>
 
+<style>
+/* ==================== HOME PAGE SCROLLBAR (GLOBAL) ==================== */
+::-webkit-scrollbar {
+  width: 6px !important;
+}
+::-webkit-scrollbar-track {
+  background: transparent !important;
+}
+::-webkit-scrollbar-thumb {
+  background: #8c8a8a66 !important;
+  border: none !important;
+  border-radius: 10px !important;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b3b4b4b1 !important;
+}
+</style>
+
 <style scoped>
 * {
   margin: 0;
@@ -1093,8 +1111,8 @@ onMounted(() => {
 }
 
 .footer-logo img {
-  height: 40px;
-  margin-bottom: 1rem;
+  height: 190px;
+  margin-bottom: 0.5rem;
   filter: brightness(0) invert(1);
 }
 

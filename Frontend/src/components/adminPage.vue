@@ -53,7 +53,7 @@
     <!-- MAIN CONTENT -->
     <main class="flex-1 flex flex-col overflow-hidden relative transition-colors duration-300" :class="{ 'bg-gray-900 text-white': isDarkMode }">
       <!-- HEADER -->
-      <header class="h-16 bg-white/80 backdrop-blur-md border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 transition-all duration-300 dark:bg-gray-900/80 dark:border-gray-800 sticky top-0">
+      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 transition-all duration-300 dark:bg-gray-900 dark:border-gray-800 sticky top-0">
         <!-- Left Side: Toggle & Title -->
         <div class="flex items-center gap-4">
             <!-- Sidebar Toggle Button -->
@@ -226,17 +226,18 @@
                    </div>
                 </div>
 
-                <!-- Stat Card 4 -->
+                <!-- Stat Card 4: Candidatures par offre -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden animate-fade-in-up delay-300">
                     <div class="flex justify-between items-start mb-4">
                         <div>
-                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Revenu</span>
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Candidatures par offre</span>
                             <div class="flex items-baseline gap-2 mt-1">
-                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ formatCurrency(dashboardStats.revenuTotal) }}</span>
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ dashboardStats.tauxCouverture ?? 0 }}%</span>
                             </div>
+                            <p class="text-xs text-gray-400 mt-1">des offres ont des candidatures</p>
                         </div>
                         <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
-                           <BanknotesIcon class="w-6 h-6"/>
+                           <ClipboardDocumentListIcon class="w-6 h-6"/>
                         </div>
                     </div>
                      <!-- Sparkline -->
@@ -662,7 +663,6 @@ import {
     UsersIcon,
     ArrowTrendingUpIcon,
     ClipboardDocumentCheckIcon,
-    BanknotesIcon,
     TrashIcon,
     PencilSquareIcon,
     ExclamationCircleIcon
@@ -714,6 +714,8 @@ const dashboardStats = ref({
     totalOffres: 0,
     totalCandidatures: 0,
     totalTests: 0,
+    avgCandidaturesParOffre: 0,
+    tauxCouverture: 0,
     revenuTotal: 0,
     demographie: null as any,
     santeAcquise: null as any,
@@ -723,9 +725,6 @@ const dashboardStats = ref({
 // --- Formatting Helpers ---
 const formatNumber = (num: number) => {
     return new Intl.NumberFormat('fr-FR').format(num || 0);
-};
-const formatCurrency = (num: number) => {
-    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 1 }).format(num || 0);
 };
 const formatNotificationTime = (dateString: string) => {
     if (!dateString) return '';

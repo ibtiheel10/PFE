@@ -1,13 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Not, IsNull } from 'typeorm';
 import { User } from '../entities/user.entity';
+import { Candidature } from '../entities/candidature.entity';
+import { OffreEmploi } from '../entities/offre-emploi.entity';
 
 @Injectable()
 export class AdminService {
     constructor(
         @InjectRepository(User)
         private readonly userRepo: Repository<User>,
+        @InjectRepository(Candidature)
+        private readonly candidatureRepo: Repository<Candidature>,
+        @InjectRepository(OffreEmploi)
+        private readonly offreRepo: Repository<OffreEmploi>,
     ) { }
 
     /**
@@ -35,6 +41,25 @@ export class AdminService {
         const totalCandidats = await this.userRepo.count({ where: { role: 'Candidat' } });
         const totalEntreprises = await this.userRepo.count({ where: { role: 'Entreprise' } });
 
+        const totalTests = await this.candidatureRepo.count({
+            where: { score: Not(IsNull()) }
+        });
+        const totalCandidatures = await this.candidatureRepo.count();
+        const totalOffres = await this.offreRepo.count();
+        const avgCandidaturesParOffre = totalOffres > 0
+            ? Math.round((totalCandidatures / totalOffres) * 10) / 10
+            : 0;
+
+        // % of offers that have at least one candidature
+        const offresAvecCandidaturesRaw = await this.candidatureRepo
+            .createQueryBuilder('c')
+            .select('COUNT(DISTINCT c."offreId")', 'cnt')
+            .getRawOne();
+        const offresAvecCandidatures = parseInt(offresAvecCandidaturesRaw?.cnt ?? '0', 10);
+        const tauxCouverture = totalOffres > 0
+            ? Math.round((offresAvecCandidatures / totalOffres) * 100)
+            : 0;
+
         // Calculate demographic percentages
         const pctCandidat = totalUtilisateurs > 0 ? Math.round((totalCandidats / totalUtilisateurs) * 100) : 0;
         const pctEntreprise = totalUtilisateurs > 0 ? Math.round((totalEntreprises / totalUtilisateurs) * 100) : 0;
@@ -43,9 +68,11 @@ export class AdminService {
             totalUtilisateurs,
             totalCandidats,
             totalEntreprises,
-            totalOffres: 0,
-            totalCandidatures: 0,
-            totalTests: 0, // Mocked to 0 for now
+            totalOffres,
+            totalCandidatures,
+            totalTests,
+            avgCandidaturesParOffre,
+            tauxCouverture,
             revenuTotal: 0,
 
             // Demographics Data
