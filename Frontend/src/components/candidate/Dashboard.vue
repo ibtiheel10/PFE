@@ -13,7 +13,7 @@
                 <div class="max-w-xl">
                     <p class="text-blue-200 text-xs font-bold uppercase tracking-[0.2em] mb-2">Tableau de bord</p>
                     <h2 class="text-3xl md:text-4xl font-extrabold mb-3 leading-tight">
-                        Bon retour, <span class="text-yellow-300">{{ firstName }}</span>
+                        Bon retour, <span class="text-white">{{ displayName }}</span>
                     </h2>
                     <p class="text-blue-100/90 text-[15px] leading-relaxed max-w-md">
                         Suivez vos candidatures, passez vos évaluations et préparez-vous à décrocher le poste idéal.
@@ -33,10 +33,10 @@
                         </div>
                         <!-- Stat chip: score -->
                         <div class="stat-chip">
-                            <div class="stat-chip-icon text-yellow-300">
+                            <div class="stat-chip-icon text-white">
                                 <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
                             </div>
-                            <div class="text-2xl font-extrabold text-yellow-300 leading-none">{{ averageScore }}</div>
+                            <div class="text-2xl font-extrabold text-white leading-none">{{ averageScore }}</div>
                             <div class="text-[10px] text-blue-200 font-semibold uppercase tracking-wide">Score moy.</div>
                         </div>
                     </div>
@@ -178,8 +178,8 @@
                 <div class="sidebar-card section-enter" style="animation-delay:0.15s">
                     <div class="sidebar-card-header">
                         <h3 class="font-bold text-gray-900">Suggestions pour vous</h3>
-                        <div class="w-8 h-8 bg-yellow-50 rounded-xl flex items-center justify-center">
-                            <BoltIcon class="w-4 h-4 text-yellow-500" />
+                        <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
+                            <BoltIcon class="w-4 h-4 text-blue-600" />
                         </div>
                     </div>
 
@@ -276,11 +276,10 @@ const router = useRouter();
 
 // Nom candidat � toujours depuis la vraie session de connexion
 const _session = JSON.parse(localStorage.getItem('user_info') || '{}');
-const _sessionName = _session.nom || '';
+const _sessionName = (_session.prenom ? _session.prenom + ' ' : '') + (_session.nom || '');
 const _profEmail = localStorage.getItem('prof_email') || '';
 const _isSameUser = _profEmail === (_session.email || '');
 const displayName = ref(_isSameUser && localStorage.getItem('prof_name') ? localStorage.getItem('prof_name')! : _sessionName || 'Candidat');
-const firstName = computed(() => (displayName.value.trim().split(' ')[0] || 'Candidat'));
 
 // ���� Loading state ������������������������������������������������������������������������������������������������
 const isLoading = ref(true);

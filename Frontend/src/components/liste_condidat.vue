@@ -31,10 +31,10 @@
                     <div class="select-wrapper">
                     <select v-model="selectedStatusFilter" class="filter-select-modern">
                         <option value="">Tous les statuts</option>
-                        <option value="NOUVEAU">Nouveau</option>
-                        <option value="ENTRETIEN">À Interviewer</option>
-                        <option value="AU COURS">Au cours</option>
-                        <option value="REJETÉ">Rejeté</option>
+                        <option value="En attente">En attente</option>
+                        <option value="Entretiens">À Interviewer</option>
+                        <option value="Rejeté">Rejeté</option>
+                        <option value="Refusée">Refusé (score faible)</option>
                     </select>
                     <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
@@ -236,7 +236,9 @@ const filteredCandidates = computed(() => {
     }
 
     if (selectedStatusFilter.value) {
-        list = list.filter(c => c.status === selectedStatusFilter.value);
+        list = list.filter(c =>
+            (c.statut ?? 'En attente') === selectedStatusFilter.value
+        );
     }
 
     return list.slice().sort((a: any, b: any) => {

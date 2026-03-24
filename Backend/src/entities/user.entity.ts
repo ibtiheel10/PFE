@@ -33,6 +33,12 @@ export class User {
   @Column({ default: false })
   isEmailVerified: boolean;
 
+  @Column({ type: 'text', nullable: true })
+  avatar: string;
+
+  @Column({ type: 'text', nullable: true })
+  bio: string;
+
   @CreateDateColumn()
   createdAt: Date;
 }

@@ -212,9 +212,9 @@
                         <div class="stat-content">
                             <span class="stat-label">Taux de croissance</span>
                             <div class="stat-value-row">
-                                <span class="stat-num">4.5%</span>
+                                <span class="stat-num">{{ growthRate.value }}</span>
                             </div>
-                            <p class="stat-description">Augmentation régulière des performances</p>
+                            <p class="stat-description">{{ growthRate.description }}</p>
                         </div>
                     </div>
                 </div>
@@ -785,6 +785,38 @@ const handleMarkAllRead = async () => {
         notifications.value.forEach(n => n.lu = true);
     } catch (e) { console.error(e); }
 };
+
+const growthRate = computed(() => {
+    // Use 30-day daily data to compute current week vs previous week
+    const daily = dashboardData.value?.candidaturesLast30Days ?? [];
+    const total = dashboardData.value?.totalCandidatures ?? 0;
+
+    if (daily.length >= 7) {
+        // Current week = last 7 entries; previous week = entries 8-14 (if available)
+        const sorted = [...daily]; // already ordered ASC from API
+        const currWeek = sorted.slice(-7).reduce((s, d) => s + (d.count ?? 0), 0);
+        const prevWeek = sorted.length >= 14
+            ? sorted.slice(-14, -7).reduce((s, d) => s + (d.count ?? 0), 0)
+            : 0;
+
+        if (prevWeek === 0) {
+            return currWeek > 0
+                ? { value: '+100%', description: `${currWeek} candidature(s) cette semaine – première semaine active` }
+                : { value: '0%', description: 'Aucune candidature cette semaine' };
+        }
+        const pct = Math.round(((currWeek - prevWeek) / prevWeek) * 100);
+        const sign = pct >= 0 ? '+' : '';
+        const desc = pct >= 0
+            ? `En hausse de ${pct}% par rapport à la semaine dernière`
+            : `En baisse de ${Math.abs(pct)}% par rapport à la semaine dernière`;
+        return { value: `${sign}${pct}%`, description: desc };
+    }
+
+    // Fallback: no enough daily data → show total
+    return total > 0
+        ? { value: `+${total}`, description: 'Candidatures totales reçues' }
+        : { value: '0%', description: 'Aucune candidature enregistrée' };
+});
 
 const chartPaths = computed(() => {
     let points = [0, 0, 0, 0, 0, 0, 0];

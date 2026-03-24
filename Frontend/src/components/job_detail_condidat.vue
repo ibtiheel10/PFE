@@ -86,7 +86,7 @@
                 <i class="fa-solid fa-location-dot"></i>{{ job.Localisation }}
               </span>
               <span class="jp-meta-chip jp-meta-salary">
-                <i class="fa-solid fa-coins"></i>{{ job.Salaire || 'Non précisé' }} DZD
+                <i class="fa-solid fa-coins"></i>{{ job.Salaire || 'Non précisé' }} DT
               </span>
               <span class="jp-meta-chip jp-meta-date">
                 <i class="fa-regular fa-calendar"></i>

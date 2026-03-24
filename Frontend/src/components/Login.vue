@@ -869,7 +869,7 @@ form input.form-control:focus {
 .checkmark {
   width: 16px;
   height: 16px;
-  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(0, 0, 0, 0.1);
   border-radius: 4px;
   position: relative;
   transition: all 0.2s ease;

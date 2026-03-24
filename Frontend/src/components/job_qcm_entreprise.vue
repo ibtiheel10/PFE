@@ -76,7 +76,7 @@
 
         <!-- Questions -->
         <div v-if="questions.length > 0" class="q-list">
-          <div v-for="(q, idx) in questions" :key="q.id ?? idx" class="q-row">
+          <div v-for="(q, idx) in displayedQuestions" :key="q.id ?? idx" class="q-row">
 
             <!-- Number -->
             <div class="q-badge">Q{{ idx + 1 }}</div>
@@ -114,6 +114,20 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
             </button>
 
+          </div>
+
+          <!-- Pagination Toggle -->
+          <div v-if="questions.length > 3" class="pagination-toggle">
+            <button class="btn-toggle" @click="showAllQuestions = !showAllQuestions">
+              {{ showAllQuestions ? 'Voir moins' : `Lire plus (${questions.length - 3} questions de plus)` }}
+              <svg 
+                width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+                :class="{ 'rotate-180': showAllQuestions }"
+                class="icon-chevron"
+              >
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -153,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../services/axios';
 
@@ -176,6 +190,12 @@ const qcmPublie    = ref(false);
 const job = ref<Job>({ title:'', category:'', location:'', contractType:'', applicants:0, daysLeft:0, positions:1, qcmPasses:0, status:'ACTIVE' });
 const questions = ref<Q[]>([]);
 
+const showAllQuestions = ref(false);
+const displayedQuestions = computed(() => {
+  if (showAllQuestions.value) return questions.value;
+  return questions.value.slice(0, 3);
+});
+
 // ─── Navigation ───────────────────────────────────────────────────────────────
 const goBack = () => router.push({ name: 'MesOffres' });
 
@@ -188,11 +208,14 @@ const getText = (o: any): string => {
 
 // ─── Map raw API questions ────────────────────────────────────────────────────
 const mapQ = (raw: any[]): Q[] => raw.map(q => {
+  // Extract from 'contenu' if entity returned from DB
+  const data = q.contenu || q;
+  
   let rawOpts: any[] = [];
-  if (typeof q.options === 'string') {
-    try { rawOpts = JSON.parse(q.options); } catch { rawOpts = []; }
-  } else if (Array.isArray(q.options)) {
-    rawOpts = q.options;
+  if (typeof data.options === 'string') {
+    try { rawOpts = JSON.parse(data.options); } catch { rawOpts = []; }
+  } else if (Array.isArray(data.options)) {
+    rawOpts = data.options;
   }
 
   const opts: Opt[] = rawOpts.map((o: any) => ({
@@ -200,9 +223,17 @@ const mapQ = (raw: any[]): Q[] => raw.map(q => {
     isCorrect: typeof o === 'object' && o !== null ? !!o.isCorrect : false,
   }));
 
-  // Fallback: use correctAnswer string
-  if (!opts.some(o => o.isCorrect) && q.correctAnswer) {
-    opts.forEach(o => { if (o.text === q.correctAnswer) o.isCorrect = true; });
+  // Fallback: use correctAnswer string or letter (A, B, C, D)
+  const ca = data.correctAnswer || q.correctAnswer || data.correct_answer || q.correct_answer;
+  if (!opts.some(o => o.isCorrect) && ca) {
+    const caStr = String(ca).trim().toLowerCase();
+    opts.forEach((o, i) => {
+      const letter = String.fromCharCode(65 + i).toLowerCase(); // 65 = 'A'
+      const optText = o.text.trim().toLowerCase();
+      if (optText === caStr || letter === caStr || (caStr.length > 5 && (optText.includes(caStr) || caStr.includes(optText)))) {
+        o.isCorrect = true;
+      }
+    });
   }
 
   const fallback: Opt[] = [
@@ -214,10 +245,10 @@ const mapQ = (raw: any[]): Q[] => raw.map(q => {
 
   return {
     id:         q.id,
-    text:       q.question ?? q.text ?? '',
+    text:       data.question ?? data.text ?? q.question ?? q.text ?? '',
     options:    opts.length >= 2 ? opts : fallback,
-    difficulty: q.niveauDifficulte ?? q.difficulty ?? 'Moyen',
-    timer:      q.chronometre ? Math.max(1, Math.round(q.chronometre / 60)) : (q.timer ?? 30),
+    difficulty: q.niveauDifficulte ?? data.difficulty ?? 'Moyen',
+    timer:      q.chronometre ? Math.max(1, Math.round(q.chronometre / 60)) : (data.timer ?? 30),
     verified:   !!q.isCorrectVerified,
   };
 });
@@ -711,4 +742,38 @@ html, body, #app { background: #F3F4F6 !important; }
 @media (max-width: 480px) {
   .opts-grid { grid-template-columns: 1fr; }
 }
+
+/* ── Pagination Toggle ──────────────── */
+.pagination-toggle {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.btn-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #2563EB;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'Inter', sans-serif;
+}
+
+.btn-toggle:hover {
+  background: #EFF6FF;
+  border-color: #BFDBFE;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+  transform: translateY(-1px);
+}
+
+.icon-chevron { transition: transform 0.3s ease; }
+.icon-chevron.rotate-180 { transform: rotate(180deg); }
 </style>

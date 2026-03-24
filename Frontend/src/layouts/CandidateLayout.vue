@@ -206,11 +206,11 @@
                   <UserCircleIcon class="w-5 h-5 text-white" />
                 </div>
                 <div>
-                  <h2 class="text-lg font-bold text-white">Modifier le profil</h2>
-                  <p class="text-xs text-slate-400">Enregistrez vos changements ci-dessous</p>
+                  <h2 class="text-lg font-bold text-gray-900">Modifier le profil</h2>
+                  <p class="text-xs text-gray-500">Enregistrez vos changements ci-dessous</p>
                 </div>
               </div>
-              <button @click="showEditProfile = false" class="p-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition">
+              <button @click="showEditProfile = false" class="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
@@ -218,11 +218,14 @@
             <!-- Avatar section -->
             <div class="profile-modal-body">
               <div class="flex items-center gap-4 mb-6">
-                <img :src="editAvatar" class="w-16 h-16 rounded-2xl border-2 border-slate-600 object-cover" />
+                <img :src="editAvatar || 'https://via.placeholder.com/150'" class="w-16 h-16 rounded-2xl border-2 border-gray-100 object-cover" />
                 <div>
-                  <p class="text-sm font-semibold text-white">Photo de profil</p>
-                  <p class="text-xs text-slate-400 mt-0.5 mb-2">PNG, JPG · Max 2 MB</p>
-                  <input type="url" v-model="editAvatar" placeholder="URL de l'image..." class="profile-input text-xs w-64" />
+                  <p class="text-sm font-semibold text-gray-900">Photo de profil</p>
+                  <p class="text-xs text-gray-500 mt-0.5 mb-2">PNG, JPG · Max 2 MB</p>
+                  <input type="file" ref="fileInputRef" class="hidden" accept="image/*" @change="handleAvatarUpload" />
+                  <button @click="triggerFileInput" class="px-3 py-1.5 bg-blue-50 text-blue-600 text-[11px] font-bold rounded-lg hover:bg-blue-100 transition">
+                    Choisir une photo
+                  </button>
                 </div>
               </div>
 
@@ -240,22 +243,14 @@
                   <input type="email" v-model="editEmail" class="profile-input" placeholder="Email" />
                 </div>
                 <div class="profile-field col-span-2">
-                  <label class="profile-label">Titre professionnel</label>
-                  <input type="text" v-model="editTitle" class="profile-input" placeholder="ex: Développeur Fullstack Senior" />
-                </div>
-                <div class="profile-field col-span-2">
-                  <label class="profile-label">Localisation</label>
-                  <input type="text" v-model="editLocation" class="profile-input" placeholder="ex: Paris, France" />
-                </div>
-                <div class="profile-field col-span-2">
                   <label class="profile-label">Bio</label>
                   <textarea v-model="editBio" class="profile-input resize-none" rows="3" placeholder="Quelques mots sur vous..."></textarea>
                 </div>
               </div>
 
               <!-- Password section -->
-              <div class="border-t border-slate-700 mt-4 pt-4">
-                <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Changer le mot de passe</p>
+              <div class="border-t border-gray-100 mt-4 pt-4">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Changer le mot de passe</p>
                 <div class="grid grid-cols-2 gap-4">
                   <div class="profile-field">
                     <label class="profile-label">Nouveau mot de passe</label>
@@ -276,7 +271,7 @@
               </p>
               <p v-if="profileSaveError" class="text-xs text-red-400 font-semibold">{{ profileSaveError }}</p>
               <div class="flex gap-3 ml-auto">
-                <button @click="showEditProfile = false" class="px-4 py-2 text-sm font-semibold text-slate-300 bg-slate-700 rounded-lg hover:bg-slate-600 transition">
+                <button @click="showEditProfile = false" class="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
                   Annuler
                 </button>
                 <button @click="saveProfile" class="px-5 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition shadow-lg shadow-blue-900/30">
@@ -315,6 +310,7 @@ import {
     formatNotifTime,
     type Notification,
 } from '../services/notificationService';
+import api from '../services/axios';
 
 const router = useRouter();
 const route = useRoute();
@@ -344,8 +340,6 @@ const editFirstName        = ref(displayName.value.split(' ')[0]);
 const editLastName         = ref(displayName.value.split(' ').slice(1).join(' '));
 const editEmail            = ref(displayEmail.value);
 const editAvatar           = ref(userAvatar.value);
-const editTitle            = ref(localStorage.getItem('prof_title') || 'Candidat Premium');
-const editLocation         = ref(localStorage.getItem('prof_location') || 'Paris, France');
 const editBio              = ref(localStorage.getItem('prof_bio') || '');
 const editPassword         = ref('');
 const editPasswordConfirm  = ref('');
@@ -357,6 +351,11 @@ const showProfileMenu   = ref(false);
 const showNotifications = ref(false);
 const showEditProfile   = ref(false);
 const isSidebarCollapsed = ref(false);
+const fileInputRef       = ref<HTMLInputElement | null>(null);
+
+const triggerFileInput = () => {
+    fileInputRef.value?.click();
+};
 
 // ── Notifications ────────────────────────────────────────────────
 const notifications  = ref<Notification[]>([]);
@@ -432,8 +431,34 @@ const handleClickOutside = (e: MouseEvent) => {
         showProfileMenu.value = false;
     }
 };
+// Fetch real profile from DB
+const fetchProfile = async () => {
+    try {
+        const response = await api.get('/Candidat/mon-profil');
+        const user = response.data;
+        if (user) {
+            displayName.value = `${user.prenom || ''} ${user.nom || ''}`.trim() || 'Candidat';
+            displayEmail.value = user.email;
+            userAvatar.value = user.avatar || '';
+            editBio.value = user.bio || '';
+            
+            // Sync localStorage
+            localStorage.setItem('prof_name', displayName.value);
+            localStorage.setItem('prof_avatar', userAvatar.value);
+            localStorage.setItem('prof_bio', editBio.value);
+            
+            // Update user_info as well
+            const userInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+            localStorage.setItem('user_info', JSON.stringify({ ...userInfo, nom: user.nom, prenom: user.prenom }));
+        }
+    } catch (error) {
+        console.error('Error fetching profile:', error);
+    }
+};
+
 onMounted(() => {
     document.addEventListener('click', handleClickOutside);
+    fetchProfile(); // Get fresh DB data
     loadNotifications();
     startPolling();
 });
@@ -456,28 +481,57 @@ const openEditProfile = () => {
     showEditProfile.value     = true;
 };
 
-const saveProfile = () => {
+const handleAvatarUpload = (event: Event) => {
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+        profileSaveError.value = 'L\'image est trop volumineuse (max 2 MB).';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        editAvatar.value = e.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+};
+
+const saveProfile = async () => {
     profileSaveError.value = '';
     // Validate password match
     if (editPassword.value && editPassword.value !== editPasswordConfirm.value) {
         profileSaveError.value = 'Les mots de passe ne correspondent pas.';
         return;
     }
-    // Persist to localStorage
-    const fullName = `${editFirstName.value} ${editLastName.value}`.trim();
-    displayName.value  = fullName;
-    displayEmail.value = editEmail.value;
-    userAvatar.value   = editAvatar.value;
+    
+    try {
+        const updateData: any = {
+            prenom: editFirstName.value,
+            nom: editLastName.value,
+            avatar: editAvatar.value,
+            bio: editBio.value
+        };
+        if (editPassword.value) updateData.password = editPassword.value;
 
-    localStorage.setItem('prof_name',     fullName);
-    localStorage.setItem('prof_email',    editEmail.value);
-    localStorage.setItem('prof_avatar',   editAvatar.value);
-    localStorage.setItem('prof_title',    editTitle.value);
-    localStorage.setItem('prof_location', editLocation.value);
-    localStorage.setItem('prof_bio',      editBio.value);
+        await api.put('/Candidat/mon-profil', updateData);
 
-    profileSaveSuccess.value = true;
-    setTimeout(() => { showEditProfile.value = false; profileSaveSuccess.value = false; }, 1500);
+        // Update local state
+        displayName.value = `${editFirstName.value} ${editLastName.value}`.trim();
+        displayEmail.value = editEmail.value;
+        userAvatar.value = editAvatar.value;
+
+        // Update localStorage
+        localStorage.setItem('prof_name', displayName.value);
+        localStorage.setItem('prof_email', editEmail.value);
+        localStorage.setItem('prof_avatar', editAvatar.value);
+        localStorage.setItem('prof_bio', editBio.value);
+
+        profileSaveSuccess.value = true;
+        setTimeout(() => { showEditProfile.value = false; profileSaveSuccess.value = false; }, 1500);
+    } catch (error: any) {
+        profileSaveError.value = error.response?.data?.message || 'Erreur lors de la mise à jour du profil.';
+    }
 };
 
 // ── Logout ────────────────────────────────────────────────────────
@@ -489,8 +543,6 @@ const handleLogout = () => {
     localStorage.removeItem('prof_name');
     localStorage.removeItem('prof_email');
     localStorage.removeItem('prof_avatar');
-    localStorage.removeItem('prof_title');
-    localStorage.removeItem('prof_location');
     localStorage.removeItem('prof_bio');
     router.push('/login');
 };
@@ -505,13 +557,13 @@ const handleLogout = () => {
 
 /* ── Profile Modal ─────────────────────────── */
 .profile-modal {
-    background: #0f172a;
+    background: white;
     border-radius: 20px;
     width: 100%;
     max-width: 420px;
     max-height: 85vh; /* limite la hauteur totale de la carte */
-    box-shadow: 0 40px 80px rgba(0,0,0,0.6);
-    border: 1px solid rgba(255,255,255,0.07);
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+    border: 1px solid #e2e8f0;
     overflow: hidden;
 }
 .profile-modal-header {
@@ -519,8 +571,8 @@ const handleLogout = () => {
     justify-content: space-between;
     align-items: center;
     padding: 16px 18px;
-    border-bottom: 1px solid rgba(255,255,255,0.07);
-    background: rgba(255,255,255,0.03);
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
 }
 .profile-modal-body {
     padding: 16px;
@@ -532,8 +584,8 @@ const handleLogout = () => {
     align-items: center;
     gap: 12px;
     padding: 12px 18px;
-    border-top: 1px solid rgba(255,255,255,0.07);
-    background: rgba(255,255,255,0.02);
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
 }
 .profile-field {
     display: flex;
@@ -543,18 +595,18 @@ const handleLogout = () => {
 .profile-label {
     font-size: 0.75rem;
     font-weight: 600;
-    color: #94a3b8;
+    color: #64748b;
     letter-spacing: 0.02em;
 }
 .profile-input {
-    background: rgba(255,255,255,0.05);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
     padding: 9px 13px;
     font-size: 0.875rem;
-    color: #f1f5f9;
+    color: #1e293b;
     outline: none;
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: all 0.2s;
     font-family: inherit;
     width: 100%;
 }

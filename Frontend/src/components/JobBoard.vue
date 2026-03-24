@@ -151,7 +151,7 @@
                     </div>
                     <div class="salary-badge" v-if="job.Salaire">
                       <i class="fa-solid fa-money-bill-wave"></i>
-                      {{ job.Salaire }} DZD
+                      {{ job.Salaire }} DT
                     </div>
                   </div>
                   <button class="job-btn" @click.stop="viewJob(job.id)">

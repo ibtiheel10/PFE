@@ -75,7 +75,7 @@ export class CandidatService {
     async getMonProfil(userId: number) {
         const user = await this.userRepo.findOne({
             where: { id: userId, role: 'Candidat' },
-            select: ['id', 'nom', 'prenom', 'email', 'dateNaissance'],
+            select: ['id', 'nom', 'prenom', 'email', 'dateNaissance', 'avatar', 'bio'],
         });
 
         if (!user) {
