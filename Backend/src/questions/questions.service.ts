@@ -14,13 +14,14 @@ export class QuestionsService {
   ) {}
 
   async getQuestionsByOffre(offreId: string, userId: number) {
+    const cleanId = (offreId || '').trim();
     const offre = await this.offreRepo.findOne({
-      where: { id: offreId },
+      where: { id: cleanId },
       relations: ['entreprise'],
     });
 
-    if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
-    if (offre.entreprise?.id !== userId) {
+    if (!offre) throw new NotFoundException(`Offre ${cleanId} introuvable.`);
+    if (Number(offre.entreprise?.id) !== Number(userId)) {
       throw new ForbiddenException("Vous n'êtes pas autorisé à consulter ces questions.");
     }
 
@@ -33,7 +34,6 @@ export class QuestionsService {
       id: q.id,
       contenu: q.contenu,
       chronometre: q.chronometre,
-      niveauDifficulte: q.niveauDifficulte,
       isCorrectVerified: q.isCorrectVerified,
       createdAt: q.createdAt
     }));
@@ -44,19 +44,19 @@ export class QuestionsService {
         throw new BadRequestException('ID of Offre is required.');
     }
 
+    const cleanId = (data.offre.id || '').trim();
     const offre = await this.offreRepo.findOne({
-      where: { id: data.offre.id },
+      where: { id: cleanId },
       relations: ['entreprise'],
     });
 
-    if (!offre) throw new NotFoundException(`Offre ${data.offre.id} introuvable.`);
-    if (offre.entreprise?.id !== userId) {
+    if (!offre) throw new NotFoundException(`Offre ${cleanId} introuvable.`);
+    if (Number(offre.entreprise?.id) !== Number(userId)) {
       throw new ForbiddenException("Vous n'êtes pas autorisé à ajouter des questions à cette offre.");
     }
 
     const newQuestion = this.questionRepo.create({
       contenu: data.contenu,
-      niveauDifficulte: data.niveauDifficulte || 'Moyen',
       chronometre: data.chronometre || 30,
       isCorrectVerified: true, // Assuming the recruiter validates it during generation
       offre: offre,
@@ -68,7 +68,6 @@ export class QuestionsService {
       id: saved.id,
       contenu: saved.contenu,
       chronometre: saved.chronometre,
-      niveauDifficulte: saved.niveauDifficulte,
       isCorrectVerified: saved.isCorrectVerified,
       createdAt: saved.createdAt
     };
@@ -81,7 +80,7 @@ export class QuestionsService {
     });
 
     if (!question) throw new NotFoundException(`Question ${id} introuvable.`);
-    if (question.offre?.entreprise?.id !== userId) {
+    if (Number(question.offre?.entreprise?.id) !== Number(userId)) {
       throw new ForbiddenException("Vous n'êtes pas autorisé à supprimer cette question.");
     }
 
@@ -97,7 +96,7 @@ export class QuestionsService {
     });
 
     if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
-    if (offre.entreprise?.id !== userId) {
+    if (Number(offre.entreprise?.id) !== Number(userId)) {
       throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
     }
 

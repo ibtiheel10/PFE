@@ -101,7 +101,6 @@
 
               <!-- Meta -->
               <div class="q-meta">
-                <span class="badge-diff" :class="diffClass(q.difficulty)">{{ q.difficulty }}</span>
                 <span class="badge-time">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   {{ q.timer }} min
@@ -177,7 +176,7 @@ const jobId  = String(route.params.id);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Opt  { text: string; isCorrect: boolean }
-interface Q    { id?: number; text: string; options: Opt[]; difficulty: string; timer: number; verified: boolean }
+interface Q    { id?: number; text: string; options: Opt[]; timer: number; verified: boolean }
 interface Job  { title: string; category: string; location: string; contractType: string; applicants: number; daysLeft: number; positions: number; qcmPasses: number; status: string }
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -247,19 +246,10 @@ const mapQ = (raw: any[]): Q[] => raw.map(q => {
     id:         q.id,
     text:       data.question ?? data.text ?? q.question ?? q.text ?? '',
     options:    opts.length >= 2 ? opts : fallback,
-    difficulty: q.niveauDifficulte ?? data.difficulty ?? 'Moyen',
     timer:      q.chronometre ? Math.max(1, Math.round(q.chronometre / 60)) : (data.timer ?? 30),
     verified:   !!q.isCorrectVerified,
   };
 });
-
-// ─── Difficulty CSS class ─────────────────────────────────────────────────────
-const diffClass = (d: string) => {
-  const l = (d ?? '').toLowerCase();
-  if (l.includes('facile') || l.includes('easy'))                              return 'easy';
-  if (l.includes('difficile') || l.includes('hard') || l.includes('expert'))  return 'hard';
-  return 'medium';
-};
 
 // ─── Load data ────────────────────────────────────────────────────────────────
 const loadData = async () => {

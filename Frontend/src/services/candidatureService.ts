@@ -18,6 +18,7 @@ export interface CandidatureResponse {
         Categorie: string;
         Localisation: string;
         DateLimite?: string | null;
+        dateLancementQcm?: string | null;
     };
 }
 

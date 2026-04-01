@@ -4,12 +4,19 @@ import {
     Body,
     HttpCode,
     HttpStatus,
+    Get,
+    UseGuards,
+    Req,
+    Res,
+    Query
 } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RegisterDto } from './dto/register.dto';
+import { GoogleAuthGuard } from './guards/social-auth.guard';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -63,5 +70,23 @@ export class AuthController {
     @ApiResponse({ status: 200, description: 'OTP resent.' })
     async resendOtp(@Body('email') email: string) {
         return this.authService.resendOtp(email);
+    }
+
+    // ── Social Login Routes ──────────────────────────────────────────────────────
+
+    @Get('google')
+    @UseGuards(GoogleAuthGuard)
+    @ApiOperation({ summary: 'Initiate Google OAuth login' })
+    async googleAuth(@Query('role') _role: string) {
+        // Guard redirects to Google
+    }
+
+    @Get('google/callback')
+    @UseGuards(AuthGuard('google'))
+    @ApiOperation({ summary: 'Google OAuth callback' })
+    async googleAuthRedirect(@Req() req, @Res() res) {
+        const authResult = await this.authService.handleSocialLogin(req.user);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        return res.redirect(`${frontendUrl}/social-auth-success?token=${authResult.token}&role=${authResult.role}`);
     }
 }

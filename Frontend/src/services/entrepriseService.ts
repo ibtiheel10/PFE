@@ -215,9 +215,9 @@ export const generateQuestionsForOffre = async (offreId: string | number): Promi
  * Régénérer des questions QCM pour une offre via l'IA.
  * POST /api/Entreprise/offres/{id}/regenerer-questions-ia
  */
-export const regenerateQuestionsForOffre = async (offreId: string | number): Promise<AiResponse<{ questions: any[] }>> => {
+export const regenerateQuestionsForOffre = async (offreId: string | number, previousQuestions: string[] = []): Promise<AiResponse<{ questions: any[] }>> => {
     try {
-        const response = await api.post(`/Entreprise/offres/${offreId}/regenerer-questions-ia`, {}, { timeout: 600000 });
+        const response = await api.post(`/Entreprise/offres/${offreId}/regenerer-questions-ia`, { previousQuestions }, { timeout: 600000 });
         if (!response.data || !Array.isArray(response.data.questions)) {
             throw new Error("L'IA a renvoyé une réponse invalide.");
         }
@@ -231,9 +231,9 @@ export const regenerateQuestionsForOffre = async (offreId: string | number): Pro
  * Sauvegarder des questions générées pour une offre.
  * POST /api/Entreprise/offres/{id}/sauvegarder-questions-ia
  */
-export const saveQuestionsForOffre = async (offreId: string | number, questions: any[], difficulte: string = 'Moyen'): Promise<AiResponse<any>> => {
+export const saveQuestionsForOffre = async (offreId: string | number, questions: any[]): Promise<AiResponse<any>> => {
     try {
-        const response = await api.post(`/Entreprise/offres/${offreId}/sauvegarder-questions-ia`, { questions, difficulte }, { timeout: 30000 });
+        const response = await api.post(`/Entreprise/offres/${offreId}/sauvegarder-questions-ia`, { questions }, { timeout: 30000 });
         return { success: true, data: response.data };
     } catch (error) {
         return handleAiError(error);

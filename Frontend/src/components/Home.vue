@@ -277,9 +277,9 @@ const featureCards = [
 ];
 
 const steps = [
-  { num: '01', title: 'Créez vos évaluations', desc: 'Choisissez parmi notre bibliothèque de QCM validés ou créez vos propres tests personnalisés.' },
-  { num: '02', title: 'Invitez vos candidats', desc: 'Envoyez des invitations personnalisées et suivez la progression en temps réel.' },
-  { num: '03', title: 'Analysez les résultats', desc: 'Consultez les rapports détaillés et prenez des décisions éclairées basées sur les données.' },
+  { num: '01', title: 'Création de l’offre', desc: 'Publiez une offre avec la description du poste et les compétences requises.' },
+  { num: '02', title: 'Génération des questions', desc: 'Skillvia génère automatiquement des questions adaptées au poste.' },
+  { num: '03', title: 'Évaluation des candidats', desc: 'Les candidats répondent et la plateforme calcule les scores pour faciliter la sélection.' },
 ];
 
 onMounted(() => {

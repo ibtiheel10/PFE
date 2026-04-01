@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
@@ -7,11 +7,13 @@ import { ConfigService } from '@nestjs/config';
 import { User } from '../entities/user.entity';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { Candidature } from '../entities/candidature.entity';
-import { Question, QuestionNiveau } from '../entities/question.entity';
+import { Question } from '../entities/question.entity';
 import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class EntrepriseService {
+    private readonly logger = new Logger(EntrepriseService.name);
+
     constructor(
         @InjectRepository(User)
         private readonly userRepo: Repository<User>,
@@ -24,6 +26,28 @@ export class EntrepriseService {
         private readonly aiService: AiService,
         private readonly configService: ConfigService,
     ) { }
+
+    /** Helper: fetch an offre by UUID with optional relations, throws NotFoundException if not found */
+    private async findOffreOrFail(offreId: string, relations: string[] = []): Promise<OffreEmploi> {
+        const cleanId = (offreId || '').trim();
+        this.logger.log(`findOffreOrFail: looking for offre id="${cleanId}"`);
+        const offre = await this.offreRepo.findOne({
+            where: { id: cleanId },
+            relations,
+        });
+        if (!offre) {
+            this.logger.warn(`Offre "${cleanId}" NOT FOUND in DB`);
+            throw new NotFoundException(`Offre ${cleanId} introuvable.`);
+        }
+        return offre;
+    }
+
+    /** Helper: assert that the given userId owns the offre */
+    private assertOwner(offre: OffreEmploi, userId: number): void {
+        if (Number(offre.entreprise?.id) !== Number(userId)) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
+        }
+    }
 
     private async sendQcmAvailableEmail(email: string, candidateName: string, offreTitle: string) {
         const transporter = nodemailer.createTransport({
@@ -306,6 +330,7 @@ export class EntrepriseService {
             Description: dto.description,
             Categorie: dto.categorie,
             DateLimite: dto.dateLimite ? new Date(dto.dateLimite) : undefined,
+            dateLancementQcm: dto.dateLancementQcm ? new Date(dto.dateLancementQcm) : undefined,
             TypeDeContrat: dto.typeDeContrat,
             ModeDeTravail: dto.modeDeTravail,
             Salaire: dto.salaire ? parseFloat(dto.salaire) : undefined,
@@ -322,21 +347,15 @@ export class EntrepriseService {
 
     /** PUT update offre (Owner only) */
     async updateOffre(id: string, userId: number, dto: any) {
-        const offre = await this.offreRepo.findOne({
-            where: { id },
-            relations: ['entreprise'],
-        });
-        if (!offre) throw new NotFoundException(`Offre ${id} introuvable.`);
-
-        if (offre.entreprise?.id !== userId) {
-            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
-        }
+        const offre = await this.findOffreOrFail(id, ['entreprise']);
+        this.assertOwner(offre, userId);
 
         Object.assign(offre, {
             TitreDePost: dto.titre ?? offre.TitreDePost,
             Description: dto.description ?? offre.Description,
             Categorie: dto.categorie ?? offre.Categorie,
             DateLimite: dto.dateLimite ? new Date(dto.dateLimite) : offre.DateLimite,
+            dateLancementQcm: dto.dateLancementQcm ? new Date(dto.dateLancementQcm) : offre.dateLancementQcm,
             TypeDeContrat: dto.typeDeContrat ?? offre.TypeDeContrat,
             ModeDeTravail: dto.modeDeTravail ?? offre.ModeDeTravail,
             Salaire: dto.salaire !== undefined ? parseFloat(dto.salaire) : offre.Salaire,
@@ -353,15 +372,8 @@ export class EntrepriseService {
 
     /** DELETE offre (Owner only) */
     async deleteOffre(id: string, userId: number) {
-        const offre = await this.offreRepo.findOne({
-            where: { id },
-            relations: ['entreprise'],
-        });
-        if (!offre) throw new NotFoundException(`Offre ${id} introuvable.`);
-
-        if (offre.entreprise?.id !== userId) {
-            throw new ForbiddenException("Vous n'êtes pas autorisé à supprimer cette offre.");
-        }
+        const offre = await this.findOffreOrFail(id, ['entreprise']);
+        this.assertOwner(offre, userId);
 
         await this.offreRepo.remove(offre);
         return { message: 'Offre supprimée avec succès.' };
@@ -369,18 +381,11 @@ export class EntrepriseService {
 
     /** GET questions for a specific offre (Owner only) */
     async getQuestionsByOffre(offreId: string, userId: number) {
-        const offre = await this.offreRepo.findOne({
-            where: { id: offreId },
-            relations: ['entreprise'],
-        });
-        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
-
-        if (offre.entreprise?.id !== userId) {
-            throw new ForbiddenException("Vous n'êtes pas autorisé à consulter ces questions.");
-        }
+        const offre = await this.findOffreOrFail(offreId, ['entreprise']);
+        this.assertOwner(offre, userId);
 
         const questions = await this.questionRepo.find({
-            where: { offre: { id: offreId } },
+            where: { offre: { id: offre.id } },
             order: { createdAt: 'ASC' },
         });
 
@@ -409,96 +414,98 @@ export class EntrepriseService {
     // ─── Génération IA ────────────────────────────────────────────────────────
 
     /** POST generer-questions-ia */
-    async genererQuestionsIA(offreId: string, userId: number, difficulte: QuestionNiveau = 'Moyen') {
+    async genererQuestionsIA(offreId: string, userId: number) {
         // 1. Check ownership
-        const offre = await this.offreRepo.findOne({
-            where: { id: offreId },
-            relations: ['entreprise'],
+        const offre = await this.findOffreOrFail(offreId, ['entreprise']);
+        this.assertOwner(offre, userId);
+
+        // 2. Build job description
+        const jobDescription = [
+            `Titre du poste: ${offre.TitreDePost}`,
+            offre.Categorie ? `Categorie: ${offre.Categorie}` : '',
+            offre.Description ? `Description: ${offre.Description.substring(0, 400)}` : '',
+            offre.ExperienceRequise ? `Experience: ${offre.ExperienceRequise}` : '',
+        ].filter(Boolean).join('\n');
+
+        // 3. Generate questions — always returns 5 (with fallback if Ollama fails)
+        const aiQuestions = await this.aiService.generateQuestions(
+            jobDescription,
+            null, // do not persist yet — recruiter must validate first
+            offre.competences || ''
+        );
+
+        // 4. Normalize for frontend — handle both QuizQuestion and Question entity formats
+        const normalizedQuestions = aiQuestions.map((q: any) => {
+            const questionText = q.contenu?.question ?? q.question ?? '';
+            const opts: any[] = q.contenu?.options ?? q.options ?? [];
+            const normalizedOpts = opts.map((o: any) => ({
+                text: typeof o === 'string' ? o : (o.text ?? ''),
+                isCorrect: typeof o === 'object' ? !!o.isCorrect : false,
+            }));
+            return {
+                question: questionText,
+                options: normalizedOpts,
+                correctAnswer: normalizedOpts.find((o: any) => o.isCorrect)?.text || '',
+                chronometre: q.chronometre ?? 30,
+            };
         });
-        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
-        if (offre.entreprise?.id !== userId) {
-            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
-        }
-
-        // 2. Prepare simple topic for the strict prompt
-        const topic = `${offre.TitreDePost} (Compétences: ${offre.competences || 'Générales'})`;
-
-        // 3. Call AI Service with the robust text generator (does NOT save since we pass offre = null)
-        const robustQuestions = await this.aiService.generateQuestions(topic, 'moyen', null, offre.competences || '');
-
-        // 4. Normalize the output for the frontend
-        const normalizedQuestions = robustQuestions.map(q => ({
-            question: q.question,
-            options: q.options, // already normalized to { text, isCorrect } in ai.service.ts
-            correctAnswer: q.options.find(o => o.isCorrect)?.text || '',
-            chronometre: 30, // default
-            niveauDifficulte: difficulte
-        }));
 
         return {
             message: 'Questions générées avec succès (non sauvegardées).',
             totalQuestions: normalizedQuestions.length,
-            offre: {
-                id: offre.id,
-                TitreDePost: offre.TitreDePost
-            },
-            questions: normalizedQuestions
-        };
-    }
-
-    /** POST regenerer-questions-ia */
-    async regenererQuestionsIA(offreId: string, userId: number, difficulte: QuestionNiveau = 'Moyen', previousQuestions: string[] = []) {
-        // 1. Check ownership
-        const offre = await this.offreRepo.findOne({
-            where: { id: offreId },
-            relations: ['entreprise'],
-        });
-        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
-        if (offre.entreprise?.id !== userId) {
-            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
-        }
-
-        // 2. Prepare simple topic
-        const topic = `${offre.TitreDePost} (Compétences: ${offre.competences || 'Générales'})`;
-
-        // 3. Generate new questions, avoiding previous ones (does NOT save)
-        const robustQuestions = await this.aiService.regenerateQuestions(
-            topic,
-            'moyen',
-            previousQuestions,
-            offre.competences || ''
-        );
-
-        // 4. Normalize the output
-        const normalizedQuestions = robustQuestions.map(q => ({
-            question: q.question,
-            options: q.options, // already {text, isCorrect}[]
-            correctAnswer: q.options.find(o => o.isCorrect)?.text || '',
-            chronometre: 30, // default
-            niveauDifficulte: difficulte
-        }));
-
-        return {
-            message: 'Questions régénérées avec succès (non sauvegardées).',
-            totalQuestions: normalizedQuestions.length,
-            offre: {
-                id: offre.id,
-                TitreDePost: offre.TitreDePost
-            },
+            offre: { id: offre.id, TitreDePost: offre.TitreDePost },
             questions: normalizedQuestions,
         };
     }
 
-    /** POST sauvegarder-questions-ia */
-    async sauvegarderQuestionsIA(offreId: string, userId: number, questions: any[], difficulte: QuestionNiveau = 'Moyen') {
-        const offre = await this.offreRepo.findOne({
-            where: { id: offreId },
-            relations: ['entreprise'],
+    /** POST regenerer-questions-ia */
+    async regenererQuestionsIA(offreId: string, userId: number, previousQuestions: string[] = []) {
+        // 1. Check ownership
+        const offre = await this.findOffreOrFail(offreId, ['entreprise']);
+        this.assertOwner(offre, userId);
+
+        // 2. Build description
+        const jobDescription = [
+            `Titre du poste: ${offre.TitreDePost}`,
+            offre.Description ? offre.Description.substring(0, 400) : '',
+        ].filter(Boolean).join('\n');
+
+        // 3. Generate new questions — always returns 5 (with fallback if needed)
+        const aiQuestions = await this.aiService.regenerateQuestions(
+            jobDescription,
+            previousQuestions,
+            offre.competences || ''
+        );
+
+        // 4. Normalize for frontend
+        const normalizedQuestions = aiQuestions.map((q: any) => {
+            const questionText = q.contenu?.question ?? q.question ?? '';
+            const opts: any[] = q.contenu?.options ?? q.options ?? [];
+            const normalizedOpts = opts.map((o: any) => ({
+                text: typeof o === 'string' ? o : (o.text ?? ''),
+                isCorrect: typeof o === 'object' ? !!o.isCorrect : false,
+            }));
+            return {
+                question: questionText,
+                options: normalizedOpts,
+                correctAnswer: normalizedOpts.find((o: any) => o.isCorrect)?.text || '',
+                chronometre: q.chronometre ?? 30,
+            };
         });
-        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
-        if (offre.entreprise?.id !== userId) {
-            throw new ForbiddenException("Vous n'êtes pas autorisé à modifier cette offre.");
-        }
+
+        return {
+            message: 'Questions régénérées avec succès (non sauvegardées).',
+            totalQuestions: normalizedQuestions.length,
+            offre: { id: offre.id, TitreDePost: offre.TitreDePost },
+            questions: normalizedQuestions,
+        };
+    }
+
+
+    /** POST sauvegarder-questions-ia */
+    async sauvegarderQuestionsIA(offreId: string, userId: number, questions: any[]) {
+        const offre = await this.findOffreOrFail(offreId, ['entreprise']);
+        this.assertOwner(offre, userId);
 
         // Delete old questions
         await this.questionRepo.delete({ offre: { id: offreId } });
@@ -548,7 +555,6 @@ export class EntrepriseService {
                     correctAnswer: correctAnswerText,
                 },
                 chronometre: q.chronometre || 30,
-                niveauDifficulte: difficulte,
                 isCorrectVerified: false,
                 offre: { id: offre.id } as OffreEmploi,
             });
@@ -584,14 +590,8 @@ export class EntrepriseService {
 
     /** POST publier-qcm */
     async publierQCM(offreId: string, userId: number) {
-        const offre = await this.offreRepo.findOne({
-            where: { id: offreId },
-            relations: ['entreprise'],
-        });
-        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
-        if (offre.entreprise?.id !== userId) {
-            throw new ForbiddenException("Vous n'êtes pas autorisé à publier le QCM de cette offre.");
-        }
+        const offre = await this.findOffreOrFail(offreId, ['entreprise']);
+        this.assertOwner(offre, userId);
 
         // Check questions exist
         const count = await this.questionRepo.count({ where: { offre: { id: offreId } } });
@@ -625,12 +625,7 @@ export class EntrepriseService {
 
     /** POST recommandation-ia */
     async recommandationIA(offreId: string, userId: number, results: any[]) {
-        // 1. Check ownership (or allow candidate? Let's assume this is for Entreprise review for now)
-        const offre = await this.offreRepo.findOne({
-            where: { id: offreId },
-            relations: ['entreprise'],
-        });
-        if (!offre) throw new NotFoundException(`Offre ${offreId} introuvable.`);
+        const offre = await this.findOffreOrFail(offreId, ['entreprise']);
 
         const safeDescription = offre.Description ? offre.Description.substring(0, 800) + (offre.Description.length > 800 ? '...' : '') : '';
         const context = `
@@ -718,7 +713,6 @@ Compétences: ${offre.competences || 'Non spécifié'}
                 isCorrect: typeof opt === 'object' && opt !== null ? !!opt.isCorrect : false,
             })),
             chronometre: q.chronometre,
-            niveauDifficulte: q.niveauDifficulte,
             isCorrectVerified: q.isCorrectVerified,
             createdAt: q.createdAt
         }));

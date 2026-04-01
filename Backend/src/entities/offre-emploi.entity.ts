@@ -21,8 +21,11 @@ export class OffreEmploi {
     @CreateDateColumn()
     DatePublication: Date;
 
-    @Column({ type: 'date', nullable: true })
+    @Column({ type: 'timestamp', nullable: true })
     DateLimite: Date;
+
+    @Column({ type: 'timestamp', nullable: true })
+    dateLancementQcm: Date;
 
     @Column({ nullable: true })
     TypeDeContrat: string;
@@ -53,6 +56,9 @@ export class OffreEmploi {
 
     @Column({ type: 'boolean', default: false })
     qcmPublie: boolean;
+
+    @Column({ type: 'boolean', default: false })
+    qcmNotification1hEnvoyee: boolean;
 
     @ManyToOne(() => User, { nullable: true })
     entreprise: User;

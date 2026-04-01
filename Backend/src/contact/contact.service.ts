@@ -49,7 +49,7 @@ export class ContactService {
 
     // Send email notification to admin
     try {
-      await this.mailerService.sendMail({
+      const mailOptions: any = {
         to: 'skillvia.recrutement@gmail.com',
         subject: `[Nouveau Contact] ${saved.subject}`,
         html: `
@@ -60,11 +60,22 @@ export class ContactService {
           <blockquote style="background: #f9f9f9; border-left: 10px solid #ccc; margin: 1.5em 10px; padding: 0.5em 10px;">
             ${saved.message.replace(/\n/g, '<br>')}
           </blockquote>
-          ${saved.fileName ? `<p><strong>Pièce jointe:</strong> ${saved.fileName}</p>` : ''}
+          ${saved.fileName ? `<p><strong>Pièce jointe:</strong> ${saved.fileName} (ci-joint)</p>` : ''}
           <hr>
           <p style="font-size: 0.9em; color: gray;">Ce message a été envoyé depuis le formulaire de contact de la plateforme Skillvia.</p>
         `,
-      });
+      };
+
+      if (saved.filePath && saved.fileName) {
+        mailOptions.attachments = [
+          {
+            filename: saved.fileName,
+            path: saved.filePath,
+          },
+        ];
+      }
+
+      await this.mailerService.sendMail(mailOptions);
       this.logger.log(`📧 Notification email sent to admin for message #${saved.id}`);
     } catch (e) {
       this.logger.error(`Failed to send email notification for message #${saved.id}:`, e);

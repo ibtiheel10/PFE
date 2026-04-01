@@ -13,7 +13,6 @@ import type {
   QuizQuestion,
   TestResult,
   AIRecommendation,
-  DifficultyLevel,
 } from './ai.service';
 import {
   IsString,
@@ -33,10 +32,6 @@ export class GenerateQuestionsDto {
   @IsNotEmpty()
   jobDescription: string;
 
-  @IsEnum(['facile', 'moyen', 'difficile'])
-  @IsOptional()
-  difficulty?: DifficultyLevel = 'moyen';
-
   @IsOptional()
   timer?: number;
 }
@@ -45,10 +40,6 @@ export class RegenerateQuestionsDto {
   @IsString()
   @IsNotEmpty()
   jobDescription: string;
-
-  @IsEnum(['facile', 'moyen', 'difficile'])
-  @IsOptional()
-  difficulty?: DifficultyLevel = 'moyen';
 
   @IsArray()
   @IsString({ each: true })
@@ -111,8 +102,8 @@ export class AiController {
   ): Promise<any> {
     const rawQuestions = await this.aiService.generateQuestions(
       dto.jobDescription,
-      dto.difficulty ?? 'moyen',
       null,
+      ''
     );
     return this.formatQuestionsResponse(rawQuestions);
   }
@@ -133,8 +124,8 @@ export class AiController {
   ): Promise<any> {
     const rawQuestions = await this.aiService.regenerateQuestions(
       dto.jobDescription,
-      dto.difficulty ?? 'moyen',
       dto.previousQuestions ?? [],
+      ''
     );
     return this.formatQuestionsResponse(rawQuestions);
   }

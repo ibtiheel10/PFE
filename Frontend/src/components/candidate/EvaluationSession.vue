@@ -37,17 +37,14 @@
       
       <!-- Badges -->
       <div class="flex items-center gap-3 mb-6 justify-center">
-        <span class="px-3 py-1.5 text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200/50 rounded-full uppercase tracking-wider flex items-center gap-1.5">
-          <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span> DIFFICULTÉ : {{ currentQuestion.difficulty }}
-        </span>
         <span class="px-3 py-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100/50 rounded-full uppercase tracking-wider">
           SUJET : {{ currentQuestion.topic }}
         </span>
       </div>
 
       <!-- Question Card -->
-      <div class="bg-white rounded-2xl p-8 md:p-12 shadow-sm border border-slate-200 mb-8 relative overflow-hidden flex items-center min-h-[160px]">
-        <div class="absolute left-0 top-1/2 -translate-y-1/2 h-[60%] w-1.5 bg-blue-600 rounded-r-md"></div>
+      <div class="bg-white rounded-2xl p-8 md:p-12 shadow-sm border border-slate-200 mb-8 relative">
+        <div class="absolute left-0 inset-y-0 w-1.5 bg-blue-600 rounded-r-md"></div>
         <h2 class="text-[22px] md:text-[26px] font-bold text-slate-900 leading-[1.4] pl-5 m-0">
           {{ currentQuestion.text }}
         </h2>
@@ -114,9 +111,9 @@
           
           <button
             @click="handleNext(false)"
-            :disabled="selectedOptionIndex === null"
-            class="flex items-center gap-2 px-6 py-2.5 text-[14px] font-bold text-white bg-blue-600 rounded-lg transition-all"
-            :class="selectedOptionIndex === null ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20'"
+            :disabled="!isLastQuestion && selectedOptionIndex === null"
+            class="flex flex-row items-center gap-2 px-6 py-2.5 text-[14px] font-bold text-white bg-blue-600 rounded-lg transition-all"
+            :class="(!isLastQuestion && selectedOptionIndex === null) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/20'"
           >
             {{ isLastQuestion ? 'Soumettre l\'évaluation' : 'Question Suivante' }}
             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -163,8 +160,11 @@ const progressPercentage = computed(() =>
 );
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
+const TOTAL_DURATION_SECONDS = 300; // 5 minutes fixe pour tout le QCM
 const totalTimeSeconds = ref(0);
 let timerInterval = 0;
+
+const getSessionStartTimeKey = (id: string | string[]) => `qcm_start_time_${id}`;
 
 const formattedTimeLeft = computed(() => {
   const m = Math.floor(totalTimeSeconds.value / 60);
@@ -172,18 +172,33 @@ const formattedTimeLeft = computed(() => {
   return `${m}:${s.toString().padStart(2, '0')}`;
 });
 
+// Temps écoulé depuis le début (pour l'enregistrement)
 const totalTimeInSeconds = ref(0);
+
 const startTimer = () => {
   timerInterval = window.setInterval(() => {
     if (totalTimeSeconds.value > 0) {
       totalTimeSeconds.value--;
       totalTimeInSeconds.value++;
+      
+      // Update elapsed time display based on current actual time for accurate background tracking
+      const candId = route.params.id;
+      const startTimeStr = localStorage.getItem(getSessionStartTimeKey(candId));
+      if (startTimeStr) {
+          const actualElapsed = Math.floor((Date.now() - parseInt(startTimeStr)) / 1000);
+          totalTimeInSeconds.value = actualElapsed;
+          totalTimeSeconds.value = Math.max(0, TOTAL_DURATION_SECONDS - actualElapsed);
+      }
+      
     } else {
       clearInterval(timerInterval);
-      handleNext(true);
+      handleNext(true); // Soumettre automatiquement quand le temps est écoulé
     }
   }, 1000);
 };
+
+// Clé sessionStorage pour marquer la session comme en cours
+const getSessionKey = (id: string | string[]) => `qcm_in_progress_${id}`;
 
 const formatDuration = (seconds: number) => {
   const m = Math.floor(seconds / 60);
@@ -201,27 +216,66 @@ onMounted(async () => {
       id: q.id,
       text: q.text,
       options: q.options,
-      difficulty: q.difficulty || 'Moyen',
       topic: 'Test Technique',
       timer: q.timer || 30,
     }));
 
     if (questions.value.length > 0) {
-      totalTimeSeconds.value = questions.value.reduce((a: number, q: any) => a + (q.timer || 30), 0);
-      startTimer();
+      const startTimeKey = getSessionStartTimeKey(candId);
+      let startTime = localStorage.getItem(startTimeKey);
+      
+      if (!startTime) {
+        startTime = Date.now().toString();
+        localStorage.setItem(startTimeKey, startTime);
+      }
+      
+      const elapsedSeconds = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+      const remainingSeconds = TOTAL_DURATION_SECONDS - elapsedSeconds;
+      
+      if (remainingSeconds <= 0) {
+        totalTimeSeconds.value = 0;
+        totalTimeInSeconds.value = TOTAL_DURATION_SECONDS;
+        handleNext(true);
+      } else {
+        totalTimeSeconds.value = remainingSeconds;
+        totalTimeInSeconds.value = elapsedSeconds;
+        // Marquer la session comme en cours dans le sessionStorage
+        sessionStorage.setItem(getSessionKey(candId), '1');
+        startTimer();
+      }
     } else {
       alert("Aucune question trouvée pour ce test.");
       router.push('/candidat/evaluations');
     }
   } catch (err: any) {
-    alert(err?.response?.data?.message || "Impossible de charger l'évaluation.");
-    router.push('/candidat/evaluations');
+    const msg: string = err?.response?.data?.message || '';
+    const status: number = err?.response?.status;
+    // Déjà passé: 409 avec mention "passé" OU "pass" (tolérant aux problèmes d'encodage)
+    const alreadyDone = status === 409 && (
+      msg.toLowerCase().includes('pass') ||
+      msg.toLowerCase().includes('d\u00e9j\u00e0') ||
+      msg.includes('valuation')
+    );
+    if (alreadyDone) {
+      router.push({ name: 'EvaluationResult', params: { id: route.params.id } });
+    } else {
+      alert(msg || "Impossible de charger l'\u00e9valuation.");
+      router.push('/candidat/evaluations');
+    }
   }
 });
 
-onUnmounted(() => { if (timerInterval) clearInterval(timerInterval); });
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval);
+  // Nettoyer le verrou de session à la sortie
+  sessionStorage.removeItem(getSessionKey(route.params.id));
+});
 
 // ── Navigation & Submit ───────────────────────────────────────────────────────
+const handleBack = () => {
+  router.push('/candidat/evaluations');
+};
+
 const handleNext = async (forced = false) => {
   // Record the current answer before moving
   if (selectedOptionIndex.value !== null && currentQuestion.value) {
@@ -236,7 +290,9 @@ const handleNext = async (forced = false) => {
         answers: studentAnswers.value,
         tempsEcoule 
       });
-      alert('Évaluation soumise avec succès !');
+      // Libérer le verrou de session après soumission réussie
+      sessionStorage.removeItem(getSessionKey(candId));
+      localStorage.removeItem(getSessionStartTimeKey(candId));
       router.push({ name: 'EvaluationResult', params: { id: candId } });
     } catch (e: any) {
       alert(e?.response?.data?.message ?? "Erreur lors de la soumission.");
@@ -249,9 +305,4 @@ const handleNext = async (forced = false) => {
   }
 };
 
-const handleBack = () => {
-  if (confirm("Votre progression sera perdue. Voulez-vous quitter ?")) {
-    router.push('/candidat/evaluations');
-  }
-};
 </script>

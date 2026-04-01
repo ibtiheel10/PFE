@@ -17,10 +17,15 @@ export class CreateOffreDto {
     @IsNotEmpty()
     Categorie: string;
 
-    @ApiPropertyOptional({ description: 'Date limite pour postuler', type: String, format: 'date' })
+    @ApiPropertyOptional({ description: 'Date limite pour postuler', type: String, format: 'date-time' })
     @IsOptional()
     @IsDateString()
     DateLimite?: Date;
+
+    @ApiPropertyOptional({ description: 'Date et heure de lancement du QCM', type: String, format: 'date-time' })
+    @IsOptional()
+    @IsDateString()
+    dateLancementQcm?: Date;
 
     @ApiPropertyOptional({ description: 'Type de contrat (CDI, CDD, Stage, etc.)' })
     @IsOptional()

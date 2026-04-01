@@ -162,7 +162,7 @@ const fetchApplications = async () => {
             id: app.id,
             jobId: app.offre.id,
             jobTitle: app.offre.TitreDePost,
-            company: 'Skillvia Partner',
+            company: (app.offre as any).entreprise?.nom || (app.offre as any).entreprise?.Nom || (app.offre as any).user?.Entreprise?.Nom || (app.offre as any).user?.entreprise?.nom || 'Entreprise Confidentielle',
             category: app.offre.Categorie,
             status: app.statut === 'En attente' ? 'En cours' : (app.statut === 'Refusés' ? 'Refusée' : app.statut),
             date: app.datePostulation,

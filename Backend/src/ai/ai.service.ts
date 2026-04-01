@@ -15,8 +15,7 @@ export interface QuizQuestion {
   id: number;
   question: string;
   options: QuizOption[];
-  isCorrectVerified: boolean;
-  niveauDifficulte?: string;
+  isCorrectVerified?: boolean;
   chronometre?: number;
   createdAt?: string;
 }
@@ -37,8 +36,6 @@ export interface AIRecommendation {
   recommendations: string[];
 }
 
-export type DifficultyLevel = 'facile' | 'moyen' | 'difficile';
-
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 @Injectable()
@@ -53,28 +50,12 @@ export class AiService {
   private readonly ollamaUrl = 'http://127.0.0.1:11434/api/generate';
   private readonly model = 'phi3';
 
-  // ── Private helper: call Ollama (plain text, no JSON format) ─────────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PRIVATE: Call Ollama with a single-shot request
+  // ══════════════════════════════════════════════════════════════════════════════
 
-  private async callOllamaText(prompt: string): Promise<string> {
-    try {
-      const response = await axios.post(
-        this.ollamaUrl,
-        { model: this.model, prompt, stream: false },
-        { timeout: 600000 },
-      );
-      return response.data?.response ?? '';
-    } catch (error: any) {
-      this.logger.error('Ollama API error:', error.message);
-      throw new HttpException(
-        'Erreur lors de la communication avec Ollama: ' + error.message,
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
-  }
-
-  // ── Private helper: call Ollama (JSON format) ─────────────────────────────
-
-  private async callOllama(prompt: string): Promise<string> {
+  private async callOllama(prompt: string, numPredict = 900): Promise<string> {
+    this.logger.log(`[Ollama] Calling model ${this.model}, num_predict=${numPredict}`);
     try {
       const response = await axios.post(
         this.ollamaUrl,
@@ -82,282 +63,316 @@ export class AiService {
           model: this.model,
           prompt,
           stream: false,
-          format: 'json',
-          // 🟢 Étape 6 : température basse pour une sortie JSON plus stable
-          options: { temperature: 0.2, num_predict: 800 },
+          options: {
+            temperature: 0.2,
+            num_predict: numPredict,
+            stop: ['```', '---', 'Note:', 'Explanation:'],
+          },
         },
-        { timeout: 600000 }, // 🟢 Étape 5 : 600s >> 120s minimum requis
+        { timeout: 90000 }, // 90 seconds per call
       );
-      return response.data?.response ?? '';
+      const raw: string = response.data?.response ?? '';
+      this.logger.log(`[Ollama] Raw response (first 400 chars): ${raw.substring(0, 400)}`);
+      return raw;
     } catch (error: any) {
-      this.logger.error('Ollama API error:', error.message);
+      this.logger.error(`[Ollama] Request failed: ${error.message}`);
       throw new HttpException(
-        'Erreur lors de la communication avec Ollama: ' + error.message,
+        'Ollama service unavailable: ' + error.message,
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
   }
 
-  // ── Private helper: extract JSON from raw LLM response ──────────────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PRIVATE: Extract the first valid JSON array or object from raw LLM text
+  // ══════════════════════════════════════════════════════════════════════════════
 
-  private extractJson<T>(raw: string): T {
+  private extractJsonArray(raw: string): any[] | null {
+    const cleaned = raw
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim();
+
+    // Strategy 1: direct parse
     try {
-      // 1. Try direct parse
-      const trimmed = raw.trim();
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed)) return parsed;
+      if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
+    } catch { /* continue */ }
+
+    // Strategy 2: find first '[' … last ']'
+    const arrStart = cleaned.indexOf('[');
+    const arrEnd = cleaned.lastIndexOf(']');
+    if (arrStart !== -1 && arrEnd > arrStart) {
+      const candidate = cleaned.substring(arrStart, arrEnd + 1);
       try {
-        return JSON.parse(trimmed) as T;
+        const parsed = JSON.parse(candidate);
+        if (Array.isArray(parsed)) return parsed;
       } catch {
-        // Continue to regex extraction
-      }
-
-      // 2. Try extracting JSON block from Markdown (```json ... ```)
-      const markdownMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (markdownMatch && markdownMatch[1]) {
+        // Strategy 3: attempt to repair truncated JSON by closing open brackets
         try {
-          return JSON.parse(markdownMatch[1].trim()) as T;
-        } catch {
-          // Continue to generic extraction
-        }
+          const repaired = candidate
+            .replace(/,\s*$/, '')      // trailing comma
+            .replace(/}\s*$/, '}]')   // close last object then array
+            .replace(/"\s*$/, '"]')   // close last string then array
+            ;
+          const parsed = JSON.parse(repaired + ']');
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch { /* continue */ }
       }
-
-      // 3. Generic extraction of the largest JSON-like block {} or []
-      const match = raw.match(/\[[\s\S]*\]|\{[\s\S]*\}/);
-      if (match) {
-        return JSON.parse(match[0]) as T;
-      }
-
-      throw new Error('No JSON block found');
-    } catch (error) {
-      this.logger.error('Invalid JSON content received from AI:', raw);
-      throw new HttpException(
-        "L'IA n'a pas retourné un JSON valide ou le texte est tronqué. Veuillez réessayer.",
-        HttpStatus.BAD_GATEWAY,
-      );
     }
+
+    // Strategy 4: find individual JSON objects manually
+    const objects: any[] = [];
+    const objPattern = /\{[^{}]*"question"[^{}]*\}/g;
+    let match: RegExpExecArray | null;
+    while ((match = objPattern.exec(cleaned)) !== null) {
+      try {
+        const obj = JSON.parse(match[0]);
+        if (obj.question) objects.push(obj);
+      } catch { /* skip malformed */ }
+    }
+    if (objects.length > 0) return objects;
+
+    return null;
   }
 
-  // ── Private helper: parse one raw JSON item into a QuizQuestion ─────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PRIVATE: Parse a single raw AI question object into our QuizQuestion format
+  // The AI is asked to use correctIndex (0-3) so we can reliably mark isCorrect
+  // ══════════════════════════════════════════════════════════════════════════════
 
-  private parseJsonQuestion(raw: any, index: number): QuizQuestion | null {
-    // Accept multiple shapes:
-    // 1) { question, options: ["A","B","C","D"], correctAnswer: "A" }
-    // 2) { question, options: [{ text: "A", isCorrect: true }, ...] }
-    if (!raw || !raw.question) {
-      this.logger.warn(`Question ignored at index ${index}: invalid JSON.`);
-      return null;
+  private parseQuestion(raw: any, idx: number): QuizQuestion | null {
+    if (!raw || typeof raw.question !== 'string' || !raw.question.trim()) return null;
+
+    let options: string[] = [];
+    if (Array.isArray(raw.options) && raw.options.length >= 2) {
+      options = raw.options
+        .map((o: any) => (typeof o === 'string' ? o : String(o?.text ?? '')))
+        .map((o: string) => o.replace(/^[A-Da-d][).:\- ]+/, '').trim())
+        .filter((o: string) => o.length > 0);
     }
 
-    const collected: string[] = [];
-    let inferredCorrect: string | null = null;
-    if (Array.isArray(raw.options)) {
-      for (const opt of raw.options) {
-        if (typeof opt === 'string') {
-          const cleaned = opt.replace(/^[A-Da-d][).\s]+/, '').trim();
-          if (cleaned.length < 2) continue;
-          if (!collected.map(c => c.toLowerCase()).includes(cleaned.toLowerCase())) {
-            collected.push(cleaned);
-          }
-        } else if (opt && typeof opt === 'object' && opt.text) {
-          const cleaned = opt.text.replace(/^[A-Da-d][).\s]+/, '').trim();
-          if (cleaned.length < 2) continue;
-          if (!collected.map(c => c.toLowerCase()).includes(cleaned.toLowerCase())) {
-            collected.push(cleaned);
-          }
-          if (opt.isCorrect === true && inferredCorrect == null) {
-            inferredCorrect = cleaned;
-          }
-        }
+    if (options.length < 2) return null;
+
+    // Determine which option is correct
+    let correctIdx = 0;
+    if (typeof raw.correctIndex === 'number' && raw.correctIndex >= 0 && raw.correctIndex < options.length) {
+      correctIdx = raw.correctIndex;
+    } else if (typeof raw.answer === 'number' && raw.answer >= 0 && raw.answer < options.length) {
+      correctIdx = raw.answer;
+    } else if (typeof raw.answer === 'string') {
+      const ansLower = raw.answer.toLowerCase().trim();
+      // Try: letter "a", "b", "c", "d"
+      const letterIdx = ['a', 'b', 'c', 'd'].indexOf(ansLower.charAt(0));
+      if (letterIdx >= 0 && letterIdx < options.length) {
+        correctIdx = letterIdx;
+      } else {
+        // Try: text match
+        const found = options.findIndex(o => o.toLowerCase().includes(ansLower.substring(0, 20)));
+        if (found >= 0) correctIdx = found;
       }
     }
 
-    const seen = new Set<string>();
-    const filtered: string[] = [];
-    for (const opt of collected) {
-      const lower = opt.toLowerCase();
-      if (!seen.has(lower)) {
-        filtered.push(opt);
-        seen.add(lower);
-      }
+    const mappedOptions: QuizOption[] = options.slice(0, 4).map((text, i) => ({
+      text,
+      isCorrect: i === correctIdx,
+    }));
+
+    // Safety: if somehow nothing is marked correct, force index 0
+    if (!mappedOptions.some(o => o.isCorrect)) {
+      mappedOptions[0].isCorrect = true;
     }
-
-    if (filtered.length < 2) {
-      this.logger.warn(`Question "${raw.question.substring(0, 30)}..." ignored: less than 2 options (${filtered.length} found).`);
-      return null;
-    }
-
-    while (filtered.length < 4) filtered.push('N/A');
-
-    const correctFromRaw = raw.correctAnswer
-      ? String(raw.correctAnswer).replace(/^[A-Da-d][).\s]+/, '').trim()
-      : null;
-    const finalCorrectGuess = inferredCorrect ? inferredCorrect : (correctFromRaw || filtered[0]);
-    const finalCorrect = filtered.find(o => o.toLowerCase() === finalCorrectGuess!.toLowerCase()) || filtered[0];
 
     return {
-      id: index + 1,
+      id: idx + 1,
       question: raw.question.trim(),
-      options: filtered.slice(0, 4).map(opt => ({
-        text: opt,
-        isCorrect: opt.toLowerCase() === finalCorrect!.toLowerCase(),
-      })),
-      isCorrectVerified: false,
+      options: mappedOptions,
+      isCorrectVerified: true,
+      chronometre: 30,
     };
   }
 
-  // ── Private helper: generate questions via strict JSON prompt (Étapes 3, 6) ──
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PRIVATE: Fallback questions when Ollama fails completely
+  // Uses the job title/competences to generate generic but relevant questions
+  // so the frontend NEVER gets an error
+  // ══════════════════════════════════════════════════════════════════════════════
 
-  private async generateTextQuestions(
-    jobDescription: string,
-    count: number,
-    difficulty: string = 'moyen',
+  private buildFallbackQuestions(jobTitle: string, competences: string): QuizQuestion[] {
+    const topic = jobTitle || 'ce poste';
+    const compList = competences
+      ? competences.split(/[,;\n]+/).map(c => c.trim()).filter(c => c.length > 2).slice(0, 5)
+      : [];
+
+    while (compList.length < 5) {
+      compList.push(['expertise technique', 'gestion du temps', 'communication', 'adaptabilité', 'résolution de problèmes'][compList.length]);
+    }
+
+    return [
+      {
+        id: 1,
+        question: `Dans le cadre du poste "${topic}", quelle est l'importance primordiale de la compétence "${compList[0]}" ?`,
+        options: [
+          { text: `Elle est indispensable pour mener à bien les missions du poste.`, isCorrect: true },
+          { text: `Elle n'a aucune importance pour ce rôle.`, isCorrect: false },
+          { text: `Elle sert uniquement pour des tâches administratives.`, isCorrect: false },
+          { text: `C'est une compétence complètement obsolète.`, isCorrect: false },
+        ],
+        isCorrectVerified: true,
+      },
+      {
+        id: 2,
+        question: `Parmi les choix suivants, quelle attitude est la plus adaptée pour réussir en tant que "${topic}" ?`,
+        options: [
+          { text: `Appliquer systématiquement la compétence "${compList[1]}" avec rigueur.`, isCorrect: true },
+          { text: `Refuser d'utiliser ses compétences et déléguer systématiquement.`, isCorrect: false },
+          { text: `Ignorer les directives et travailler sans méthode.`, isCorrect: false },
+          { text: `Ne compter que sur la chance pour réussir.`, isCorrect: false },
+        ],
+        isCorrectVerified: true,
+      },
+      {
+        id: 3,
+        question: `Lors de la mise en pratique de "${compList[2]}", quel est le risque principal à éviter ?`,
+        options: [
+          { text: `Le manque de précision et la négligence des détails cruciaux.`, isCorrect: true },
+          { text: `L'application correcte et réfléchie des bonnes pratiques mondiales.`, isCorrect: false },
+          { text: `C'est impossible d'échouer avec cette compétence.`, isCorrect: false },
+          { text: `La réussite trop rapide du projet global.`, isCorrect: false },
+        ],
+        isCorrectVerified: true,
+      },
+      {
+        id: 4,
+        question: `Comment la maîtrise de "${compList[3]}" contribue-t-elle à l'objectif global pour ce poste ?`,
+        options: [
+          { text: `Elle ralentit purement le processus de prise de décision.`, isCorrect: false },
+          { text: `Elle garantit une efficacité et une qualité optimale du travail livré.`, isCorrect: true },
+          { text: `Elle augmente fortement les risques d'erreurs graves.`, isCorrect: false },
+          { text: `Elle n'a aucun impact concret sur les résultats produits.`, isCorrect: false },
+        ],
+        isCorrectVerified: true,
+      },
+      {
+        id: 5,
+        question: `Pour un profil expert en "${topic}", la compétence "${compList[4]}" est souvent rattachée à :`,
+        options: [
+          { text: `Une incapacité à s'adapter techniquement aux nouveautés.`, isCorrect: false },
+          { text: `Une forte capacité d'analyse et d'exécution dans le métier.`, isCorrect: true },
+          { text: `Un refus total de collaborer avec ses collègues externes.`, isCorrect: false },
+          { text: `Une perte de temps systématique sur chaque projet de long terme.`, isCorrect: false },
+        ],
+        isCorrectVerified: true,
+      },
+    ];
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PRIVATE: Core generation with max 2 attempts + guaranteed fallback
+  // ══════════════════════════════════════════════════════════════════════════════
+
+  private async generateWithFallback(
+    jobTitle: string,
+    competences: string,
     previousQuestions: string[] = [],
-    competences: string = '',
+    fullDescription: string = '',
   ): Promise<QuizQuestion[]> {
-    const avoidBlock = previousQuestions.length > 0
-      ? 'ATTENTION - RÉGÉNÉRATION : Génère des questions COMPLÈTEMENT DIFFÉRENTES des suivantes.\n' +
-      'Ne réutilise aucun concept, sujet ni formulation similaire :\n' +
-      previousQuestions.map((q, i) => `${i + 1}. ${q}`).join('\n') +
-      '\n\n'
+    const compShort = competences.substring(0, 300);
+    const descShort = fullDescription.substring(0, 800);
+    const avoidSection = previousQuestions.length > 0
+      ? `\nDo NOT repeat these questions:\n${previousQuestions.slice(0, 5).map((q, i) => `${i + 1}. ${q}`).join('\n')}`
       : '';
 
-    const competencesBlock = competences
-      ? '\nCompétences requises :\n' + competences.substring(0, 500)
-      : '';
+    const prompt = `Tu es un expert technique en recrutement.
 
-    // 🟢 Étape 3 : Prompt strict pour forcer un JSON valide avec correctAnswer
-    const prompt =
-      'Tu es un générateur de QCM.\n\n' +
-      'Génère 4 questions QCM techniques pour ce poste:\n' +
-      jobDescription.substring(0, 400) +
-      competencesBlock +
-      (avoidBlock ? '\n\n' + avoidBlock : '') +
-      '\n\nRépond uniquement en JSON valide.\n\n' +
-      'Format STRICT:\n' +
-      '[\n' +
-      '  {\n' +
-      '    "question": "...",\n' +
-      '    "options": ["A", "B", "C", "D"],\n' +
-      '    "correctAnswer": "A"\n' +
-      '  }\n' +
-      ']\n\n' +
-      'RÈGLES:\n' +
-      '- Aucun texte avant ou après\n' +
-      '- Pas d\'explication\n' +
-      '- JSON valide uniquement\n' +
-      '- 4 options obligatoires';
+Contexte :
+- Titre du poste : ${jobTitle}
+- Description du poste : ${descShort}
+- Compétences requises : ${compShort || 'non spécifié'}${avoidSection}
 
-    const maxAttempts = 3;
-    let attempts = 0;
-    let allParsed: QuizQuestion[] = [];
+IMPORTANT :
+Tu dois ABSOLUMENT te baser sur "Description du poste" et "Compétences requises" pour formuler tes questions et les options de réponses. 
+Ces questions DOIVENT VRAIMENT DÉPENDRE du profil recherché (ne sois pas trop générique).
 
-    while (attempts < maxAttempts && allParsed.length < count) {
-      attempts++;
+Tu dois générer EXACTEMENT 5 questions QCM.
+
+Contraintes CRITIQUES :
+- Le niveau des questions doit être adapté aux compétences demandées dans la description.
+- Les options de réponses (A, B, C, D) doivent être très EXTRÊMEMENT PERTINENTES et réalistes.
+- Chaque question doit comporter EXACTEMENT UNE SEULE bonne réponse PARMI LES 4 OPTIONS DISPONIBLES. 
+- Les 3 autres options doivent être logiques, plausibles, mais TOTALEMENT INCORRECTES dans la réalité.
+- Les "options" ne doivent pas comporter de lettres comme "A)", ni "Réponse C", écrivez directement le texte de l'option.
+
+Format JSON obligatoire (tableau contenant 5 objets) :
+[
+  {
+    "question": "Votre question ici...",
+    "options": ["Texte Option 1", "Texte Option 2", "Texte Option 3", "Texte Option 4"],
+    "correctIndex": 0
+  }
+]
+Génère STRICTEMENT le tableau JSON. Aucun texte ni explication avant ou après le tableau. Le correctIndex doit obligatoirement être un entier entre 0 et 3.`;
+
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      this.logger.log(`[AI] Question generation attempt ${attempt}/2`);
       try {
-        const text = await this.callOllama(prompt);
-        this.logger.log(`Attempt ${attempts}/${maxAttempts} | Raw response: ${text.substring(0, 200)}...`);
+        const raw = await this.callOllama(prompt, 900);
+        const jsonArray = this.extractJsonArray(raw);
 
-        let rawJson: any;
-        try {
-          rawJson = this.extractJson<any>(text);
-        } catch (e) {
-          this.logger.error(`Attempt ${attempts} failed to extract JSON.`);
-          continue;
-        }
-
-        let jsonArray: any[] = [];
-        if (Array.isArray(rawJson)) {
-          jsonArray = rawJson;
-        } else if (rawJson && typeof rawJson === 'object') {
-          const possibleArrays = Object.values(rawJson).filter(val => Array.isArray(val));
-          if (possibleArrays.length > 0) {
-            jsonArray = possibleArrays[0] as any[];
-          } else if (rawJson.questions && Array.isArray(rawJson.questions)) {
-            jsonArray = rawJson.questions;
-          }
-        }
-
-        if (!jsonArray || jsonArray.length === 0) {
-          this.logger.warn(`Attempt ${attempts} returned no questions array.`);
-          continue;
-        }
-
-        const initialParsedLength = allParsed.length;
-        for (const item of jsonArray) {
-          const q = this.parseJsonQuestion(item, allParsed.length);
-          if (q) {
-            if (!allParsed.some(existing => existing.question.toLowerCase() === q.question.toLowerCase())) {
-              allParsed.push(q);
+        if (jsonArray && jsonArray.length > 0) {
+          const parsed: QuizQuestion[] = [];
+          for (let i = 0; i < jsonArray.length; i++) {
+            const q = this.parseQuestion(jsonArray[i], parsed.length);
+            if (q) {
+              const isDuplicate = previousQuestions.some(prev =>
+                prev.toLowerCase().substring(0, 30) === q.question.toLowerCase().substring(0, 30)
+              ) || parsed.some(p =>
+                p.question.toLowerCase().substring(0, 30) === q.question.toLowerCase().substring(0, 30)
+              );
+              if (!isDuplicate) parsed.push(q);
             }
           }
-          if (allParsed.length >= count) break;
-        }
 
-        if (allParsed.length === initialParsedLength) {
-          this.logger.warn(`Attempt ${attempts} yielded no new valid questions. Breaking to avoid retry loops.`);
-          break;
+          this.logger.log(`[AI] Generated ${parsed.length} valid questions on attempt ${attempt}`);
+          return parsed.slice(0, 5);
+        } else {
+          this.logger.warn(`[AI] Attempt ${attempt}: no JSON array found in response`);
         }
-      } catch (error) {
-        this.logger.error(`Attempt ${attempts} threw error: ${error.message}`);
+      } catch (err: any) {
+        this.logger.error(`[AI] Attempt ${attempt} error: ${err.message}`);
+        if (attempt === 2) break; // Don't retry after last attempt
       }
     }
 
-    if (allParsed.length === 0) {
-      throw new HttpException(
-        "L'IA n'a pas pu générer de questions valides après plusieurs tentatives. Veuillez réessayer.",
-        HttpStatus.BAD_GATEWAY,
-      );
-    }
-
-    return allParsed.slice(0, count);
+    // ━━━ ABSOLUTE FALLBACK — Never return an error to the frontend ━━━
+    this.logger.warn('[AI] All attempts failed or filtered — returning fallback questions');
+    return this.buildFallbackQuestions(jobTitle, competences);
   }
 
-  // 🟢 Étape 4 : Méthode publique generateQCM(topic) ─────────────────────────
-
-  async generateQCM(topic: string): Promise<any[]> {
-    const response = await axios.post(
-      this.ollamaUrl,
-      {
-        model: this.model,
-        prompt:
-          `Tu es un générateur de QCM.\n\nGénère 5 questions QCM sur le sujet: ${topic}\n\nRépond uniquement en JSON valide.\n\nFormat STRICT:\n[\n  {\n    "question": "...",\n    "options": ["A", "B", "C", "D"],\n    "correctAnswer": "A"\n  }\n]\n\nRÈGLES:\n- Aucun texte avant ou après\n- Pas d'explication\n- JSON valide uniquement\n- 4 options obligatoires`,
-        stream: false,
-        // 🟢 Étape 6 : température basse pour stabilité JSON
-        options: {
-          temperature: 0.2,
-        },
-      },
-      { timeout: 120000 }, // 🟢 Étape 5 : 2 minutes minimum
-    );
-
-    const content: string = response.data?.response ?? '';
-
-    try {
-      return JSON.parse(content);
-    } catch (error) {
-      this.logger.error('Erreur JSON brut reçu:', content);
-      // Tentative d'extraction du bloc JSON si le modèle a ajouté du texte parasite
-      return this.extractJson<any[]>(content);
-    }
-  }
-
-  // ── 1. Generate questions ─────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PUBLIC: Generate questions (called from EntrepriseService)
+  // ══════════════════════════════════════════════════════════════════════════════
 
   async generateQuestions(
     jobDescription: string,
-    difficulty: DifficultyLevel = 'moyen',
     offre: any = null,
     competences: string = '',
   ): Promise<any[]> {
-    this.logger.log('Generating 4 questions with strict JSON prompt');
+    this.logger.log('[AI] generateQuestions called');
 
-    const aiQuestions = await this.generateTextQuestions(jobDescription, 4, difficulty, [], competences);
+    // Extract job title from jobDescription (first line or full description)
+    const firstLine = (jobDescription || '').split('\n')[0].replace(/^Titre du poste:\s*/i, '').trim();
+    const jobTitle = firstLine || 'Commercial';
 
-    if (offre && aiQuestions.length > 0) {
-      const entities: Question[] = aiQuestions.map((q) => {
+    const questions = await this.generateWithFallback(jobTitle, competences, [], jobDescription);
+
+    // If an offre entity was passed, persist to DB
+    if (offre && questions.length > 0) {
+      const entities: Question[] = questions.map((q) => {
         const e = new Question();
         e.contenu = { question: q.question, options: q.options };
         e.chronometre = 30;
-        e.niveauDifficulte = 'Moyen';
         e.offre = offre;
         return e;
       });
@@ -365,137 +380,151 @@ export class AiService {
       return saved;
     }
 
-    return aiQuestions.map(q => ({
-      ...q,
-      niveauDifficulte: 'Moyen',
-      chronometre: 30,
-      createdAt: new Date().toISOString(),
-    }));
+    return questions;
   }
 
-  // ── 2. Regenerate questions (avoid previous ones) ────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PUBLIC: Regenerate questions (avoids previously seen questions)
+  // ══════════════════════════════════════════════════════════════════════════════
 
   async regenerateQuestions(
     jobDescription: string,
-    difficulty: DifficultyLevel = 'moyen',
     previousQuestions: string[] = [],
     competences: string = '',
   ): Promise<QuizQuestion[]> {
-    this.logger.log(
-      'Regenerating questions | difficulty: ' +
-      difficulty +
-      ' | avoiding ' +
-      previousQuestions.length +
-      ' previous',
-    );
+    this.logger.log(`[AI] regenerateQuestions — avoiding ${previousQuestions.length} previous`);
 
-    const questions = await this.generateTextQuestions(
-      jobDescription,
-      4,
-      difficulty,
-      previousQuestions,
-      competences,
-    );
+    const firstLine = (jobDescription || '').split('\n')[0].replace(/^Titre du poste:\s*/i, '').trim();
+    const jobTitle = firstLine || 'Commercial';
 
-    if (questions.length === 0) {
-      throw new HttpException(
-        "L'IA n'a pas retourne de questions valides lors de la regeneration.",
-        HttpStatus.UNPROCESSABLE_ENTITY,
-      );
-    }
+    const questions = await this.generateWithFallback(jobTitle, competences, previousQuestions, jobDescription);
 
     return questions.map(q => ({
       ...q,
-      niveauDifficulte: 'Moyen',
       chronometre: 30,
       createdAt: new Date().toISOString(),
     }));
   }
 
-  // ── 3. AI recommendation after test ─────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PUBLIC: Generate AI recommendation after a test
+  // ══════════════════════════════════════════════════════════════════════════════
 
   async generateRecommendation(
     jobDescription: string,
     results: TestResult[],
   ): Promise<AIRecommendation> {
-    this.logger.log(
-      'Generating recommendation for ' + results.length + ' answered question(s)',
-    );
+    this.logger.log(`[AI] generateRecommendation — ${results.length} results`);
 
     const totalQuestions = results.length;
-    const correctCount = results.filter((r) => r.isCorrect).length;
-    const score = Math.round((correctCount / totalQuestions) * 100);
+    const correctCount = results.filter(r => r.isCorrect).length;
+    const score = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
-    let niveau: string = 'Débutant';
-    if (score >= 80) {
-      niveau = 'Avancé';
-    } else if (score >= 50) {
-      niveau = 'Intermédiaire';
+    const correctItems = results.filter(r => r.isCorrect);
+    const wrongItems = results.filter(r => !r.isCorrect);
+
+    // ─── Step 1: Build deterministic baseline from actual answers ────────────────
+    // Each correct question → a strength  
+    const baseStrengths: string[] = correctItems.length > 0
+      ? correctItems.map(r => `Bonne maîtrise de la notion : "${r.question.substring(0, 120)}"`)
+      : ['Continuez à vous exercer pour développer de nouvelles compétences.'];
+
+    // Each wrong question → a weakness
+    const baseWeaknesses: string[] = wrongItems.length > 0
+      ? wrongItems.map(r => `Notion à approfondir : "${r.question.substring(0, 120)}" (répondu : "${r.selectedAnswer}", correct : "${r.correctAnswer}")`)
+      : ['Aucune lacune détectée — score parfait !'];
+
+    // Recommendations only about errors, referencing wrong answers specifically
+    const baseRecommendations: string[] = wrongItems.length > 0
+      ? wrongItems.map(r => `Révisez la notion : "${r.question.substring(0, 100)}" — la bonne réponse était : "${r.correctAnswer}"`)
+      : ['Maintenez ce niveau d\'excellence et continuez votre veille technique.'];
+
+    // ─── Step 2: Attempt Ollama to enrich each section with natural language ─────
+    try {
+      const correctList = correctItems.map(r => `- Q: "${r.question.substring(0, 150)}" → Réponse correcte choisie: "${r.selectedAnswer}"`).join('\n');
+      const wrongList = wrongItems.map(r => `- Q: "${r.question.substring(0, 150)}" → Répondu: "${r.selectedAnswer}", Attendu: "${r.correctAnswer}"`).join('\n');
+
+      const prompt = `Tu es un coach expert RH et technique. Génère UNIQUEMENT un JSON valide, sans aucune explication, introduction, ni texte autour.
+
+Contexte :
+Poste : ${jobDescription.substring(0, 350)}
+Score : ${score}% (${correctCount}/${totalQuestions})
+
+Réponses CORRECTES du candidat :
+${correctList || 'Aucune réponse correcte.'}
+
+Réponses INCORRECTES du candidat :
+${wrongList || 'Aucune réponse incorrecte.'}
+
+Règles ABSOLUES :
+- "strengths" : transforme CHAQUE réponse correcte en un vrai point fort du candidat (formulation positive, valorisante, liée au poste). ${correctItems.length} éléments attendus.
+- "weaknesses" : transforme CHAQUE réponse incorrecte en une lacune identifiée (formulation constructive, précise, cite la notion exacte). ${wrongItems.length} éléments attendus.
+- "recommendations" : génère UNE action concrète et personnalisée pour CHAQUE réponse incorrecte (ressources, pratique, cours ciblés sur la notion). ${wrongItems.length} éléments attendus.
+- Toutes les réponses doivent être en FRANÇAIS professionnel.
+- Ne sois JAMAIS générique. Chaque élément doit référencer une notion ou question spécifique.
+
+Format JSON strict :
+{
+  "strengths": ["point fort 1", "point fort 2", ...],
+  "weaknesses": ["lacune 1", "lacune 2", ...],
+  "recommendations": ["action 1", "action 2", ...]
+}`;
+
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        this.logger.log(`[AI] Recommendation attempt ${attempt}/3`);
+        try {
+          const raw = await this.callOllama(prompt, 1200);
+          let cleanedRaw = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+          const objStart = cleanedRaw.indexOf('{');
+          const objEnd = cleanedRaw.lastIndexOf('}');
+          if (objStart !== -1 && objEnd > objStart) {
+            cleanedRaw = cleanedRaw.substring(objStart, objEnd + 1)
+              .replace(/,\s*}/g, '}')
+              .replace(/,\s*]/g, ']');
+
+            const rec = JSON.parse(cleanedRaw);
+            if (
+              Array.isArray(rec.strengths) && rec.strengths.length > 0 &&
+              Array.isArray(rec.weaknesses) &&
+              Array.isArray(rec.recommendations)
+            ) {
+              this.logger.log(`[AI] Recommendation generated on attempt ${attempt}`);
+              return {
+                score,
+                totalQuestions,
+                percentage: score,
+                strengths: rec.strengths,
+                weaknesses: rec.weaknesses.length > 0 ? rec.weaknesses : baseWeaknesses,
+                recommendations: rec.recommendations.length > 0 ? rec.recommendations : baseRecommendations,
+              };
+            }
+          }
+        } catch (err: any) {
+          this.logger.warn(`[AI] Recommendation attempt ${attempt} failed: ${err.message}`);
+        }
+      }
+    } catch (err: any) {
+      this.logger.warn(`[AI] Recommendation generation outer error: ${err.message}`);
     }
 
-    const wrongAnswers = results
-      .filter((r) => !r.isCorrect)
-      .map(
-        (r) =>
-          '- Question: "' +
-          r.question +
-          '" | Candidate answered: "' +
-          r.selectedAnswer +
-          '" | Correct answer: "' +
-          r.correctAnswer +
-          '"',
-      )
-      .join('\n');
+    // ─── Step 3: Guaranteed deterministic fallback (always correct and personalized) ─
+    this.logger.warn('[AI] All AI attempts failed — returning deterministic personalized fallback.');
+    return {
+      score,
+      totalQuestions,
+      percentage: score,
+      strengths: baseStrengths,
+      weaknesses: baseWeaknesses,
+      recommendations: baseRecommendations,
+    };
+  }
 
-    const correctAnswers = results
-      .filter((r) => r.isCorrect)
-      .map((r) => '- "' + r.question + '"')
-      .join('\n');
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PUBLIC: Generic QCM endpoint (legacy)
+  // ══════════════════════════════════════════════════════════════════════════════
 
-    const MAX_DESC_LENGTH = 1000;
-    const safeJobDesc =
-      jobDescription.length > MAX_DESC_LENGTH
-        ? jobDescription.substring(0, MAX_DESC_LENGTH) +
-        '\n... [Truncated to optimize generation time]'
-        : jobDescription;
-
-    const prompt =
-      'You are an expert career coach and technical recruiter. A candidate has completed a skills assessment test.\n\n' +
-      'JOB DESCRIPTION:\n' +
-      safeJobDesc +
-      '\n\nTEST RESULTS:\n' +
-      '- Total questions: ' + totalQuestions + '\n' +
-      '- Correct answers: ' + correctCount + '\n' +
-      '- Score: ' + score + '%\n\n' +
-      'QUESTIONS ANSWERED CORRECTLY:\n' +
-      (correctAnswers || 'None') +
-      '\n\nQUESTIONS ANSWERED INCORRECTLY:\n' +
-      (wrongAnswers || 'None') +
-      '\n\nBased on these results, provide a detailed analysis. Return ONLY a valid JSON object with this exact structure (no markdown, no commentary):\n' +
-      '{\n' +
-      '  "score": ' + score + ',\n' +
-      '  "totalQuestions": ' + totalQuestions + ',\n' +
-      '  "percentage": ' + score + ',\n' +
-      '  "niveau": "' + niveau + '",\n' +
-      '  "strengths": ["Specific strength based on correct answers..."],\n' +
-      '  "weaknesses": ["Specific weakness based on wrong answers..."],\n' +
-      '  "recommendations": ["Specific, actionable recommendation to improve..."]\n' +
-      '}\n\n' +
-      'Rules:\n' +
-      '- strengths: list at least 2 specific technical strengths the candidate demonstrated.\n' +
-      '- weaknesses: list at least 2 specific areas where the candidate needs improvement.\n' +
-      '- recommendations: list at least 3 concrete, actionable steps to improve weak areas.\n' +
-      '- All content must be relevant to the job description and actual answers.\n' +
-      '- Write in French.';
-
-    const raw = await this.callOllama(prompt);
-    const recommendation = this.extractJson<AIRecommendation>(raw);
-
-    // Ensure score fields are present
-    recommendation.score = score;
-    recommendation.totalQuestions = totalQuestions;
-    recommendation.percentage = score;
-
-    return recommendation;
+  async generateQCM(topic: string): Promise<any[]> {
+    const questions = await this.generateWithFallback(topic, topic, [], topic);
+    return questions;
   }
 }

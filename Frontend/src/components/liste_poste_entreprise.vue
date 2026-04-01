@@ -225,11 +225,20 @@
 
               <div class="form-row">
                 <div class="form-group">
-                  <label for="deadline">Date Limite de Candidature</label>
+                  <label for="deadline">Date & Heure Limite de Candidature</label>
                   <input 
-                    type="date" 
+                    type="datetime-local" 
                     id="deadline" 
                     v-model="formData.deadline"
+                  >
+                </div>
+
+                <div class="form-group">
+                  <label for="dateLancementQcm">Date & Heure du QCM</label>
+                  <input 
+                    type="datetime-local" 
+                    id="dateLancementQcm" 
+                    v-model="formData.dateLancementQcm"
                   >
                 </div>
 
@@ -327,18 +336,6 @@
                 </label>
                 <input id="qcm-timer" type="number" min="1" max="120" v-model="qcmConfig.timer" placeholder="Ex: 30" />
               </div>
-              <div class="qcm-config-field">
-                <label for="qcm-difficulty">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:4px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-                  Niveau de difficulté
-                </label>
-                <select id="qcm-difficulty" v-model="qcmConfig.difficulty">
-                  <option value="facile">Facile</option>
-                  <option value="moyen">Moyen</option>
-                  <option value="difficile">Difficile</option>
-                  <option value="expert">Expert</option>
-                </select>
-              </div>
             </div>
 
             <!-- Loading state -->
@@ -370,7 +367,9 @@
               <div v-for="(q, qi) in generatedQuestions" :key="qi" class="qcm-question-card">
                 <div class="qcm-question-num">Q{{ qi + 1 }}</div>
                 <div class="qcm-question-body">
-                  <input class="qcm-question-input" v-model="q.text" placeholder="Texte de la question" />
+                  <div style="overflow-x: auto; width: 100%; padding-bottom: 4px;">
+                    <input class="qcm-question-input" v-model="q.text" placeholder="Texte de la question" :style="{ width: Math.max(100, q.text.length) + 'ch', minWidth: '100%' }" />
+                  </div>
                   <div class="qcm-options">
                     <div v-for="(_opt, oi) in q.options" :key="oi" class="qcm-option-row">
                       <input
@@ -477,7 +476,8 @@ const editJob = (job: any) => {
       salary: raw.salaire ? raw.salaire.toString() : '',
       description: raw.description || '',
       requirements: raw.competences || '',
-      deadline: raw.dateLimite ? (new Date(raw.dateLimite).toISOString().split('T')[0] || '') : '',
+      deadline: raw.dateLimite ? new Date(raw.dateLimite).toISOString().slice(0, 16) : '',
+      dateLancementQcm: raw.dateLancementQcm ? new Date(raw.dateLancementQcm).toISOString().slice(0, 16) : '',
       positions: raw.nbPost || 1
     };
     
@@ -523,6 +523,7 @@ interface PostFormData {
   description: string;
   requirements: string;
   deadline: string;
+  dateLancementQcm: string;
   positions: number;
 }
 
@@ -538,6 +539,7 @@ const formData = ref<PostFormData>({
   description: '',
   requirements: '',
   deadline: '',
+  dateLancementQcm: '',
   positions: 1
 });
 
@@ -620,6 +622,13 @@ const switchTab = (tabId: string) => {
 
 
 const submitPost = async () => {
+    if (formData.value.deadline && formData.value.dateLancementQcm) {
+        if (new Date(formData.value.dateLancementQcm) <= new Date(formData.value.deadline)) {
+            alert("La date et l'heure du QCM doivent être après la date limite de candidature !");
+            return;
+        }
+    }
+
     try {
         const payload = {
             titre: formData.value.title,
@@ -634,7 +643,8 @@ const submitPost = async () => {
             icon: 'fa-solid fa-briefcase',
             iconColor: '#3b82f6',
             nbPost: formData.value.positions,
-            dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : null
+            dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : null,
+            dateLancementQcm: formData.value.dateLancementQcm ? new Date(formData.value.dateLancementQcm).toISOString() : null
         };
         
         if (isEditing.value && currentEditId.value) {
@@ -662,7 +672,7 @@ const showQCMDialog = ref(false);
 const qcmLoading = ref(false);
 const qcmStatus = ref(''); // étape en cours affichée dans le panel
 const qcmError = ref('');  // message d'erreur visible dans le panel
-const qcmConfig = ref({ timer: 30, difficulty: 'moyen' });
+const qcmConfig = ref({ timer: 30 });
 const createdOffreId = ref<number | null>(null);
 
 interface QCMQuestion {
@@ -779,7 +789,8 @@ const regenerateQCM = async () => {
   qcmStatus.value = '🤖 Régénération des questions…';
   try {
     console.log('[QCM] Régénération pour offre', createdOffreId.value);
-    const response = await regenerateQuestionsForOffre(createdOffreId.value);
+    const previous = generatedQuestions.value.map(q => q.text);
+    const response = await regenerateQuestionsForOffre(createdOffreId.value, previous);
     console.log('[QCM] Réponse régénération :', response);
     if (!response.success) throw new Error(response.error || "L'IA n'a pas pu régénérer les questions.");
     const questions: any[] = response.data?.questions ?? [];
@@ -817,7 +828,7 @@ const saveQCM = async () => {
       };
     });
 
-    const response = await saveQuestionsForOffre(createdOffreId.value, questionsToSave, qcmConfig.value.difficulty);
+    const response = await saveQuestionsForOffre(createdOffreId.value, questionsToSave);
 
     if (!response.success) {
       throw new Error(response.error || "Erreur lors de la sauvegarde du QCM.");

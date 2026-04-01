@@ -111,7 +111,7 @@
                     <div class="job-meta">
                       <span class="meta-item">
                         <i class="fa-solid fa-building"></i>
-                        Skillvia Partner
+                        {{ job.entreprise ? job.entreprise.nom : 'Entreprise Confidentielle' }}
                       </span>
                       <span class="meta-divider">·</span>
                       <span class="meta-item">

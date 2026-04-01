@@ -13,6 +13,7 @@ export interface OffreEmploi {
     Localisation: string;
     ExperienceRequise: string | null;
     NbPost: number;
+    entreprise?: { id: number; nom: string };
     // Visuel (frontend only)
     icon?: string;
     iconColor?: string;

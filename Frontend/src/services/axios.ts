@@ -3,7 +3,7 @@ import axios from 'axios';
 // ─── Instance Axios globale ───────────────────────────────────────────────────
 const api = axios.create({
     baseURL: '/api', // Vite proxy → redirige vers http://localhost:3333/api
-    timeout: 10000,
+    timeout: 120000, // 2 minutes par défaut pour l'IA
     headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',

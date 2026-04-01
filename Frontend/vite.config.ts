@@ -22,7 +22,7 @@ export default defineConfig({
     proxy: {
       // Toutes les requêtes /api/* sont redirigées vers le backend ASP.NET
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:3333',
         changeOrigin: true,
         secure: false,
         timeout: 600000,

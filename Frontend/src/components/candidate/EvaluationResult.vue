@@ -128,6 +128,76 @@
         </div>
       </div>
 
+      <!-- ── AI Recommendation ── -->
+      <div v-if="aiRecommendation" class="skills-card mt-6">
+        <div class="skills-header">
+          <div class="skills-icon-wrap">
+            <svg class="w-4 h-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <h2 class="skills-title">Analyse par l'IA</h2>
+        </div>
+            
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+          <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+            <h4 class="font-bold text-emerald-800 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 010 2H6v1a1 1 0 01-2 0V6H3a1 1 0 010-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2 17.5 9.134a1 1 0 010 1.732l-3.354 1.935-1.18 4.455a1 1 0 01-1.933 0L9.854 12.8 6.5 10.866a1 1 0 010-1.732l3.354-1.935 1.18-4.455A1 1 0 0112 2z" clip-rule="evenodd" /></svg>
+              Points Forts
+            </h4>
+            <ul class="list-disc list-inside text-emerald-700 text-sm space-y-1">
+              <li v-for="(s, i) in aiRecommendation.strengths" :key="'s'+i">{{ s }}</li>
+            </ul>
+          </div>
+              
+          <div class="p-4 bg-rose-50 rounded-xl border border-rose-100">
+            <h4 class="font-bold text-rose-800 mb-2 flex items-center gap-2">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+              Points Faibles
+            </h4>
+            <ul class="list-disc list-inside text-rose-700 text-sm space-y-1">
+              <li v-for="(w, i) in aiRecommendation.weaknesses" :key="'w'+i">{{ w }}</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-6 p-5 bg-blue-50 rounded-xl border border-blue-100">
+          <h4 class="font-bold text-blue-800 mb-3 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" /></svg>
+            Recommandations
+          </h4>
+          <ul class="list-disc list-inside text-blue-700 text-sm space-y-2">
+            <li v-for="(r, i) in aiRecommendation.recommendations" :key="'r'+i">{{ r }}</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- ── User Answers ── -->
+      <div v-if="testAnswers && testAnswers.length > 0" class="skills-card mt-6">
+        <div class="skills-header">
+          <h2 class="skills-title">Détail des réponses</h2>
+        </div>
+        <div class="space-y-4 mt-4">
+          <div v-for="(ans, i) in testAnswers" :key="i" class="p-4 rounded-xl border" :class="ans.isCorrect ? 'bg-emerald-50/50 border-emerald-100' : 'bg-rose-50/50 border-rose-100'">
+            <p class="font-semibold text-slate-800 text-sm mb-3">Q{{i+1}}. {{ ans.question }}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div>
+                <span class="text-slate-500 font-medium">Votre réponse :</span>
+                <p class="mt-1 font-medium" :class="ans.isCorrect ? 'text-emerald-600' : 'text-rose-600'">
+                  <span v-if="ans.isCorrect">✓</span>
+                  <span v-else>✗</span>
+                  {{ ans.selectedAnswer }}
+                </p>
+              </div>
+              <div v-if="!ans.isCorrect">
+                <span class="text-slate-500 font-medium">Bonne réponse :</span>
+                <p class="mt-1 font-medium text-emerald-600">✓ {{ ans.correctAnswer }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ── Action Buttons ── -->
       <div class="action-buttons">
         <button class="btn-main" @click="goToDashboard">
@@ -165,6 +235,8 @@ const scoreDisplay = ref(0);
 const evalStats = ref({ tempsEcoule: 'N/A', bonnesReponses: 'N/A', topPercent: 'N/A' });
 const skills = ref<{ name: string; score: number; description?: string }[]>([]);
 const isSuccess = computed(() => scoreDisplay.value >= 70);
+const aiRecommendation = ref<any>(null);
+const testAnswers = ref<any[]>([]);
 
 onMounted(async () => {
   document.documentElement.classList.remove('dark', 'dark-mode');
@@ -200,6 +272,12 @@ onMounted(async () => {
               name: key,
               score: Number(val),
             }));
+          }
+          if (details.aiRecommendation) {
+              aiRecommendation.value = details.aiRecommendation;
+          }
+          if (details.answers && Array.isArray(details.answers)) {
+              testAnswers.value = details.answers;
           }
         } catch {
           // fallback to score only

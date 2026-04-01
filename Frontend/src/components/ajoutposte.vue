@@ -237,8 +237,12 @@
 
           <div class="field-row" style="margin-top:16px">
             <div class="field">
-              <label>Date Limite de Candidature</label>
-              <input v-model="form.deadline" type="date" />
+              <label>Date & Heure Limite de Candidature</label>
+              <input v-model="form.deadline" type="datetime-local" />
+            </div>
+            <div class="field">
+              <label>Date & Heure du QCM</label>
+              <input v-model="form.dateLancementQcm" type="datetime-local" />
             </div>
             <div class="field" style="justify-content:flex-end">
             </div>
@@ -294,6 +298,7 @@ const form = ref({
   requirements:      '',
   benefits:          '',
   deadline:          '',
+  dateLancementQcm:  '',
   positions:         1,
   mcqDuration:       20,
   mcqQuestionsCount: 15,
@@ -321,6 +326,13 @@ function nextStep(current: number) {
 }
 
 const submitPost = async () => {
+  if (form.value.deadline && form.value.dateLancementQcm) {
+    if (new Date(form.value.dateLancementQcm) <= new Date(form.value.deadline)) {
+      alert("La date et l'heure du QCM doivent être après la date limite de candidature !");
+      return;
+    }
+  }
+
   publishing.value = true;
   try {
      const token = localStorage.getItem('userToken');
@@ -338,7 +350,8 @@ const submitPost = async () => {
         icon: form.value.icon,
         iconColor: form.value.iconColor,
         nbPost: form.value.positions,
-        dateLimite: form.value.deadline ? new Date(form.value.deadline).toISOString() : null
+        dateLimite: form.value.deadline ? new Date(form.value.deadline).toISOString() : null,
+        dateLancementQcm: form.value.dateLancementQcm ? new Date(form.value.dateLancementQcm).toISOString() : null
      };
 
      let finalOffreId = createdOffreId.value;
@@ -358,10 +371,7 @@ const submitPost = async () => {
          ...q,
          chronometre: form.value.mcqDuration || 20 
        }));
-       const difficulte = form.value.experience === 'junior' ? 'Facile' 
-                        : form.value.experience === 'senior' ? 'Difficile' : 'Moyen';
-       
-       await saveQuestionsForOffre(finalOffreId, questionsData, difficulte);
+       await saveQuestionsForOffre(finalOffreId, questionsData);
      }
 
      toastVisible.value = true;
@@ -393,7 +403,8 @@ const saveDraft = async () => {
         icon: form.value.icon,
         iconColor: form.value.iconColor,
         nbPost: form.value.positions,
-        dateLimite: form.value.deadline ? new Date(form.value.deadline).toISOString() : new Date().toISOString()
+        dateLimite: form.value.deadline ? new Date(form.value.deadline).toISOString() : new Date().toISOString(),
+        dateLancementQcm: form.value.dateLancementQcm ? new Date(form.value.dateLancementQcm).toISOString() : null
      };
      
      if (!createdOffreId.value) {
@@ -428,7 +439,8 @@ const generateQCM = async () => {
 
      let response;
      if (generatedQuestions.value.length > 0) {
-        response = await regenerateQuestionsForOffre(createdOffreId.value);
+        const previous = generatedQuestions.value.map((q: any) => q.question || q.contenu?.question || q.text);
+        response = await regenerateQuestionsForOffre(createdOffreId.value, previous);
      } else {
         response = await generateQuestionsForOffre(createdOffreId.value);
      }

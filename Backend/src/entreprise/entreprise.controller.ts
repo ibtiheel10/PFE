@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Patch, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Patch, UseGuards, Request, HttpException } from '@nestjs/common';
 import { EntrepriseService } from './entreprise.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -198,7 +198,6 @@ export class EntrepriseController {
         schema: {
             type: 'object',
             properties: {
-                difficulte: { type: 'string', enum: ['Facile', 'Moyen', 'Difficile'], default: 'Moyen' }
             }
         }
     })
@@ -207,11 +206,17 @@ export class EntrepriseController {
     @ApiResponse({ status: 404, description: 'Offre not found.' })
     async genererQuestionsIA(
         @Param('id') id: string,
-        @Body() body: { difficulte?: 'Facile' | 'Moyen' | 'Difficile' },
         @Request() req: any
     ) {
         console.log(`[EntrepriseController] Reçu requête de génération IA pour offre ID: ${id}`);
-        return this.entrepriseService.genererQuestionsIA(id, req.user.userId, body.difficulte || 'Moyen');
+        try {
+            return await this.entrepriseService.genererQuestionsIA(id, req.user.userId);
+        } catch (error: any) {
+            console.error('[EntrepriseController] Erreur genererQuestionsIA:', error);
+            const msg = error.message || 'Erreur inconnue';
+            const status = error.status || 500;
+            throw new HttpException(`[Erreur Backend] ${msg}`, status);
+        }
     }
 
     /**
@@ -225,7 +230,6 @@ export class EntrepriseController {
         schema: {
             type: 'object',
             properties: {
-                difficulte: { type: 'string', enum: ['Facile', 'Moyen', 'Difficile'], default: 'Moyen' },
                 previousQuestions: { type: 'array', items: { type: 'string' } },
             }
         }
@@ -235,15 +239,21 @@ export class EntrepriseController {
     @ApiResponse({ status: 404, description: 'Offre not found.' })
     async regenererQuestionsIA(
         @Param('id') id: string,
-        @Body() body: { difficulte?: 'Facile' | 'Moyen' | 'Difficile', previousQuestions?: string[] },
+        @Body() body: { previousQuestions?: string[] },
         @Request() req: any
     ) {
-        return this.entrepriseService.regenererQuestionsIA(
-            id,
-            req.user.userId,
-            body.difficulte || 'Moyen',
-            body.previousQuestions || []
-        );
+        try {
+            return await this.entrepriseService.regenererQuestionsIA(
+                id,
+                req.user.userId,
+                body?.previousQuestions || []
+            );
+        } catch (error: any) {
+            console.error('[EntrepriseController] Erreur regenererQuestionsIA:', error);
+            const msg = error.message || 'Erreur inconnue';
+            const status = error.status || 500;
+            throw new HttpException(`[Erreur Backend] ${msg}`, status);
+        }
     }
 
     /**
@@ -257,7 +267,6 @@ export class EntrepriseController {
         schema: {
             type: 'object',
             properties: {
-                difficulte: { type: 'string', enum: ['Facile', 'Moyen', 'Difficile'], default: 'Moyen' },
                 questions: { type: 'array', items: { type: 'object' } },
             }
         }
@@ -267,15 +276,21 @@ export class EntrepriseController {
     @ApiResponse({ status: 404, description: 'Offre not found.' })
     async sauvegarderQuestionsIA(
         @Param('id') id: string,
-        @Body() body: { difficulte?: 'Facile' | 'Moyen' | 'Difficile', questions: any[] },
+        @Body() body: { questions: any[] },
         @Request() req: any
     ) {
-        return this.entrepriseService.sauvegarderQuestionsIA(
-            id,
-            req.user.userId,
-            body.questions || [],
-            body.difficulte || 'Moyen'
-        );
+        try {
+            return await this.entrepriseService.sauvegarderQuestionsIA(
+                id,
+                req.user.userId,
+                body?.questions || []
+            );
+        } catch (error: any) {
+            console.error('[EntrepriseController] Erreur sauvegarderQuestionsIA:', error);
+            const msg = error.message || 'Erreur inconnue';
+            const status = error.status || 500;
+            throw new HttpException(`[Erreur Backend] ${msg}`, status);
+        }
     }
 
     /**

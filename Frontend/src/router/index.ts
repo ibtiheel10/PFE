@@ -4,6 +4,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import Login from '@/components/Login.vue'
 import Inscription from '@/components/Inscription.vue'
 import VerifyEmail from '@/components/VerifyEmail.vue'
+import SocialAuthSuccess from '@/components/SocialAuthSuccess.vue'
 import Home from '@/components/Home.vue'
 import Result from '@/components/Result.vue'
 
@@ -62,6 +63,11 @@ const routes: RouteRecordRaw[] = [
     path: '/verify-email',
     name: 'VerifyEmail',
     component: VerifyEmail
+  },
+  {
+    path: '/social-auth-success',
+    name: 'SocialAuthSuccess',
+    component: SocialAuthSuccess
   },
   {
     path: '/login-entreprise',

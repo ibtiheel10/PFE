@@ -187,10 +187,6 @@
             <i class="fa-brands fa-google"></i>
             Google
             </button>
-            <button class="social-btn" @click="handleSocialLogin('LinkedIn')">
-            <i class="fa-brands fa-linkedin"></i>
-            LinkedIn
-            </button>
           </div>
 
           </div>
@@ -348,25 +344,10 @@ const completeLogin = async (otpCode: string) => {
   }
 };
 
-// ─── Social Login (mock conservé) ────────────────────────────────────────────
+// ─── Social Login ────────────────────────────────────────────
 const handleSocialLogin = (provider: string) => {
-  const width = 500, height = 600;
-  const left = (window.screen.width / 2) - (width / 2);
-  const top = (window.screen.height / 2) - (height / 2);
-  const popup = window.open('', 'Social Login', `width=${width},height=${height},top=${top},left=${left}`);
-  if (popup) {
-    popup.document.write(`<html><head><title>Connexion avec ${provider}</title>
-      <style>body{font-family:sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;background:#0a0e1a;color:#e2e8f0;}
-      .loader{border:4px solid rgba(255,255,255,0.1);border-top:4px solid #3b82f6;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;}
-      @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style></head>
-      <body><h2>Connexion avec ${provider}...</h2><div class="loader"></div></body></html>`);
-    setTimeout(() => {
-      popup.close();
-      localStorage.setItem('userToken', 'mock-social-token-' + Date.now());
-      localStorage.setItem('userRole', 'candidat');
-      router.push('/dashboard');
-    }, 2000);
-  }
+  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
+  window.location.href = `${backendUrl}/auth/${provider.toLowerCase()}?role=${selectedRole.value}`;
 };
 </script>
 

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ScheduleModule } from '@nestjs/schedule';
 
 import { AuthModule } from './auth/auth.module';
 import { CandidatModule } from './candidat/candidat.module';
@@ -60,6 +61,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     QuestionsModule,
     NotificationsModule,
     ContactModule,
+    ScheduleModule.forRoot(),
   ],
 })
 export class AppModule { }

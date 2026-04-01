@@ -2,7 +2,7 @@ import axios from 'axios';
 
 async function testApi() {
     const CAND_ID = 8;
-    const BASE_URL = 'http://localhost:5000/api';
+    const BASE_URL = 'http://localhost:3333/api';
 
     // We need a token to test, but I can't easily get one.
     // Instead, I'll write a script that calls the SERVICE directly.

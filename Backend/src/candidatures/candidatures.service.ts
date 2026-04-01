@@ -7,7 +7,7 @@ import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { Question } from '../entities/question.entity';
 import { ReponseCandidat } from '../entities/reponse-candidat.entity';
 import { NotificationsService } from '../notifications/notifications.service';
-import * as fs from 'fs';
+import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class CandidaturesService {
@@ -23,6 +23,7 @@ export class CandidaturesService {
         @InjectRepository(ReponseCandidat)
         private readonly reponseCandidatRepo: Repository<ReponseCandidat>,
         private readonly notificationsService: NotificationsService,
+        private readonly aiService: AiService,
     ) { }
 
     // ─── GET /api/candidatures/:id/evaluation ─────────────────────────────────
@@ -32,8 +33,15 @@ export class CandidaturesService {
             relations: ['candidat', 'offre'],
         });
         if (!candidature) throw new NotFoundException(`Candidature introuvable.`);
-        if (candidature.candidat.id !== userId) throw new ConflictException('Accès refusé.');
-        if (!candidature.qcmDisponible) throw new ConflictException('Le QCM n\'est pas encore disponible pour cette offre.');
+        if (Number(candidature.candidat.id) !== Number(userId)) throw new ConflictException('Accès refusé.');
+        if (candidature.offre.dateLancementQcm) {
+            const now = new Date();
+            const launchDate = new Date(candidature.offre.dateLancementQcm);
+            if (now < launchDate) {
+                throw new ConflictException(`Le QCM ne sera disponible qu'à partir du ${launchDate.toLocaleString()}.`);
+            }
+        }
+
         if (candidature.score !== null) throw new ConflictException('Vous avez déjà passé cette évaluation.');
 
         const questions = await this.questionRepo.find({
@@ -50,7 +58,6 @@ export class CandidaturesService {
                 options: (q.contenu?.options ?? []).map((opt: any) => ({
                     text: typeof opt === 'string' ? opt : (opt.text ?? ''),
                 })),
-                difficulty: q.niveauDifficulte,
                 timer: q.chronometre,
             }))
         };
@@ -64,7 +71,7 @@ export class CandidaturesService {
             relations: ['candidat', 'offre'],
         });
         if (!candidature) throw new NotFoundException(`Candidature introuvable.`);
-        if (candidature.candidat.id !== userId) throw new ConflictException('Accès refusé.');
+        if (Number(candidature.candidat.id) !== Number(userId)) throw new ConflictException('Accès refusé.');
         if (candidature.score !== null) throw new ConflictException('Vous avez déjà passé cette évaluation.');
 
         const questions = await this.questionRepo.find({
@@ -100,7 +107,7 @@ export class CandidaturesService {
 
         let correctCount = 0;
         const reponsesToSave: ReponseCandidat[] = [];
-
+        const testResults: any[] = [];
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
             const bucketIdx = i % compBuckets.length;
@@ -109,17 +116,13 @@ export class CandidaturesService {
             let isCorrect = false;
             let reponseText = 'Non répondu';
 
-            const logPath = 'c:/Users/USER/Desktop/Projet_PFE/PFE/Backend/trace.log';
-            const logTrace = (msg: string) => fs.appendFileSync(logPath, msg + '\n');
-            logTrace(`\n[Q_LOOP] Processing Q ID: ${q.id} (type: ${typeof q.id})`);
-
             const chosenIndex = answers[Number(q.id)];
-            logTrace(`[Q_LOOP] chosenIndex for Q ${q.id}: ${chosenIndex}`);
+            console.log(`[EVAL] Q ${q.id} → chosenIndex: ${chosenIndex}`);
 
             if (chosenIndex !== undefined && chosenIndex !== null) {
                 const options: any[] = q.contenu?.options || [];
                 const chosen = options[chosenIndex];
-                logTrace(`[Q_LOOP] option found: ${JSON.stringify(chosen)}`);
+
                 if (chosen !== undefined) {
                     const isObj = typeof chosen === 'object' && chosen !== null;
                     reponseText = isObj ? (chosen.text || 'Option sélectionnée') : String(chosen);
@@ -143,6 +146,9 @@ export class CandidaturesService {
                 }
             }
 
+            const correctAnswerText = ((q.contenu as any)?.correctAnswer || 
+                ((q.contenu as any)?.options?.find((o: any) => o.isCorrect)?.text || 'Non spécifié'));
+
             const rep = new ReponseCandidat();
             rep.candidature = candidature;
             rep.question = q;
@@ -150,6 +156,13 @@ export class CandidaturesService {
             rep.est_correct = isCorrect;
             rep.scoreFinal = isCorrect ? 1 : 0;
             reponsesToSave.push(rep);
+            
+            testResults.push({
+                question: q.contenu?.question || `Question ${q.id}`,
+                selectedAnswer: reponseText,
+                correctAnswer: correctAnswerText,
+                isCorrect: isCorrect
+            });
         }
 
         const totalQuestions = questions.length;
@@ -165,12 +178,20 @@ export class CandidaturesService {
         candidature.totalQuestions = totalQuestions;
         candidature.tempsEcoule = tempsEcoule || candidature.tempsEcoule;
         candidature.statut = scorePercent >= 50 ? 'Entretiens' : 'Refusée';
+        
+        const aiRecommendation = await this.aiService.generateRecommendation(
+            candidature.offre.Description || candidature.offre.TitreDePost,
+            testResults
+        );
+
         candidature.evaluationDetails = JSON.stringify({
             TotalQuestions: totalQuestions,
             CorrectAnswers: correctCount,
             Temps: tempsEcoule || candidature.tempsEcoule || '15:00',
-            TopPercent: Math.max(5, Math.ceil(Math.random() * 20)),
+            TopPercent: Math.max(1, 100 - scorePercent),
             ScoreParCompetence,
+            aiRecommendation,
+            answers: testResults
         });
 
         await this.candidatureRepo.save(candidature);
@@ -195,6 +216,14 @@ export class CandidaturesService {
         });
         if (!offre) {
             throw new NotFoundException('Offre d\'emploi introuvable.');
+        }
+
+        if (offre.DateLimite) {
+            const now = new Date();
+            const dateLimite = new Date(offre.DateLimite);
+            if (now > dateLimite) {
+                throw new ConflictException('La date limite pour postuler à cette offre est dépassée.');
+            }
         }
 
         // 3. Vérifier si le candidat a déjà postulé à cette offre
@@ -245,7 +274,7 @@ export class CandidaturesService {
             order: { datePostulation: 'ASC' },
         });
 
-        const progression = candidatures.map(c => ({
+        const progression = candidatures.filter(c => c.score !== null).map(c => ({
             date: c.datePostulation,
             score: c.score || 0,
         }));
@@ -286,7 +315,7 @@ export class CandidaturesService {
             throw new NotFoundException(`Candidature introuvable.`);
         }
 
-        if (candidature.candidat.id !== userId) {
+        if (Number(candidature.candidat.id) !== Number(userId)) {
             throw new ConflictException('Vous n\'êtes pas autorisé à annuler cette candidature.');
         }
 

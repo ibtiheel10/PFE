@@ -164,6 +164,37 @@ export class AuthService {
         return { message: 'Un nouveau code OTP a été envoyé.' };
     }
 
+    // ── Social Login ─────────────────────────────────────────────────────────────
+
+    async handleSocialLogin(profile: any) {
+        let user = await this.userRepo.findOne({ where: { email: profile.email } });
+        
+        if (!user) {
+            // Register a new user with random password
+            const randomPassword = await bcrypt.hash(Math.random().toString(36).slice(-15), 10);
+            user = this.userRepo.create({
+                email: profile.email,
+                nom: profile.lastName || profile.firstName || 'User',
+                prenom: profile.firstName || '',
+                role: profile.role?.toLowerCase() === 'entreprise' ? 'Entreprise' : 'Candidat',
+                isEmailVerified: true,
+                password: randomPassword,
+                secteur: profile.role?.toLowerCase() === 'entreprise' ? 'Non spécifié' : undefined,
+            });
+            await this.userRepo.save(user);
+        }
+
+        const payload = { sub: user.id, email: user.email, role: user.role };
+        const token = this.jwtService.sign(payload);
+
+        return {
+            token,
+            email: user.email,
+            nom: user.nom,
+            role: user.role,
+        };
+    }
+
     // ── Helpers ──────────────────────────────────────────────────────────────────
 
     private generateOtpCode(): string {

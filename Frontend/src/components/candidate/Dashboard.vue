@@ -208,7 +208,7 @@
                             <div class="suggestion-accent" :style="{ backgroundColor: '#3B82F6' }"></div>
                             <div class="flex-1 min-w-0 py-3 pr-4">
                                 <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600 truncate transition-colors duration-200 mb-0.5">{{ offre.TitreDePost }}</h4>
-                                <p class="text-xs text-gray-400 mb-2">Skillvia Partner &bull; {{ offre.Localisation }}</p>
+                                <p class="text-xs text-gray-400 mb-2">{{ (offre as any).entreprise?.nom || (offre as any).entreprise?.Nom || (offre as any).user?.Entreprise?.Nom || (offre as any).user?.entreprise?.nom || 'Entreprise Confidentielle' }} &bull; {{ offre.Localisation }}</p>
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span v-if="offre.Categorie" class="text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md">{{ offre.Categorie }}</span>
                                     <span v-if="offre.ModeDeTravail" class="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">{{ offre.ModeDeTravail }}</span>

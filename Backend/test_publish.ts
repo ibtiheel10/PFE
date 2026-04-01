@@ -8,7 +8,7 @@ const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOjksImVtYWlsIjoidGFr
 async function test() {
     try {
         const res = await axios.post(
-            `http://localhost:5000/api/Entreprise/offres/${OFFRE_ID}/publier-qcm`,
+            `http://localhost:3333/api/Entreprise/offres/${OFFRE_ID}/publier-qcm`,
             {},
             { headers: { Authorization: `Bearer ${TOKEN}` } }
         );

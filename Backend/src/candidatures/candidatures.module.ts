@@ -8,9 +8,10 @@ import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { Question } from '../entities/question.entity';
 import { ReponseCandidat } from '../entities/reponse-candidat.entity';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AiModule } from '../ai/ai.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Candidature, User, OffreEmploi, Question, ReponseCandidat]), NotificationsModule],
+  imports: [TypeOrmModule.forFeature([Candidature, User, OffreEmploi, Question, ReponseCandidat]), NotificationsModule, AiModule],
   controllers: [CandidaturesController],
   providers: [CandidaturesService],
   exports: [CandidaturesService]

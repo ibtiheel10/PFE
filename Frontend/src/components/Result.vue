@@ -124,22 +124,6 @@
               </div>
             </div>
           </div>
-
-          <!-- CTA Buttons -->
-          <div class="action-row animate-fade-up" style="animation-delay: 0.2s">
-            <button class="btn-primary" @click="goToJobs">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
-              Voir d'autres offres
-            </button>
-            <button class="btn-secondary" @click="goToDashboard">
-              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-              </svg>
-              Mon Dashboard
-            </button>
-          </div>
         </div>
 
         <!-- Right column: Charts -->
@@ -208,6 +192,7 @@ const router = useRouter();
 const score = ref(0);
 const candidature = ref<CandidatureResponse | null>(null);
 
+
 const evalStats = ref({
     tempsEcoule: 'N/A',
     bonnesReponses: '0/0',
@@ -216,14 +201,15 @@ const evalStats = ref({
 
 onMounted(async () => {
   try {
+      const allCandidatures = await (await import('../services/candidatureService')).getMesCandidatures();
+      const evaluatedCandidatures = (allCandidatures || []).filter(c => c.statut === 'Évalué' || c.score !== null);
+      
       const candidatureIdParam = route.query.candidatureId;
       let targetCandidatureId: number | null = null;
       
       if (candidatureIdParam) {
           targetCandidatureId = Number(candidatureIdParam);
       } else {
-          const allCandidatures = await (await import('../services/candidatureService')).getMesCandidatures();
-          const evaluatedCandidatures = (allCandidatures || []).filter(c => c.statut === 'Évalué' || c.score !== null);
           if (evaluatedCandidatures && evaluatedCandidatures.length > 0) {
               targetCandidatureId = evaluatedCandidatures[0]?.id || null;
           }
@@ -240,12 +226,25 @@ onMounted(async () => {
                   evalStats.value.tempsEcoule = details.Temps || 'N/A';
                   evalStats.value.bonnesReponses = `${details.CorrectAnswers}/${details.TotalQuestions}`;
                   evalStats.value.topPercent = details.TopPercent ? `Top ${details.TopPercent}%` : 'N/A';
-                  if (details.ScoreParCompetence) {
-                      competencies.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
-                          name: key,
-                          score: Number(val)
-                      }));
+                  const competenceMap: Record<string, { total: number; count: number }> = {};
+                  for (const c of evaluatedCandidatures) {
+                      if (c.evaluationDetails) {
+                          try {
+                              const d = JSON.parse(c.evaluationDetails);
+                              if (d.ScoreParCompetence) {
+                                  for (const [k, v] of Object.entries(d.ScoreParCompetence)) {
+                                      if (!competenceMap[k]) competenceMap[k] = { total: 0, count: 0 };
+                                      competenceMap[k].total += Number(v);
+                                      competenceMap[k].count += 1;
+                                  }
+                              }
+                          } catch (e) {}
+                      }
                   }
+                  competencies.value = Object.entries(competenceMap).map(([name, { total, count }]) => ({
+                      name,
+                      score: Math.round(total / count)
+                  }));
               } catch (e) {
                   console.error('Error parsing evaluation details', e);
               }

@@ -80,7 +80,7 @@
 
             <div class="jp-hero-meta">
               <span class="jp-meta-chip">
-                <i class="fa-regular fa-building"></i>Skillvia Partner
+                <i class="fa-regular fa-building"></i>{{ job.entreprise ? job.entreprise.nom : 'Entreprise Confidentielle' }}
               </span>
               <span class="jp-meta-chip">
                 <i class="fa-solid fa-location-dot"></i>{{ job.Localisation }}
@@ -123,12 +123,12 @@
                 </div>
                 <div>
                   <div class="jp-apply-label">Rejoindre l'équipe</div>
-                  <div class="jp-apply-co"><strong>Skillvia Partner</strong></div>
+                  <div class="jp-apply-co"><strong>{{ job.entreprise ? job.entreprise.nom : 'Entreprise Confidentielle' }}</strong></div>
                 </div>
               </div>
-              <button class="jp-btn-apply" @click="applyToJob">
+              <button class="jp-btn-apply" @click="applyToJob" :disabled="isDeadlinePassed" :class="{ 'opacity-50 cursor-not-allowed': isDeadlinePassed }">
                 <i class="fa-solid fa-paper-plane"></i>
-                Postuler maintenant
+                {{ isDeadlinePassed ? 'Date limite dépassée' : 'Postuler maintenant' }}
               </button>
               <p class="jp-apply-note">
                 <i class="fa-solid fa-shield-halved"></i>
@@ -325,10 +325,10 @@
           <!-- CTA Card -->
           <div class="jp-card jp-cta-card" v-if="!alreadyApplied">
             <div class="jp-card-body">
-              <p class="jp-cta-title">Prêt à postuler chez <strong>Skillvia Partner ?</strong></p>
-              <button class="jp-btn-apply jp-btn-full" @click="applyToJob">
+              <p class="jp-cta-title">Prêt à postuler chez <strong>{{ job.entreprise ? job.entreprise.nom : 'Entreprise Confidentielle' }} ?</strong></p>
+              <button class="jp-btn-apply jp-btn-full" @click="applyToJob" :disabled="isDeadlinePassed" :class="{ 'opacity-50 cursor-not-allowed': isDeadlinePassed }">
                 <i class="fa-solid fa-paper-plane"></i>
-                Postuler maintenant
+                {{ isDeadlinePassed ? 'Date limite dépassée' : 'Postuler maintenant' }}
               </button>
             </div>
           </div>
@@ -410,6 +410,13 @@ onMounted(async () => {
 
 const alreadyApplied  = computed(() => !!myApplication.value);
 const applicantsCount = computed(() => 12);
+
+const isDeadlinePassed = computed(() => {
+  if (!job.value || !job.value.DateLimite) return false;
+  const deadline = new Date(job.value.DateLimite);
+  deadline.setHours(23, 59, 59, 999);
+  return new Date() > deadline;
+});
 
 const recruitmentSteps = computed(() => [
   { title: 'Dépôt de candidature', desc: 'Soumettez votre candidature. Notre équipe examine votre profil sous 48h.', extra: '', icon: 'fa-solid fa-file-arrow-up', color: 'dot-indigo' },

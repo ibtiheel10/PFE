@@ -28,10 +28,6 @@
       
       <!-- Question Metadata -->
       <div class="question-meta">
-        <span class="difficulty-badge" :class="difficultyClass">
-          <i class="fa-solid fa-signal"></i>
-          DIFFICULTY: {{ currentQuestion.difficulty.toUpperCase() }}
-        </span>
         <span class="topic-badge">
           <i class="fa-solid fa-lightbulb"></i>
           TOPIC: {{ currentQuestion.topic.toUpperCase() }}
@@ -122,7 +118,6 @@ interface Question {
   id: number;
   text: string;
   answers: Answer[];
-  difficulty: 'easy' | 'intermediate' | 'hard';
   topic: string;
 }
 
@@ -131,7 +126,6 @@ const questions = ref<Question[]>([
   {
     id: 1,
     text: "Which of the following best describes the principle of 'Separation of Concerns'?",
-    difficulty: 'intermediate',
     topic: 'Architecture',
     answers: [
       { text: "Dividing a program into distinct sections, such that each section addresses a separate concern.", hint: "Modularity", correct: true },
@@ -143,7 +137,6 @@ const questions = ref<Question[]>([
   {
     id: 2,
     text: "What is the primary purpose of a 'key' prop in Vue.js list rendering?",
-    difficulty: 'easy',
     topic: 'Vue.js',
     answers: [
       { text: "To give a unique class name to elements.", hint: "CSS", correct: false },
@@ -155,7 +148,6 @@ const questions = ref<Question[]>([
   {
     id: 3,
     text: "In RESTful API design, which HTTP method is idempotent?",
-    difficulty: 'intermediate',
     topic: 'API Design',
     answers: [
       { text: "POST", hint: "Creates resources", correct: false },
@@ -180,7 +172,6 @@ const formattedTime = computed(() => {
   const s = (timeRemainingSeconds.value % 60).toString().padStart(2, '0');
   return `${m}:${s}`;
 });
-const difficultyClass = computed(() => `difficulty-${currentQuestion.value?.difficulty}`);
 
 // Timer
 let timerInterval: any;
@@ -335,7 +326,6 @@ const submitQuiz = () => {
   flex-wrap: wrap;
 }
 
-.difficulty-badge,
 .topic-badge {
   display: inline-flex;
   align-items: center;
@@ -347,25 +337,10 @@ const submitQuiz = () => {
   letter-spacing: 0.5px;
 }
 
-.difficulty-badge i,
 .topic-badge i {
   font-size: 12px;
 }
 
-.difficulty-intermediate {
-  background: #ffedd5;
-  color: #c2410c;
-}
-
-.difficulty-easy {
-  background: #d1fae5;
-  color: #059669;
-}
-
-.difficulty-hard {
-  background: #fee2e2;
-  color: #dc2626;
-}
 
 .topic-badge {
   background: #dbeafe;

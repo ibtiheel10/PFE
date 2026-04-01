@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, MoreThanOrEqual, IsNull } from 'typeorm';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { CreateOffreDto } from './dto/create-offre.dto';
 import { UpdateOffreDto } from './dto/update-offre.dto';
@@ -19,13 +19,23 @@ export class OffresService {
 
 
     async findAll(): Promise<OffreEmploi[]> {
+        const now = new Date();
+
         return await this.offreEmploiRepository.find({
+            where: [
+                { DateLimite: MoreThanOrEqual(now) },
+                { DateLimite: IsNull() }
+            ],
+            relations: ['entreprise'],
             order: { DatePublication: 'DESC' },
         });
     }
 
     async findOne(id: string): Promise<OffreEmploi> { // Original findOne for OffreEmploi
-        const offre = await this.offreEmploiRepository.findOne({ where: { id } });
+        const offre = await this.offreEmploiRepository.findOne({ 
+            where: { id },
+            relations: ['entreprise']
+        });
         if (!offre) {
             throw new NotFoundException(`L'offre d'emploi avec l'ID ${id} n'a pas été trouvée.`);
         }
