@@ -12,6 +12,11 @@ export class Question {
         question: string;
         options: { text: string; isCorrect: boolean }[];
         correctAnswer?: string;
+        explanation?: string;
+        points?: number;
+        questionType?: string;
+        difficulty?: string;
+        category?: string;
     };
 
     @Column({ type: 'int' })

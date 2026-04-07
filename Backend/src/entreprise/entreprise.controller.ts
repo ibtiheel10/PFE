@@ -384,6 +384,20 @@ export class EntrepriseController {
         return this.entrepriseService.publierQCM(id, req.user.userId);
     }
 
+    /**
+     * GET /api/Entreprise/offres/:id/analytics-qcm
+     * Récupère le taux de réussite détaillé par question pour cette offre
+     */
+    @Get('offres/:id/analytics-qcm')
+    @ApiOperation({ summary: 'Get detailed success rate limit per question for this job offer' })
+    @ApiParam({ name: 'id', description: 'UUID of the offre' })
+    @ApiResponse({ status: 200, description: 'Analytics data retrieved.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
+    @ApiResponse({ status: 404, description: 'Offre not found.' })
+    async getQcmAnalytics(@Param('id') id: string, @Request() req: any) {
+        return this.entrepriseService.getQcmAnalytics(id, req.user.userId);
+    }
+
     // ─── Candidats ────────────────────────────────────────────────────────────
 
     /**

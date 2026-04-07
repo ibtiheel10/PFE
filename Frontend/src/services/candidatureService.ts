@@ -32,6 +32,7 @@ export interface CandidatureStats {
         reussis: number;
         echoues: number;
         moyenne: number;
+        expirees?: number;
     };
 }
 

@@ -17,6 +17,37 @@ export class AdminService {
     ) { }
 
     /**
+     * Seeds the admin user.
+     */
+    async seedAdmin() {
+        const ADMIN_EMAIL = 'skillvia.recrutement@gmail.com';
+        const bcrypt = require('bcrypt');
+        let admin = await this.userRepo.findOneBy({ email: ADMIN_EMAIL });
+        const hashedPassword = await bcrypt.hash('Admin@Skillvia2026!', 10);
+        
+        if (admin) {
+            admin.password = hashedPassword;
+            admin.role = 'Admin';
+            admin.nom = 'Skillvia';
+            admin.prenom = 'Admin';
+            admin.isEmailVerified = true;
+            await this.userRepo.save(admin);
+            return { message: 'Admin mis à jour' };
+        } else {
+            const newAdmin = this.userRepo.create({
+                email: ADMIN_EMAIL,
+                password: hashedPassword,
+                nom: 'Skillvia',
+                prenom: 'Admin',
+                role: 'Admin',
+                isEmailVerified: true,
+            });
+            await this.userRepo.save(newAdmin);
+            return { message: 'Admin créé' };
+        }
+    }
+
+    /**
      * Returns the profile of the currently logged-in admin.
      * @param userId - extracted from the JWT token
      */
@@ -186,30 +217,40 @@ export class AdminService {
         }));
     }
 
+private systemMockedLogs = [
+    {
+        id: 1,
+        action: 'Connexion Admin réussie',
+        userId: 'Super Admin',
+        dateAction: new Date().toISOString()
+    },
+    {
+        id: 2,
+        action: 'Nouvelle entreprise inscrite: TechCorp',
+        userId: 'Système',
+        dateAction: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+        id: 3,
+        action: 'Utilisateur Jean.D suspendu',
+        userId: 'Super Admin',
+        dateAction: new Date(Date.now() - 7200000).toISOString()
+    }
+];
+
     /**
      * Get system logs (mocked for now).
      */
     async getLogs() {
-        return [
-            {
-                id: 1,
-                action: 'Connexion Admin réussie',
-                userId: 'Super Admin',
-                dateAction: new Date().toISOString()
-            },
-            {
-                id: 2,
-                action: 'Nouvelle entreprise inscrite: TechCorp',
-                userId: 'Système',
-                dateAction: new Date(Date.now() - 3600000).toISOString()
-            },
-            {
-                id: 3,
-                action: 'Utilisateur Jean.D suspendu',
-                userId: 'Super Admin',
-                dateAction: new Date(Date.now() - 7200000).toISOString()
-            }
-        ];
+        return this.systemMockedLogs;
+    }
+
+    /**
+     * Clears system logs.
+     */
+    async clearLogs() {
+        this.systemMockedLogs = [];
+        return { message: 'Logs nettoyés avec succès' };
     }
 }
 

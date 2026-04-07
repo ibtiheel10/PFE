@@ -6,15 +6,8 @@
       <div class="jp-nav-inner">
 
         <div class="jp-brand">
-          <div class="jp-logo">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-          </div>
-          <div class="jp-brand-text">
-            <span class="jp-brand-name">Skillvia</span>
-            <span class="jp-brand-tag">Recrutement</span>
-          </div>
+          <LogoIcon customClass="w-10 h-10" />
+          <span class="jp-brand-name" style="color: #1e40af; font-weight: 900; font-size: 22px; letter-spacing: -0.03em; line-height: 1;">Skillvia</span>
         </div>
 
         <div class="jp-nav-divider"></div>
@@ -107,7 +100,7 @@
               </div>
               <div class="jp-stat-line"></div>
               <div class="jp-stat">
-                <span class="jp-stat-val">20 min</span>
+                <span class="jp-stat-val">5 min</span>
                 <span class="jp-stat-key">Durée test</span>
               </div>
             </div>
@@ -258,17 +251,17 @@
               <div class="jp-test-stats">
                 <div class="jp-ts">
                   <div class="jp-ts-icon jp-ts-sky"><i class="fa-regular fa-clock"></i></div>
-                  <span class="jp-ts-num">20 min</span>
+                  <span class="jp-ts-num">5 min</span>
                   <span class="jp-ts-lbl">durée</span>
                 </div>
                 <div class="jp-ts">
                   <div class="jp-ts-icon jp-ts-indigo"><i class="fa-solid fa-list-check"></i></div>
-                  <span class="jp-ts-num">15</span>
+                  <span class="jp-ts-num">5</span>
                   <span class="jp-ts-lbl">questions</span>
                 </div>
                 <div class="jp-ts">
                   <div class="jp-ts-icon jp-ts-emerald"><i class="fa-solid fa-chart-line"></i></div>
-                  <span class="jp-ts-num">70%</span>
+                  <span class="jp-ts-num">80%</span>
                   <span class="jp-ts-lbl">min. requis</span>
                 </div>
               </div>
@@ -376,7 +369,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import Swal from 'sweetalert2';
 import { useRoute } from 'vue-router';
+import LogoIcon from './LogoIcon.vue';
 import { getOffreById, type OffreEmploi } from '../services/offreService';
 import { postuler, getMesCandidatures, deleteCandidature, type CandidatureResponse } from '../services/candidatureService';
 
@@ -420,7 +415,7 @@ const isDeadlinePassed = computed(() => {
 
 const recruitmentSteps = computed(() => [
   { title: 'Dépôt de candidature', desc: 'Soumettez votre candidature. Notre équipe examine votre profil sous 48h.', extra: '', icon: 'fa-solid fa-file-arrow-up', color: 'dot-indigo' },
-  { title: 'Test QCM Skillvia', desc: "Évaluation objective de vos compétences techniques via notre plateforme.", extra: job.value ? 'QCM technique · Score min. 70%' : '', icon: 'fa-solid fa-brain', color: 'dot-violet' },
+  { title: 'Test QCM Skillvia', desc: "Évaluation objective de vos compétences techniques via notre plateforme.", extra: job.value ? 'QCM technique · Score min. 80%' : '', icon: 'fa-solid fa-brain', color: 'dot-violet' },
   { title: 'Entretien technique', desc: "Échange approfondi avec l'équipe recrutement et les managers techniques.", extra: '', icon: 'fa-solid fa-video', color: 'dot-orange' },
   { title: 'Décision finale', desc: "Retour de l'entreprise sous 5 jours ouvrés après l'entretien.", extra: '', icon: 'fa-solid fa-flag-checkered', color: 'dot-green' },
 ]);
@@ -432,7 +427,7 @@ const applyToJob = async () => {
     myApplication.value = resp;
     showToast('✅', 'Candidature envoyée avec succès !');
   } catch (e: any) {
-    alert(e.response?.data?.message || 'Erreur lors de la candidature.');
+    Swal.fire({ title: 'Erreur', text: e.response?.data?.message || 'Erreur lors de la candidature.', icon: 'error' });
   }
 };
 

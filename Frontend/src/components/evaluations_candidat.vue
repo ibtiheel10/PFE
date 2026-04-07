@@ -47,7 +47,10 @@
       <div
         v-for="evaluation in filteredEvaluations"
         :key="evaluation.id"
-        class="bg-white rounded-2xl p-6 border border-gray-100 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] transition-all hover:shadow-[0_8px_20px_-6px_rgba(6,81,237,0.15)] flex flex-col h-full"
+        class="rounded-2xl p-6 border transition-all flex flex-col h-full"
+        :class="evaluation.status === 'expired'
+          ? 'bg-gray-50 border-gray-200 shadow-none opacity-70'
+          : 'bg-white border-gray-100 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] hover:shadow-[0_8px_20px_-6px_rgba(6,81,237,0.15)]'"
       >
         <!-- Card Header -->
         <div class="flex justify-between items-start mb-4">
@@ -116,29 +119,40 @@
           </span>
         </div>
 
-        <!-- Action Button -->
-        <button
-          @click="handleEvaluationAction(evaluation)"
-          class="w-full py-3 rounded-xl font-bold text-[13px] transition-all duration-200"
-          :class="evaluation.status === 'open'
-            ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40'
-            : evaluation.status === 'done'
-              ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 hover:shadow-purple-600/40'
-              : evaluation.status === 'in_progress'
-                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
-          :disabled="evaluation.status !== 'open' && evaluation.status !== 'done'"
-        >
-          <span class="flex items-center justify-center gap-2">
-            <svg v-if="evaluation.status === 'done'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4" />
+        <!-- Action Button (hidden for expired) -->
+        <div v-if="evaluation.status !== 'expired'">
+          <button
+            @click="handleEvaluationAction(evaluation)"
+            class="w-full py-3 rounded-xl font-bold text-[13px] transition-all duration-200"
+            :class="evaluation.status === 'open'
+              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40'
+              : evaluation.status === 'done'
+                ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 hover:shadow-purple-600/40'
+                : evaluation.status === 'in_progress'
+                  ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'"
+            :disabled="evaluation.status !== 'open' && evaluation.status !== 'done'"
+          >
+            <span class="flex items-center justify-center gap-2">
+              <svg v-if="evaluation.status === 'done'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2M9 12l2 2 4-4" />
+              </svg>
+              <svg v-if="evaluation.status === 'in_progress'" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              {{ actionLabel(evaluation.status, evaluation.dateLancementQcm) }}
+            </span>
+          </button>
+        </div>
+        <!-- Expired: informational footer only -->
+        <div v-else class="w-full py-3 rounded-xl bg-orange-50 border border-orange-100 text-center">
+          <span class="flex items-center justify-center gap-2 text-[13px] font-semibold text-orange-500">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <svg v-if="evaluation.status === 'in_progress'" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            {{ actionLabel(evaluation.status, evaluation.dateLancementQcm) }}
+            Délai dépassé — aucune évaluation possible
           </span>
-        </button>
+        </div>
 
       </div>
     </div>
@@ -196,7 +210,6 @@ const filterTabs = computed(() => [
   { key: 'all' as FilterKey,     label: 'Toutes',           count: evaluations.value.length },
   { key: 'scheduled' as FilterKey,label: 'Programmées',     count: countByStatus('scheduled') },
   { key: 'done' as FilterKey,    label: 'Terminées',        count: countByStatus('done') },
-  { key: 'closed' as FilterKey,  label: 'Fermées',          count: countByStatus('closed') },
   { key: 'expired' as FilterKey, label: 'Session expirée',  count: countByStatus('expired') },
 ]);
 
@@ -229,7 +242,7 @@ const computeStatus = (c: any): 'open' | 'closed' | 'expired' | 'done' | 'schedu
       return 'scheduled';
     }
     
-    const expirationDate = new Date(launchDate.getTime() + 5 * 60000); // 5 minutes après le lancement
+    const expirationDate = new Date(launchDate.getTime() + 1 * 60000); // 1 minute après le lancement
     if (now >= expirationDate && !sessionStorage.getItem(`qcm_in_progress_${c.id}`)) {
       return 'expired';
     }
@@ -253,11 +266,11 @@ onMounted(async () => {
       return {
         id: c.id,
         title: c.offre.TitreDePost,
-        companyName: c.offre.entreprise?.nom || c.offre.entreprise?.Nom || c.offre.user?.Entreprise?.Nom || c.offre.user?.entreprise?.nom || 'Entreprise Confidentielle',
+        companyName: (c.offre as any).entreprise?.nom || (c.offre as any).entreprise?.Nom || (c.offre as any).user?.Entreprise?.Nom || (c.offre as any).user?.entreprise?.nom || 'Entreprise Confidentielle',
         status,
         description: `Évaluation technique pour le poste de ${c.offre.TitreDePost}.`,
         deadline: c.offre.DateLimite ? new Date(c.offre.DateLimite).toLocaleDateString('fr-FR') : '—',
-        duration: 20,
+        duration: 3,
         skills: [c.offre.Categorie].filter(Boolean),
         moreSkillsCount: 0,
         score: c.score,

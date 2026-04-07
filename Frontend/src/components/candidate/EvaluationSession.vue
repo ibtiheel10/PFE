@@ -1,5 +1,5 @@
 <template>
-  <div class="evaluation-session-page min-h-screen bg-slate-50 font-sans flex flex-col items-center relative">
+  <div class="evaluation-session-page min-h-screen bg-slate-50 font-sans flex flex-col items-center relative select-none">
     
     <!-- Top Header Bar -->
     <header class="w-full bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
@@ -45,7 +45,7 @@
       <!-- Question Card -->
       <div class="bg-white rounded-2xl p-8 md:p-12 shadow-sm border border-slate-200 mb-8 relative">
         <div class="absolute left-0 inset-y-0 w-1.5 bg-blue-600 rounded-r-md"></div>
-        <h2 class="text-[22px] md:text-[26px] font-bold text-slate-900 leading-[1.4] pl-5 m-0">
+        <h2 class="text-[22px] md:text-[26px] font-bold text-slate-900 leading-[1.4] pl-5 m-0 whitespace-pre-wrap break-words">
           {{ currentQuestion.text }}
         </h2>
       </div>
@@ -81,8 +81,8 @@
           </div>
 
           <!-- Option Text -->
-          <div class="flex-1 pr-8">
-            <p class="text-[14px] font-bold leading-snug transition-colors"
+          <div class="flex-1 pr-8 min-w-0">
+            <p class="text-[14px] font-bold leading-snug transition-colors whitespace-pre-wrap break-words"
                :class="selectedOptionIndex === index ? 'text-slate-900' : 'text-slate-700'">
               {{ option.text }}
             </p>
@@ -138,6 +138,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import Swal from 'sweetalert2';
 import { useRouter, useRoute } from 'vue-router';
 import api from '@/services/axios';
 
@@ -244,7 +245,7 @@ onMounted(async () => {
         startTimer();
       }
     } else {
-      alert("Aucune question trouvée pour ce test.");
+      Swal.fire({ title: 'Erreur', text: "Aucune question trouvée pour ce test.", icon: 'error' });
       router.push('/candidat/evaluations');
     }
   } catch (err: any) {
@@ -259,7 +260,7 @@ onMounted(async () => {
     if (alreadyDone) {
       router.push({ name: 'EvaluationResult', params: { id: route.params.id } });
     } else {
-      alert(msg || "Impossible de charger l'\u00e9valuation.");
+      Swal.fire({ title: 'Erreur', text: msg || "Impossible de charger l'\u00e9valuation.", icon: 'error' });
       router.push('/candidat/evaluations');
     }
   }
@@ -269,6 +270,130 @@ onUnmounted(() => {
   if (timerInterval) clearInterval(timerInterval);
   // Nettoyer le verrou de session à la sortie
   sessionStorage.removeItem(getSessionKey(route.params.id));
+  
+  // Supprimer les écouteurs Anti-cheat
+  document.removeEventListener('contextmenu', preventContextMenu);
+  document.removeEventListener('keydown', handleKeydown);
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  window.removeEventListener('blur', handleBlur);
+  document.removeEventListener('copy', preventDefaultAction);
+  document.removeEventListener('cut', preventDefaultAction);
+  document.removeEventListener('selectstart', preventDefaultAction);
+  document.removeEventListener('dragstart', preventDefaultAction);
+  window.removeEventListener('resize', handleResize);
+  if (fullscreenInterval) clearInterval(fullscreenInterval);
+});
+
+// ── Anti-Cheat System ─────────────────────────────────────────────────────────
+const infractionsCount = ref(0);
+const MAX_INFRACTIONS = 3;
+const isCancelled = ref(false);
+
+const handleInfraction = (type: string) => {
+    if (isCancelled.value) return; // Prevent infinite loop of alerts
+    
+    // Increase infractions count by 1
+    infractionsCount.value++;
+    console.warn(`[Anti-Cheat] Infraction détectée: ${type}`);
+    
+    // If it exceeds or matches the maximum, forcefully submit the exam
+    if (infractionsCount.value >= MAX_INFRACTIONS) {
+        isCancelled.value = true;
+        Swal.fire({
+            title: 'Évaluation Annulée',
+            text: `Plusieurs tentatives de triche détectées (${type}). L'évaluation est soumise automatiquement.`,
+            icon: 'error',
+            confirmButtonText: 'Compris',
+            allowOutsideClick: false
+        }).then(() => {
+            handleNext(true); // Auto-submit
+        });
+    } else {
+        // Show warning toast for minor strikes
+        Swal.fire({
+            title: 'Avertissement Sécurité',
+            text: `Action non autorisée (${type}). Au bout de ${MAX_INFRACTIONS} avertissements, l'évaluation sera annulée. (Avertissements: ${infractionsCount.value}/${MAX_INFRACTIONS})`,
+            icon: 'warning',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 5000,
+            timerProgressBar: true
+        });
+    }
+};
+
+const preventContextMenu = (e: Event) => {
+    e.preventDefault();
+    handleInfraction("Clic droit interdit");
+};
+
+const preventDefaultAction = (e: Event) => {
+    e.preventDefault();
+    handleInfraction("Copier/Sélectionner interdit");
+};
+
+const handleBlur = () => {
+    handleInfraction("Perte de focus (Ouverture d'une autre application)");
+};
+
+const handleKeydown = (e: KeyboardEvent) => {
+    // Block inspector (F12, Ctrl+Shift+I)
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'i' || e.key === 'J' || e.key === 'j'))) {
+        e.preventDefault();
+        handleInfraction("Outils de développement bloqués");
+    }
+    // Block Copy/Paste/Cut (Ctrl/Cmd + C/V/X)
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'v' || e.key === 'x')) {
+        e.preventDefault();
+        handleInfraction("Copier-Coller interdit");
+    }
+    // Detect PrintScreen (PrtScn / Impr écr)
+    if (e.key === 'PrintScreen' || e.code === 'PrintScreen') {
+        // e.preventDefault() may not block the OS, but we catch them!
+        handleInfraction("Capture d'écran détectée");
+    }
+};
+
+const handleVisibilityChange = () => {
+    if (document.hidden) {
+        handleInfraction("Changement d'onglet ou fenêtre masquée");
+    }
+};
+
+const handleResize = () => {
+    if (window.innerWidth < 800 || window.innerHeight < 600) {
+        handleInfraction("Fenêtre réduite détectée (Veuillez garder le mode plein écran)");
+    }
+};
+
+let fullscreenInterval: number;
+const checkFullscreen = () => {
+    if (!document.fullscreenElement) {
+        handleInfraction("Mode plein écran quitté (Veuillez rester en plein écran)");
+    }
+};
+
+onMounted(() => {
+  document.addEventListener('contextmenu', preventContextMenu);
+  document.addEventListener('keydown', handleKeydown);
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('blur', handleBlur);
+  document.addEventListener('copy', preventDefaultAction);
+  document.addEventListener('cut', preventDefaultAction);
+  document.addEventListener('selectstart', preventDefaultAction);
+  document.addEventListener('dragstart', preventDefaultAction);
+  window.addEventListener('resize', handleResize);
+  
+  fullscreenInterval = window.setInterval(checkFullscreen, 2000);
+  
+  // Forcer le plein écran au début
+  document.documentElement.requestFullscreen().catch(err => {
+      console.warn("Fullscreen request failed (attente d'une interaction utilisateur):", err);
+  });
+  
+  // Custom console message for inspection warning
+  console.log("%c⚠️ ATTENTION: Toute tentative de triche sera signalée ! ⚠️", "color: red; font-size: 20px; font-weight: bold;");
 });
 
 // ── Navigation & Submit ───────────────────────────────────────────────────────
@@ -295,7 +420,11 @@ const handleNext = async (forced = false) => {
       localStorage.removeItem(getSessionStartTimeKey(candId));
       router.push({ name: 'EvaluationResult', params: { id: candId } });
     } catch (e: any) {
-      alert(e?.response?.data?.message ?? "Erreur lors de la soumission.");
+      // In case of conflict (already submitted from another trigger), gracefully bypass instead of showing a blocking alert
+      const candId = route.params.id as string;
+      sessionStorage.removeItem(getSessionKey(candId));
+      localStorage.removeItem(getSessionStartTimeKey(candId));
+      router.push({ name: 'EvaluationResult', params: { id: candId } });
     }
   } else {
     if (!forced && selectedOptionIndex.value === null) return;

@@ -13,6 +13,12 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nes
 export class AdminController {
     constructor(private readonly adminService: AdminService) { }
 
+    @Get('seed-admin')
+    @ApiOperation({ summary: 'Seed the admin user' })
+    async seedAdmin() {
+        return this.adminService.seedAdmin();
+    }
+
     /**
      * GET /api/Admin/mon-profil
      * Returns the profile of the currently logged-in admin.
@@ -112,5 +118,15 @@ export class AdminController {
     @ApiOperation({ summary: 'Get system logs (mocked)' })
     async getLogs() {
         return this.adminService.getLogs();
+    }
+
+    /**
+     * DELETE /api/Admin/logs
+     * Clears all system logs.
+     */
+    @Delete('logs')
+    @ApiOperation({ summary: 'Clear all system logs' })
+    async clearLogs() {
+        return this.adminService.clearLogs();
     }
 }

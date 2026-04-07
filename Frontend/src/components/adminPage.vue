@@ -10,14 +10,8 @@
         <div class="h-16 flex items-center border-b border-gray-100 dark:border-gray-800 overflow-hidden whitespace-nowrap"
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
           <div class="flex items-center gap-3 cursor-pointer" @click="router.push('/')">
-             <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30 flex-shrink-0 relative overflow-hidden group">
-                <span class="relative z-10">S</span>
-                <div class="absolute inset-0 bg-gradient-to-tr from-blue-700 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-             </div>
-             <div v-if="!isSidebarCollapsed" class="flex flex-col transition-opacity duration-200">
-                <span class="font-bold text-gray-900 text-lg tracking-tight dark:text-white">Skillvia</span>
-                <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider dark:text-gray-400">Panel Admin</span>
-             </div>
+             <LogoIcon customClass="w-9 h-9 flex-shrink-0" />
+                <span class="font-black text-[#1e40af] text-[24px] tracking-tight">Skillvia</span>
           </div>
         </div>
 
@@ -120,9 +114,6 @@
                             <p class="text-sm font-bold text-gray-900 dark:text-white">{{ adminName }}</p>
                             <p class="text-xs text-gray-500 truncate dark:text-gray-400">{{ adminEmail }}</p>
                         </div>
-                        <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors dark:text-gray-300 dark:hover:bg-gray-700 dark:hover:text-blue-400">
-                            <Cog6ToothIcon class="w-4 h-4" /> Paramètres
-                        </a>
                          <div class="h-px bg-gray-100 my-1 dark:bg-gray-700"></div>
                         <a href="#" @click.prevent="handleLogout" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors dark:hover:bg-red-900/20">
                             <ArrowRightOnRectangleIcon class="w-4 h-4" /> Déconnexion
@@ -392,11 +383,6 @@
 
         <!-- User Management Module -->
         <div v-else-if="activeNav === 'Gestion Utilisateurs'" class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Utilisateurs</h2>
-                <button @click="showCreateUserModal = true" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all">+ Ajouter un utilisateur</button>
-            </div>
-
             <!-- Success / Error banner -->
             <div v-if="userActionMsg" :class="userActionIsError ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'" class="px-4 py-3 rounded-xl border text-sm font-medium flex items-center justify-between">
                 <span>{{ userActionMsg }}</span>
@@ -491,7 +477,7 @@
         <div v-else-if="activeNav === 'Logs Système'" class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Journaux d'activité</h2>
-                <button class="text-sm font-bold text-blue-600 hover:underline">Nettoyer les logs</button>
+                <button @click="clearLogs" class="text-sm font-bold text-blue-600 hover:underline">Nettoyer les logs</button>
             </div>
 
             <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-50 dark:divide-gray-700">
@@ -649,6 +635,8 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import Swal from 'sweetalert2';
+import LogoIcon from './LogoIcon.vue';
 import { 
     Squares2X2Icon, 
     UserGroupIcon, 
@@ -942,7 +930,8 @@ const handleMarkContactTreated = async (id: number) => {
 };
 
 const handleDeleteContact = async (id: number) => {
-    if (!confirm('Voulez-vous vraiment supprimer ce message ?')) return;
+    const result = await Swal.fire({ title: 'Confirmation', text: 'Voulez-vous vraiment supprimer ce message ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Oui', cancelButtonText: 'Non' });
+    if (!result.isConfirmed) return;
     try {
         const token = localStorage.getItem('userToken');
         const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -967,7 +956,8 @@ const toggleUserStatus = async (userId: string) => {
 
 // ── Delete user ───────────────────────────────────────────
 const deleteUser = async (userId: string) => {
-    if (!confirm('Supprimer cet utilisateur ?')) return;
+    const result = await Swal.fire({ title: 'Confirmation', text: 'Supprimer cet utilisateur ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Oui', cancelButtonText: 'Non' });
+    if (!result.isConfirmed) return;
     try {
         const token = localStorage.getItem('userToken');
         const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -981,6 +971,21 @@ const deleteUser = async (userId: string) => {
     }
 };
 
+// ── Clear system logs ──────────────────────────────────────
+const clearLogs = async () => {
+    const result = await Swal.fire({ title: 'Confirmation', text: 'Voulez-vous vraiment nettoyer tous les journaux système ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Oui', cancelButtonText: 'Non' });
+    if (!result.isConfirmed) return;
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.delete(`${API_BASE}/api/admin/logs`, config);
+        logs.value = []; // Clear array locally
+    } catch (e: any) {
+        console.error('Erreur lors du nettoyage des logs', e);
+        Swal.fire({ title: 'Erreur', text: e?.response?.data?.message || 'Erreur lors de la suppression des logs.', icon: 'error' });
+    }
+};
+
 onMounted(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme === 'dark') {
@@ -989,9 +994,9 @@ onMounted(() => {
     fetchAdminData();
 });
 
-
 const handleLogout = async () => {
-    if(confirm('Voulez-vous vraiment vous déconnecter ?')) {
+    const result = await Swal.fire({ title: 'Déconnexion', text: 'Voulez-vous vraiment vous déconnecter ?', icon: 'question', showCancelButton: true, confirmButtonText: 'Oui', cancelButtonText: 'Non' });
+    if(result.isConfirmed) {
         try {
             await axios.post(`${API_BASE}/api/auth/logout`);
         } catch (e) { console.error(e); }

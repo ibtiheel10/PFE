@@ -3,8 +3,9 @@
     <!-- Header -->
     <header class="header">
       <div class="header-container">
-        <div class="logo">
-          <img src="../assets/logo-modern.png" alt="Skillvia" />
+        <div class="logo" style="display: flex; align-items: center; gap: 10px;">
+          <LogoIcon customClass="w-8 h-8 flex-shrink-0" />
+          <span class="font-black text-[#1e40af] text-[20px] tracking-tight leading-none">Skillvia</span>
         </div>
 
         <nav class="nav-menu">
@@ -104,11 +105,10 @@
               <option value="low">Low (0-59%)</option>
             </select>
             <select v-model="statusFilter" class="filter-select">
-              <option value="all">All Status</option>
-              <option value="shortlisted">Shortlisted</option>
-              <option value="evaluating">Evaluating</option>
-              <option value="pending">Pending Review</option>
-              <option value="rejected">Rejected</option>
+              <option value="all">Tous les statuts</option>
+              <option value="entretien">Entretien</option>
+              <option value="attente">En attente</option>
+              <option value="refuse">Refusé</option>
             </select>
           </div>
         </div>
@@ -173,25 +173,25 @@
                 <!-- Actions -->
                 <td class="candidate-actions">
                   <button 
-                    v-if="candidate.status === 'Shortlisted'"
+                    v-if="candidate.status === 'Entretien'"
                     class="action-btn primary"
                   >
-                    Profile
+                    Profil
                   </button>
                   <button 
-                    v-else-if="candidate.status === 'Rejected'"
+                    v-else-if="candidate.status === 'Refusé'"
                     class="action-btn secondary"
                   >
-                    Feedback
+                    Retour
                   </button>
                   <button 
                     v-else
                     class="action-btn primary"
                   >
-                    Shortlist
+                    Planifier
                   </button>
                   <button 
-                    v-if="candidate.status !== 'Rejected'"
+                    v-if="candidate.status !== 'Refusé'"
                     class="menu-btn"
                   >
                     <i class="fa-solid fa-ellipsis-vertical"></i>
@@ -240,6 +240,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import LogoIcon from './LogoIcon.vue';
 
 interface Candidate {
   id: number;
@@ -265,7 +266,7 @@ const candidates = ref<Candidate[]>([
     avatarColor: '#3b82f6',
     score: 94,
     timeTaken: '18:45',
-    status: 'Shortlisted'
+    status: 'Entretien'
   },
   {
     id: 2,
@@ -275,7 +276,7 @@ const candidates = ref<Candidate[]>([
     avatarColor: '#8b5cf6',
     score: 88,
     timeTaken: '22:10',
-    status: 'Evaluating'
+    status: 'En attente'
   },
   {
     id: 3,
@@ -285,7 +286,7 @@ const candidates = ref<Candidate[]>([
     avatarColor: '#f59e0b',
     score: 72,
     timeTaken: '25:30',
-    status: 'Pending Review'
+    status: 'En attente'
   },
   {
     id: 4,
@@ -295,7 +296,7 @@ const candidates = ref<Candidate[]>([
     avatarColor: '#ef4444',
     score: 45,
     timeTaken: '30:00',
-    status: 'Rejected'
+    status: 'Refusé'
   }
 ]);
 
@@ -308,13 +309,11 @@ const getScoreColor = (score: number): string => {
 
 const getStatusClass = (status: string): string => {
   switch (status) {
-    case 'Shortlisted':
-      return 'status-shortlisted';
-    case 'Evaluating':
-      return 'status-evaluating';
-    case 'Pending Review':
+    case 'Entretien':
+      return 'status-entretien';
+    case 'En attente':
       return 'status-pending';
-    case 'Rejected':
+    case 'Refusé':
       return 'status-rejected';
     default:
       return '';
@@ -816,19 +815,14 @@ const getStatusClass = (status: string): string => {
   font-weight: 600;
 }
 
-.status-shortlisted {
+.status-entretien {
   color: #059669;
   background: #d1fae5;
 }
 
-.status-evaluating {
-  color: #1f5bff;
-  background: #dbeafe;
-}
-
 .status-pending {
-  color: #64748b;
-  background: #f1f5f9;
+  color: #d97706;
+  background: #fef3c7;
 }
 
 .status-rejected {

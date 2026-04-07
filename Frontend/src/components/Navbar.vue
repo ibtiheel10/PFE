@@ -3,9 +3,9 @@
     <header class="navbar navbar-dark" :class="{ 'navbar-transparent': transparent }">
       <div class="nav-container">
         <!-- Logo -->
-        <div class="logo" @click="$router.push('/')" style="cursor: pointer;">
-          <!-- Using text for now if logo image doesn't match dark theme, or ensure logo is white/transparent -->
-           <h2 class="logo-text">Skillvia</h2>
+        <div class="logo flex items-center gap-2" @click="$router.push('/')" style="cursor: pointer; display: flex; align-items: center; gap: 10px;">
+          <LogoIcon customClass="w-[36px] h-[36px] flex-shrink-0" />
+          <h2 class="font-black text-[#1e40af] text-[22px] tracking-tight leading-none" style="margin: 0;">Skillvia</h2>
         </div>
 
         <!-- Links -->
@@ -49,6 +49,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
+import LogoIcon from './LogoIcon.vue';
 
 const props = defineProps({
   hideActions: {

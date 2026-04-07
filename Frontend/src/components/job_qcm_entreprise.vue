@@ -105,6 +105,12 @@
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                   {{ q.timer }} min
                 </span>
+                <span class="badge-pts" :class="q.questionType === 'soft' ? 'pts-soft' : 'pts-tech'">
+                  {{ q.points ?? 2 }} pt{{ (q.points ?? 2) > 1 ? 's' : '' }}
+                </span>
+                <span class="badge-type" :class="q.questionType === 'soft' ? 'type-soft' : 'type-tech'">
+                  {{ q.questionType === 'soft' ? '💬 Soft skill' : '🎯 Technique' }}
+                </span>
               </div>
             </div>
 
@@ -167,6 +173,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import Swal from 'sweetalert2';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../services/axios';
 
@@ -176,7 +183,7 @@ const jobId  = String(route.params.id);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface Opt  { text: string; isCorrect: boolean }
-interface Q    { id?: number; text: string; options: Opt[]; timer: number; verified: boolean }
+interface Q    { id?: number; text: string; options: Opt[]; timer: number; verified: boolean; points?: number; questionType?: string; }
 interface Job  { title: string; category: string; location: string; contractType: string; applicants: number; daysLeft: number; positions: number; qcmPasses: number; status: string }
 
 // ─── State ────────────────────────────────────────────────────────────────────
@@ -243,11 +250,16 @@ const mapQ = (raw: any[]): Q[] => raw.map(q => {
   ];
 
   return {
-    id:         q.id,
-    text:       data.question ?? data.text ?? q.question ?? q.text ?? '',
-    options:    opts.length >= 2 ? opts : fallback,
-    timer:      q.chronometre ? Math.max(1, Math.round(q.chronometre / 60)) : (data.timer ?? 30),
-    verified:   !!q.isCorrectVerified,
+    id:           q.id,
+    text:         data.question ?? data.text ?? q.question ?? q.text ?? '',
+    options:      opts.length >= 2 ? opts : fallback,
+    // chronometre > 300 = valeur en secondes (÷60), sinon déjà en minutes
+    timer: q.chronometre
+      ? (q.chronometre > 300 ? Math.round(q.chronometre / 60) : q.chronometre)
+      : (data.timer ?? 2),
+    verified:     !!q.isCorrectVerified,
+    points:       data.points ?? q.points ?? 2,
+    questionType: data.questionType ?? q.questionType ?? 'technique',
   };
 });
 
@@ -297,7 +309,7 @@ const deleteQuestion = async (qId?: number) => {
     await api.delete(`/Entreprise/questions/${qId}`);
     questions.value = questions.value.filter(q => q.id !== qId);
   } catch (e: any) {
-    alert(e?.response?.data?.message ?? e?.message ?? 'Erreur lors de la suppression.');
+    Swal.fire({ title: 'Erreur', text: e?.response?.data?.message ?? e?.message ?? 'Erreur lors de la suppression.', icon: 'error' });
   }
 };
 
@@ -579,6 +591,28 @@ html, body, #app { background: #F3F4F6 !important; }
   color: #6B7280;
   border: 1px solid #E5E7EB;
 }
+
+.badge-pts {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.pts-tech { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+.pts-soft { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
+
+.badge-type {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+.type-tech { background: #EFF6FF; color: #1D4ED8; }
+.type-soft { background: #FAF5FF; color: #6D28D9; }
 
 /* Delete button */
 .btn-del {

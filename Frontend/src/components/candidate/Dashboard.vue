@@ -109,7 +109,7 @@
                                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
                                         <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                     </div>
-                                    <span class="status-pill" :class="getStatusBadgeClass(app.statut)">{{ app.statut }}</span>
+                                    <span class="status-pill" :class="getStatusBadgeClass(app.statut)">{{ getDisplayStatus(app.statut) }}</span>
                                 </div>
                                 <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 truncate text-[15px] mb-1">{{ app.offre?.TitreDePost }}</h4>
                                 <p class="text-xs text-gray-400 mb-4 flex items-center gap-1">
@@ -143,17 +143,19 @@
                     </div>
 
                     <div v-else class="bar-chart-container">
-                        <div class="bars-wrapper">
-                            <div v-for="(data, index) in currentChartData" :key="index" class="bar-group">
-                                <div class="bars-pair">
-                                    <div class="bar bar-1" :style="{ '--bar-height': data.score + '%', '--animation-delay': (index * 0.1) + 's' }">
-                                        <div class="bar-tooltip">{{ data.score }}%</div>
+                        <div class="bars-scroll-wrapper">
+                            <div class="bars-wrapper" :style="{ minWidth: (currentChartData.length * 72) + 'px' }">
+                                <div v-for="(data, index) in currentChartData" :key="index" class="bar-group">
+                                    <div class="bars-pair">
+                                        <div class="bar bar-1" :style="{ '--bar-height': data.score + '%', '--animation-delay': (index * 0.1) + 's' }">
+                                            <div class="bar-tooltip">{{ data.score }}%</div>
+                                        </div>
+                                        <div class="bar bar-2" :style="{ '--bar-height': data.scoreAvg + '%', '--animation-delay': (index * 0.1 + 0.1) + 's' }">
+                                            <div class="bar-tooltip">{{ data.scoreAvg }}%</div>
+                                        </div>
                                     </div>
-                                    <div class="bar bar-2" :style="{ '--bar-height': data.scoreAvg + '%', '--animation-delay': (index * 0.1 + 0.1) + 's' }">
-                                        <div class="bar-tooltip">{{ data.scoreAvg }}%</div>
-                                    </div>
+                                    <span class="month-label">{{ data.label }}</span>
                                 </div>
-                                <span class="month-label">{{ data.label.length > 8 ? data.label.substring(0, 8) + '⬦' : data.label }}</span>
                             </div>
                         </div>
                     </div>
@@ -375,10 +377,16 @@ onMounted(async () => {
 });
 
 // ���� Utility functions ������������������������������������������������������������������������������������������
+const getDisplayStatus = (statut: string | undefined) => {
+    if (!statut) return '';
+    if (statut.toLowerCase().includes('refus')) return 'Non retenu';
+    return statut;
+};
+
 const getStatusBadgeClass = (statut: string) => {
     switch (statut) {
         case 'Acceptée':  return 'bg-green-50 text-green-700 border-green-100';
-        case 'Refusée':   return 'bg-red-50 text-red-700 border-red-100';
+        case 'Non retenu':   return 'bg-red-50 text-red-700 border-red-100';
         case '�0valué':    return 'bg-purple-50 text-purple-700 border-purple-100';
         case 'En attente': return 'bg-blue-50 text-blue-700 border-blue-100';
         default:          return 'bg-gray-100 text-gray-600 border-gray-200';
@@ -388,7 +396,7 @@ const getStatusBadgeClass = (statut: string) => {
 const getStatusAccent = (statut: string) => {
     switch (statut) {
         case 'Acceptée':   return 'bg-green-400';
-        case 'Refusée':    return 'bg-red-400';
+        case 'Non retenu':    return 'bg-red-400';
         case '�0valué':     return 'bg-purple-400';
         case 'En attente': return 'bg-blue-400';
         default:           return 'bg-gray-300';
@@ -481,12 +489,38 @@ const goToResults = () => router.push('/resultats');
   padding: 1rem 0;
 }
 
+.bars-scroll-wrapper {
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Thin scrollbar style */
+  scrollbar-width: thin;
+  scrollbar-color: #CBD5E1 #F1F5F9;
+}
+
+.bars-scroll-wrapper::-webkit-scrollbar {
+  height: 5px;
+}
+.bars-scroll-wrapper::-webkit-scrollbar-track {
+  background: #F1F5F9;
+  border-radius: 4px;
+}
+.bars-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+.bars-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
 .bars-wrapper {
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-start;
   align-items: flex-end;
   height: 100%;
-  gap: 1rem;
+  gap: 0.5rem;
+  padding: 0 0.5rem;
 }
 
 .bar-group {
@@ -564,10 +598,14 @@ const goToResults = () => router.push('/resultats');
 }
 
 .month-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
   color: #9CA3AF;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 64px;
 }
 
 @keyframes barGrow {

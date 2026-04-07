@@ -74,11 +74,12 @@
               <label>Type de Contrat <span class="req">*</span></label>
               <select v-model="form.contractType" required>
                 <option value="">Sélectionner</option>
-                <option value="CDI">CDI</option>
-                <option value="CDD">CDD</option>
+                <option value="CDI">CDI (Contrat à durée indéterminée)</option>
+                <option value="CDD">CDD (Contrat à durée déterminée)</option>
                 <option value="Stage">Stage</option>
-                <option value="Freelance">Freelance</option>
                 <option value="Alternance">Alternance</option>
+                <option value="Freelance / Indépendant">Freelance / Indépendant</option>
+                <option value="Intérim">Intérim</option>
               </select>
             </div>
           </div>
@@ -91,9 +92,11 @@
             <div class="field">
               <label>Mode de Travail</label>
               <select v-model="form.remote">
-                <option value="onsite">Sur site</option>
-                <option value="hybrid">Hybride</option>
-                <option value="remote">Télétravail</option>
+                <option value="Présentiel">Présentiel</option>
+                <option value="Télétravail (Remote)">Télétravail (Remote)</option>
+                <option value="Hybride">Hybride</option>
+                <option value="Sur site client">Sur site client</option>
+                <option value="Travail en déplacement">Travail en déplacement</option>
               </select>
             </div>
           </div>
@@ -273,6 +276,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import { generateQuestionsForOffre, regenerateQuestionsForOffre, saveQuestionsForOffre } from '../services/entrepriseService';
 
 const router = useRouter();
@@ -290,7 +294,7 @@ const form = ref({
   category:          '',
   contractType:      '',
   location:          '',
-  remote:            'onsite',
+  remote:            'Présentiel',
   company:           '',
   experience:        '',
   salary:            '',
@@ -328,7 +332,7 @@ function nextStep(current: number) {
 const submitPost = async () => {
   if (form.value.deadline && form.value.dateLancementQcm) {
     if (new Date(form.value.dateLancementQcm) <= new Date(form.value.deadline)) {
-      alert("La date et l'heure du QCM doivent être après la date limite de candidature !");
+      Swal.fire({ title: 'Erreur', text: "La date et l'heure du QCM doivent être après la date limite de candidature !", icon: 'error' });
       return;
     }
   }

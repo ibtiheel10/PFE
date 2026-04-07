@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { AdminService } from './admin/admin.service';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -39,6 +40,16 @@ async function bootstrap() {
   });
 
   const port = process.env.PORT ?? 3333;
+
+  // Auto-seed admin user
+  try {
+    const adminService = app.get(AdminService);
+    await adminService.seedAdmin();
+    console.log('✅ Admin user checked/seeded successfully');
+  } catch (error) {
+    console.error('❌ Failed to seed admin user:', error);
+  }
+
   await app.listen(port);
 
   // Set timeout to 10 minutes (600,000 ms) for long-running LLM generation requests

@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Delete, Param, UseGuards, Request, HttpCode, HttpStatus, ConflictException, Body } from '@nestjs/common';
+import { Controller, Post, Get, Delete, Param, UseGuards, Request, HttpCode, HttpStatus, ConflictException, ForbiddenException, Body } from '@nestjs/common';
 import { CandidaturesService } from './candidatures.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -88,6 +88,9 @@ export class CandidaturesController {
         if (candidature.candidat.id !== req.user.userId) {
             throw new ConflictException('Accès refusé à ce résultat.');
         }
+        if (candidature.score === null || candidature.score === undefined) {
+            throw new ForbiddenException('Le résultat n\'est pas encore disponible. Terminez l\'évaluation d\'abord.');
+        }
         return candidature;
     }
 
@@ -100,5 +103,12 @@ export class CandidaturesController {
     async deleteApplication(@Param('id') id: string, @Request() req: any) {
         await this.candidaturesService.deleteApplication(+id, req.user.userId);
         return { message: 'Candidature annulée avec succès.' };
+    }
+
+    @Post('resync-statuses')
+    @Roles('Entreprise', 'Admin')
+    @ApiOperation({ summary: 'Resynchroniser tous les statuts selon le classement Top 5' })
+    async resyncStatuses() {
+        return await this.candidaturesService.resyncAllStatuses();
     }
 }

@@ -20,7 +20,7 @@
                             <div class="candidate-profile">
                                 <div class="avatar-wrapper" style="width: 36px; height: 36px;">
                                     <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&color=fff&rounded=true&bold=true`" class="c-avatar-lg" :alt="candidate.name">
-                                    <div class="status-indicator" :class="getScoreColor(candidate.score)"></div>
+                                    <div class="status-indicator" :class="getScoreColor(candidate)"></div>
                                 </div>
                                 <div class="candidate-details">
                                     <div class="c-name-lg" style="font-size: 0.85rem;">{{ candidate.name }}</div>
@@ -30,19 +30,20 @@
                         <td><span class="role-badge" style="font-size: 0.7rem;">{{ candidate.role }}</span></td>
                         <td>
                             <div class="score-container" style="gap: 8px;">
-                                    <div class="circular-chart" :class="getScoreColor(candidate.score)" style="width: 32px; height: 32px;">
+                                <div class="circular-chart" :class="getScoreColor(candidate)" style="width: 32px; height: 32px;">
                                     <svg viewBox="0 0 36 36" class="circular-chart-svg">
                                         <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                         <path class="circle" :stroke-dasharray="candidate.score + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                     </svg>
                                     <span class="percentage" style="font-size: 0.6rem;">{{ candidate.score }}%</span>
                                 </div>
+                                <span class="score-label" :class="getScoreTextClass(candidate)">{{ getScoreLabel(candidate) }}</span>
                             </div>
                         </td>
                         <td style="text-align: right;">
-                            <span class="status-pill" :class="candidate.statusClass" style="padding: 4px 8px; font-size: 0.65rem;">
+                            <span class="status-pill" :class="getStatusClass(getDisplayStatus(candidate))" style="padding: 4px 8px; font-size: 0.65rem;">
                                 <span class="status-dot" style="width: 6px; height: 6px;"></span>
-                                {{ candidate.status }}
+                                {{ getDisplayStatus(candidate) }}
                             </span>
                         </td>
                     </tr>
@@ -68,11 +69,44 @@ const topCandidates = computed(() => {
     return sorted.slice(0, 5);
 });
 
-const getScoreColor = (score: number) => {
-    if (score >= 90) return 'green-fill';
-    if (score >= 80) return 'blue-fill';
-    return 'orange-fill';
+const getScoreColor = (candidate: any) => {
+    const s = getDisplayStatus(candidate);
+    if (s === 'Entretien') return 'green-fill';
+    if (s === 'Non retenu') return 'red-fill';
+    return 'orange-fill'; // En attente
 };
+
+const getScoreTextClass = (candidate: any) => {
+    const s = getDisplayStatus(candidate);
+    if (s === 'Entretien') return 'text-green';
+    if (s === 'Non retenu') return 'text-red';
+    return 'text-orange';
+};
+
+const getScoreLabel = (candidate: any) => {
+    const s = getDisplayStatus(candidate);
+    if (s === 'Entretien') return 'Bon+';
+    if (s === 'Non retenu') return 'Faible';
+    return 'Moyen'; // En attente
+};
+
+const getDisplayStatus = (candidate: any): string => {
+    // Since this component only renders top 5, any candidate here with a score is Entretien.
+    if (candidate.score !== null && candidate.score !== undefined) {
+        return 'Entretien';
+    }
+    
+    // For unevaluated candidates 
+    return 'En attente'; 
+};
+
+const getStatusClass = (statutText: string): string => {
+    const s = (statutText || '').toLowerCase();
+    if (s === 'entretien') return 'entretien'; // Vert
+    if (s === 'non retenu') return 'refused'; // Rouge
+    return 'pending'; // Orange
+};
+
 </script>
 
 <style scoped>
@@ -214,8 +248,8 @@ const getScoreColor = (score: number) => {
     transition: stroke-dasharray 0.5s ease;
 }
 .green-fill .circle { stroke: #10B981; }
-.blue-fill .circle { stroke: #2563EB; }
 .orange-fill .circle { stroke: #F59E0B; }
+.red-fill .circle { stroke: #EF4444; }
 
 .percentage {
     position: absolute;
@@ -225,6 +259,14 @@ const getScoreColor = (score: number) => {
     font-weight: 700;
     color: #374151;
 }
+
+.score-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.text-green { color: #16A34A; }
+.text-orange { color: #D97706; }
+.text-red { color: #DC2626; }
 
 /* Status Pill */
 .status-pill {
@@ -241,20 +283,14 @@ const getScoreColor = (score: number) => {
     border-radius: 50%;
 }
 
-.status-pill.new { background: #F0F9FF; color: #0284C7; }
-.status-pill.new .status-dot { background: #0EA5E9; }
+.status-pill.entretien { background: #F0FDF4; color: #16A34A; }
+.status-pill.entretien .status-dot { background: #22C55E; }
 
-.status-pill.interview { background: #F0FDF4; color: #16A34A; }
-.status-pill.interview .status-dot { background: #22C55E; }
+.status-pill.pending { background: #FFF7ED; color: #D97706; }
+.status-pill.pending .status-dot { background: #F59E0B; }
 
-.status-pill.shortlisted { background: #FEFCE8; color: #CA8A04; }
-.status-pill.shortlisted .status-dot { background: #EAB308; }
-
-.status-pill.rejected { background: #FEF2F2; color: #DC2626; }
-.status-pill.rejected .status-dot { background: #EF4444; }
-
-.status-pill.evaluated { background: #FFF7ED; color: #C2410C; }
-.status-pill.evaluated .status-dot { background: #EA580C; }
+.status-pill.refused { background: #FEF2F2; color: #DC2626; }
+.status-pill.refused .status-dot { background: #EF4444; }
 
 /* Responsive Adjustments */
 @media (max-width: 1400px) {

@@ -54,6 +54,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
+import Swal from 'sweetalert2';
 
 const props = defineProps({
   show: Boolean,
@@ -95,7 +96,7 @@ const handleResend = () => {
     resendCooldown.value--;
     if (resendCooldown.value <= 0) clearInterval(timer);
   }, 1000);
-  alert("Code de vérification renvoyé !");
+  Swal.fire({ title: 'Succès', text: "Code de vérification renvoyé !", icon: 'success' });
 };
 
 const handleVerify = () => {

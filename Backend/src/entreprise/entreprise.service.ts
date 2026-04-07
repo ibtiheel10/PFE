@@ -8,6 +8,7 @@ import { User } from '../entities/user.entity';
 import { OffreEmploi } from '../entities/offre-emploi.entity';
 import { Candidature } from '../entities/candidature.entity';
 import { Question } from '../entities/question.entity';
+import { ReponseCandidat } from '../entities/reponse-candidat.entity';
 import { AiService } from '../ai/ai.service';
 
 @Injectable()
@@ -23,6 +24,8 @@ export class EntrepriseService {
         private readonly candidatureRepo: Repository<Candidature>,
         @InjectRepository(Question)
         private readonly questionRepo: Repository<Question>,
+        @InjectRepository(ReponseCandidat)
+        private readonly reponseRepo: Repository<ReponseCandidat>,
         private readonly aiService: AiService,
         private readonly configService: ConfigService,
     ) { }
@@ -245,7 +248,7 @@ export class EntrepriseService {
         const topCandidats = await this.candidatureRepo
             .createQueryBuilder('c')
             .leftJoinAndSelect('c.candidat', 'user')
-            .leftJoin('c.offre', 'o')
+            .leftJoinAndSelect('c.offre', 'o')
             .leftJoin('o.entreprise', 'ent')
             .where('ent.id = :userId', { userId })
             .andWhere('c.score IS NOT NULL')
@@ -259,6 +262,7 @@ export class EntrepriseService {
                 ? `${c.candidat.nom}${c.candidat.prenom ? ' ' + c.candidat.prenom : ''}`
                 : 'Inconnu',
             score: c.score,
+            role: c.offre?.TitreDePost ?? 'Poste inconnu',
             note: c.decision,
             statut: c.statut,
         }));
@@ -302,6 +306,7 @@ export class EntrepriseService {
                     categorie: o.Categorie,
                     datePublication: o.DatePublication,
                     dateLimite: o.DateLimite,
+                    dateLancementQcm: o.dateLancementQcm,
                     typeDeContrat: o.TypeDeContrat,
                     modeDeTravail: o.ModeDeTravail,
                     salaire: o.Salaire,
@@ -419,6 +424,16 @@ export class EntrepriseService {
         const offre = await this.findOffreOrFail(offreId, ['entreprise']);
         this.assertOwner(offre, userId);
 
+        if (offre.qcmPublie) {
+            throw new BadRequestException("Ce QCM a déjà été publié. Il n'est plus possible de le regénérer entièrement.");
+        }
+        
+        // Remove old questions if not published to avoid piling up duplicates
+        const existingCount = await this.questionRepo.count({ where: { offre: { id: offreId } }});
+        if (existingCount > 0) {
+            await this.questionRepo.delete({ offre: { id: offreId }});
+        }
+
         // 2. Build job description
         const jobDescription = [
             `Titre du poste: ${offre.TitreDePost}`,
@@ -463,6 +478,10 @@ export class EntrepriseService {
         // 1. Check ownership
         const offre = await this.findOffreOrFail(offreId, ['entreprise']);
         this.assertOwner(offre, userId);
+
+        if (offre.qcmPublie) {
+            throw new BadRequestException("Ce QCM a déjà été publié. Impossible de le regénérer.");
+        }
 
         // 2. Build description
         const jobDescription = [
@@ -560,26 +579,28 @@ export class EntrepriseService {
             });
         });
 
-        const savedQuestions = await this.questionRepo.save(questionsEntities);
+        // Implement Retry logic for DB Save to avoid timeouts due to connection pool issues
+        let savedQuestions: any[] = [];
+        let attempt = 0;
+        const MAX_RETRIES = 3;
 
-        // Notify all candidates for this offer that the QCM is now available
-        const candidatures = await this.candidatureRepo.find({
-            where: { offre: { id: offreId } },
-            relations: ['candidat'],
-        });
-
-        for (const cand of candidatures) {
-            // Only unlock if not yet done (score null = not yet passed)
-            if (!cand.qcmDisponible && cand.score === null) {
-                cand.qcmDisponible = true;
-                await this.candidatureRepo.save(cand);
-
-                if (cand.candidat?.email) {
-                    const name = [cand.candidat.prenom, cand.candidat.nom].filter(Boolean).join(' ') || 'Candidat';
-                    await this.sendQcmAvailableEmail(cand.candidat.email, name, offre.TitreDePost);
+        while (attempt < MAX_RETRIES) {
+            try {
+                this.logger.log(`[EntrepriseService] Saving ${questionsEntities.length} questions to DB (Attempt ${attempt + 1}/${MAX_RETRIES})`);
+                savedQuestions = await this.questionRepo.save(questionsEntities);
+                break; // Save successful
+            } catch (dbError: any) {
+                attempt++;
+                this.logger.error(`[EntrepriseService] DB Save Error on attempt ${attempt}: ${dbError.message}`);
+                if (attempt >= MAX_RETRIES) {
+                    throw new BadRequestException('La sauvegarde en base a échoué suite à une surcharge du serveur. Veuillez réessayer (Détail: ' + dbError.message + ')');
                 }
+                // Attente courte avant retry
+                await new Promise(resolve => setTimeout(resolve, 1500));
             }
         }
+
+        // (L'envoi des emails a été retiré d'ici car ce n'est pas le rôle de "sauvegarder". Cela appartient à "publierQCM")
 
         return {
             message: 'Questions sauvegardées avec succès.',
@@ -603,18 +624,22 @@ export class EntrepriseService {
         });
 
         let notified = 0;
-        for (const cand of candidatures) {
+        
+        await Promise.all(candidatures.map(async (cand) => {
             if (!cand.qcmDisponible && cand.score === null) {
                 cand.qcmDisponible = true;
                 await this.candidatureRepo.save(cand);
 
                 if (cand.candidat?.email) {
                     const name = [cand.candidat.prenom, cand.candidat.nom].filter(Boolean).join(' ') || 'Candidat';
-                    await this.sendQcmAvailableEmail(cand.candidat.email, name, offre.TitreDePost);
+                    // send email async without blocking others
+                    this.sendQcmAvailableEmail(cand.candidat.email, name, offre.TitreDePost).catch(err => {
+                        this.logger.error(`Erreur email QCM pour ${cand.candidat.email}: ${err.message}`);
+                    });
                 }
                 notified++;
             }
-        }
+        }));
 
         // Mark the offer as published
         offre.qcmPublie = true;
@@ -712,9 +737,46 @@ Compétences: ${offre.competences || 'Non spécifié'}
                 text: typeof opt === 'string' ? opt : (opt.text ?? ''),
                 isCorrect: typeof opt === 'object' && opt !== null ? !!opt.isCorrect : false,
             })),
+            difficulty: q.contenu?.difficulty ?? 'Intermédiaire',
+            category: q.contenu?.category ?? 'Tech',
             chronometre: q.chronometre,
             isCorrectVerified: q.isCorrectVerified,
             createdAt: q.createdAt
         }));
+    }
+
+    /** GET analytics-qcm */
+    async getQcmAnalytics(offreId: string, userId: number) {
+        const offre = await this.findOffreOrFail(offreId, ['entreprise']);
+        this.assertOwner(offre, userId);
+
+        const questions = await this.questionRepo.find({
+            where: { offre: { id: offre.id } }
+        });
+
+        const analytics = await Promise.all(questions.map(async (q) => {
+            const reponses = await this.reponseRepo.find({
+                where: { question: { id: q.id } }
+            });
+            const totalReponses = reponses.length;
+            const bonnesReponses = reponses.filter(r => r.est_correct).length;
+            const tauxReussite = totalReponses > 0 ? (bonnesReponses / totalReponses) * 100 : 0;
+            
+            return {
+                questionId: q.id,
+                texteQuestion: q.contenu?.question || '',
+                difficulte: q.contenu?.difficulty || 'Intermédiaire',
+                categorie: q.contenu?.category || 'Tech',
+                totalReponses,
+                bonnesReponses,
+                tauxReussite: Math.round(tauxReussite)
+            };
+        }));
+        
+        return {
+            offreId: offre.id,
+            titre: offre.TitreDePost,
+            analytics
+        };
     }
 }

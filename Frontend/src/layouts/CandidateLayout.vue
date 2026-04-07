@@ -10,13 +10,8 @@
         <div class="h-16 flex items-center border-b border-gray-100 overflow-hidden whitespace-nowrap"
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30 flex-shrink-0">
-              S
-            </div>
-            <div v-if="!isSidebarCollapsed" class="flex flex-col transition-opacity duration-200">
-              <span class="font-bold text-gray-900 text-lg tracking-tight">Skillvia</span>
-              <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Recrutement</span>
-            </div>
+            <LogoIcon customClass="w-9 h-9 flex-shrink-0" />
+               <span class="font-black text-[#1e40af] text-[24px] tracking-tight">Skillvia</span>
           </div>
         </div>
 
@@ -290,6 +285,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import LogoIcon from '../components/LogoIcon.vue';
 import {
     Squares2X2Icon,
     BriefcaseIcon,

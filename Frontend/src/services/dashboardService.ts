@@ -19,6 +19,7 @@ export interface TopCandidatDto {
     score: number | null;
     note: string | null;
     statut: string | null;
+    role?: string | null;
 }
 
 export interface CandidaturesParPeriodeDto {

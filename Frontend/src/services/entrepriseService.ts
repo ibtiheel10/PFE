@@ -233,7 +233,7 @@ export const regenerateQuestionsForOffre = async (offreId: string | number, prev
  */
 export const saveQuestionsForOffre = async (offreId: string | number, questions: any[]): Promise<AiResponse<any>> => {
     try {
-        const response = await api.post(`/Entreprise/offres/${offreId}/sauvegarder-questions-ia`, { questions }, { timeout: 30000 });
+        const response = await api.post(`/Entreprise/offres/${offreId}/sauvegarder-questions-ia`, { questions }, { timeout: 120000 });
         return { success: true, data: response.data };
     } catch (error) {
         return handleAiError(error);

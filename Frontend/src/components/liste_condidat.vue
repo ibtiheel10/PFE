@@ -3,7 +3,31 @@
         <div class="page-header">
             <div>
                 <h1>Candidats <span class="badge-total" style="font-size: 0.8rem; vertical-align: middle; margin-left: 8px;">{{ candidatesList.length }} TOTAL</span></h1>
-                <p class="subtitle">Gérez et évaluez les candidats pour tous vos postes.</p>
+                <p class="subtitle">La plateforme permet de suivre les candidats facilement.</p>
+                
+                <div class="status-legend-bar">
+                    <div class="legend-item">
+                        <span class="status-dot-lg green"></span>
+                        <div class="legend-text">
+                            <strong>Entretien (Bon+)</strong>
+                            <p>Candidat parmi les Top 5, sélectionné pour avancer.</p>
+                        </div>
+                    </div>
+                    <div class="legend-item">
+                        <span class="status-dot-lg pending"></span>
+                        <div class="legend-text">
+                            <strong>En attente (Moyen)</strong>
+                            <p>Candidature en cours d'évaluation.</p>
+                        </div>
+                    </div>
+                    <div class="legend-item">
+                        <span class="status-dot-lg red"></span>
+                        <div class="legend-text">
+                            <strong>Non retenu (Faible)</strong>
+                            <p>Candidat filtré automatiquement.</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -31,10 +55,9 @@
                     <div class="select-wrapper">
                     <select v-model="selectedStatusFilter" class="filter-select-modern">
                         <option value="">Tous les statuts</option>
+                        <option value="Entretien">Entretien</option>
                         <option value="En attente">En attente</option>
-                        <option value="Entretiens">À Interviewer</option>
-                        <option value="Rejeté">Rejeté</option>
-                        <option value="Refusée">Refusé (score faible)</option>
+                        <option value="Non retenu">Non retenu</option>
                     </select>
                     <svg class="select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
                 </div>
@@ -63,7 +86,6 @@
                             <th @click="sortBy('role')" class="sortable">POSTE VISÉ</th>
                             <th @click="sortBy('score')" class="sortable">RÉSULTAT TEST</th>
                            <th @click="sortBy('status')" class="sortable">STATUS</th>
-                            <th style="text-align: right; padding-right: 1.5rem;">ACTIONS</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -77,7 +99,7 @@
                                 <div class="candidate-profile">
                                     <div class="avatar-wrapper">
                                         <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&color=fff&rounded=true&bold=true`" class="c-avatar-lg" :alt="candidate.name">
-                                        <div class="status-indicator" :class="getScoreColor(candidate.score)"></div>
+                                        <div class="status-indicator" :class="getScoreColor(candidate)"></div>
                                     </div>
                                     <div class="candidate-details">
                                         <div class="c-name-lg">{{ candidate.name }}</div>
@@ -93,33 +115,25 @@
                             </td>
                             <td>
                                 <div class="score-container">
-                                    <div class="circular-chart" :class="getScoreColor(candidate.score)">
+                                    <div class="circular-chart" :class="getScoreColor(candidate)" style="width: 40px; height: 40px;">
                                         <svg viewBox="0 0 36 36" class="circular-chart-svg">
                                             <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                             <path class="circle" :stroke-dasharray="candidate.score + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                         </svg>
                                         <span class="percentage">{{ candidate.score }}%</span>
                                     </div>
-                                    <span class="score-label" :class="getScoreTextClass(candidate.score)">{{ getScoreLabel(candidate.score) }}</span>
+                                    <span class="score-label" :class="getScoreTextClass(candidate)">{{ getScoreLabel(candidate) }}</span>
                                 </div>
                             </td>
                             <td>
-                                <span class="status-pill" :class="candidate.statusClass">
+                                <span class="status-pill" :class="getStatusClass(getDisplayStatus(candidate))">
                                     <span class="status-dot"></span>
-                                    {{ candidate.status }}
+                                    {{ getDisplayStatus(candidate) }}
                                 </span>
-                            </td>
-                                <td style="text-align: right; padding-right: 1.5rem;">
-                                <div class="action-buttons-lg">
-                                    <div class="divider-vertical"></div>
-                                    <button class="btn-icon-modern danger" title="Rejeter" @click="openDeleteDialog(candidate)">
-                                        <TrashIcon class="w-5 h-5" />
-                                    </button>
-                                </div>
                             </td>
                         </tr>
                         <tr v-if="paginatedCandidates.length === 0">
-                            <td colspan="6" style="text-align: center; padding: 3rem;">
+                            <td colspan="5" style="text-align: center; padding: 3rem;">
                                 <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
                                     <div style="background: #F3F4F6; padding: 1rem; border-radius: 50%;">
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
@@ -152,37 +166,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Delete Confirmation Dialog -->
-        <div v-if="showDeleteDialog" class="modal-overlay" @click="closeDeleteDialog">
-            <div class="modal-dialog" @click.stop>
-                <div class="modal-icon-wrapper">
-                    <div class="modal-icon-bg">
-                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="3 6 5 6 21 6"></polyline>
-                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            <line x1="10" y1="11" x2="10" y2="17"></line>
-                            <line x1="14" y1="11" x2="14" y2="17"></line>
-                        </svg>
-                    </div>
-                </div>
-                
-                <h3 class="modal-title">Rejeter le candidat?</h3>
-                <p class="modal-description">
-                    Cette action rejettera définitivement <strong>{{ candidateToDelete?.name }}</strong> pour le poste de <strong>{{ candidateToDelete?.role }}</strong>. 
-                    Cette action ne peut pas être annulée.
-                </p>
-                
-                <div class="modal-actions">
-                    <button class="modal-btn modal-btn-cancel" @click="closeDeleteDialog">
-                        Annuler
-                    </button>
-                    <button class="modal-btn modal-btn-delete" @click="confirmReject">
-                        Rejeter
-                    </button>
-                </div>
-            </div>
-        </div>
         </div><!-- end v-else -->
     </div>
 </template>
@@ -190,7 +173,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
 import api from '../services/axios';
-import { TrashIcon } from '@heroicons/vue/24/outline';
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 const candidatesList = ref<any[]>([]);
@@ -219,8 +201,6 @@ const selectedStatusFilter = ref('');
 const sortField = ref('score');
 const sortOrder = ref('desc');
 const selectedCandidates = ref<any[]>([]);
-const showDeleteDialog = ref(false);
-const candidateToDelete = ref<any>(null);
 const currentPage = ref(1);
 const itemsPerPage = 5;
 
@@ -236,10 +216,13 @@ const filteredCandidates = computed(() => {
     }
 
     if (selectedStatusFilter.value) {
-        list = list.filter(c =>
-            (c.statut ?? 'En attente') === selectedStatusFilter.value
-        );
+        const filterVal = selectedStatusFilter.value.toLowerCase();
+        list = list.filter(c => {
+            const s = getDisplayStatus(c).toLowerCase();
+            return s === filterVal;
+        });
     }
+
 
     return list.slice().sort((a: any, b: any) => {
         const modifier = sortOrder.value === 'asc' ? 1 : -1;
@@ -266,23 +249,46 @@ const isAllSelected = computed(() =>
 );
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-const getScoreColor = (score: number) => {
-    if (score >= 90) return 'green-fill';
-    if (score >= 80) return 'blue-fill';
-    return 'orange-fill';
+const getScoreColor = (candidate: any) => {
+    const s = getDisplayStatus(candidate);
+    if (s === 'Entretien') return 'green-fill';
+    if (s === 'Non retenu') return 'red-fill';
+    return 'orange-fill'; // En attente
 };
 
-const getScoreTextClass = (score: number) => {
-    if (score >= 90) return 'text-green';
-    if (score >= 80) return 'text-blue';
+const getScoreTextClass = (candidate: any) => {
+    const s = getDisplayStatus(candidate);
+    if (s === 'Entretien') return 'text-green';
+    if (s === 'Non retenu') return 'text-red';
     return 'text-orange';
 };
 
-const getScoreLabel = (score: number) => {
-    if (score >= 90) return 'Excellent';
-    if (score >= 80) return 'Très Bon';
-    if (score >= 70) return 'Bon';
-    return 'Moyen';
+const getScoreLabel = (candidate: any) => {
+    const s = getDisplayStatus(candidate);
+    if (s === 'Entretien') return 'Bon+';
+    if (s === 'Non retenu') return 'Faible';
+    return 'Moyen'; // En attente
+};
+
+const top5Ids = computed(() => {
+    return [...candidatesList.value]
+        .filter(c => c.score !== null && c.score !== undefined)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5)
+        .map(c => c.id);
+});
+
+const getDisplayStatus = (candidate: any): string => {
+    if (candidate.score === null || candidate.score === undefined) return 'En attente';
+    if (top5Ids.value.includes(candidate.id)) return 'Entretien';
+    return 'Non retenu';
+};
+
+const getStatusClass = (statutText: string): string => {
+    const s = (statutText || '').toLowerCase();
+    if (s === 'entretien') return 'entretien'; // Vert
+    if (s === 'non retenu') return 'refused'; // Rouge
+    return 'pending'; // Orange
 };
 
 // ─── Methods ─────────────────────────────────────────────────────────────────
@@ -310,33 +316,6 @@ const toggleSelectAll = () => {
         selectedCandidates.value = [];
     } else {
         selectedCandidates.value = [...filteredCandidates.value];
-    }
-};
-
-const openDeleteDialog = (candidate: any) => {
-    showDeleteDialog.value = true;
-    candidateToDelete.value = candidate;
-};
-
-const closeDeleteDialog = () => {
-    showDeleteDialog.value = false;
-    candidateToDelete.value = null;
-};
-
-const confirmReject = async () => {
-    if (!candidateToDelete.value) return;
-    try {
-        await api.patch(`/Entreprise/candidats/${candidateToDelete.value.id}/statut`, {
-            statut: 'Rejeté',
-            decision: 'Candidature rejetée',
-        });
-        // Refresh list
-        await fetchCandidats();
-    } catch (e) {
-        console.error('Erreur lors du rejet :', e);
-        alert('Impossible de rejeter la candidature. Réessayez.');
-    } finally {
-        closeDeleteDialog();
     }
 };
 </script>
@@ -385,7 +364,54 @@ const confirmReject = async () => {
 .subtitle {
     font-size: 0.95rem;
     color: #6B7280;
+    margin: 0 0 1.5rem 0;
+}
+
+/* Legend Styles */
+.status-legend-bar {
+    display: flex;
+    gap: 1.5rem;
+    background: linear-gradient(135deg, #FFFFFF 0%, #F9FAFB 100%);
+    border: 1px solid rgba(229, 231, 235, 0.8);
+    border-radius: 12px;
+    padding: 1rem 1.5rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+
+.legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex: 1;
+}
+
+.status-dot-lg {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+.status-dot-lg.green { background: #22C55E; box-shadow: 0 0 8px rgba(34, 197, 94, 0.4); }
+.status-dot-lg.pending { background: #F59E0B; box-shadow: 0 0 8px rgba(245, 158, 11, 0.4); }
+.status-dot-lg.red { background: #EF4444; box-shadow: 0 0 8px rgba(239, 68, 68, 0.4); }
+
+.legend-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.legend-text strong {
+    font-size: 0.85rem;
+    color: #111827;
+}
+
+.legend-text p {
     margin: 0;
+    font-size: 0.75rem;
+    color: #6B7280;
+    line-height: 1.4;
 }
 
 .header-actions {
@@ -734,6 +760,11 @@ const confirmReject = async () => {
 .green-fill .circle { stroke: #10B981; }
 .blue-fill .circle { stroke: #2563EB; }
 .orange-fill .circle { stroke: #F59E0B; }
+.red-fill .circle { stroke: #EF4444; }
+
+.text-green { color: #16A34A; }
+.text-orange { color: #D97706; }
+.text-red { color: #DC2626; }
 
 .percentage {
     position: absolute;
@@ -772,23 +803,14 @@ const confirmReject = async () => {
     background: #9CA3AF;
 }
 
-.status-pill.new { background: #F0F9FF; color: #0284C7; }
-.status-pill.new .status-dot { background: #0EA5E9; }
+.status-pill.entretien { background: #F0FDF4; color: #16A34A; }
+.status-pill.entretien .status-dot { background: #22C55E; }
 
-.status-pill.interview { background: #F0FDF4; color: #16A34A; }
-.status-pill.interview .status-dot { background: #22C55E; }
+.status-pill.pending { background: #FFF7ED; color: #D97706; }
+.status-pill.pending .status-dot { background: #F59E0B; }
 
-.status-pill.shortlisted { background: #FEFCE8; color: #CA8A04; }
-.status-pill.shortlisted .status-dot { background: #EAB308; }
-
-.status-pill.evaluated { background: #F5F3FF; color: #7C3AED; }
-.status-pill.evaluated .status-dot { background: #8B5CF6; }
-
-.status-pill.rejected { background: #FEF2F2; color: #DC2626; }
-.status-pill.rejected .status-dot { background: #EF4444; }
-
-.status-pill.evaluated { background: #FFF7ED; color: #C2410C; }
-.status-pill.evaluated .status-dot { background: #EA580C; }
+.status-pill.refused { background: #FEF2F2; color: #DC2626; }
+.status-pill.refused .status-dot { background: #EF4444; }
 
 /* Actions */
 .action-buttons-lg {

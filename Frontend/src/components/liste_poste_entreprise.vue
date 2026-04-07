@@ -28,7 +28,7 @@
                         <td class="fw-600" style="cursor: pointer; color: #2563EB;" @click="goToJobDetails(job.id)">{{ job.title }}</td>
                         <td><span class="status-tag" :class="job.status === 'ACTIVE' ? 'active' : 'draft'">{{ job.status }}</span></td>
                         <td>{{ job.applicants }}</td>
-                        <td>Session dans {{ job.daysLeft }}j</td>
+                        <td>Session dans {{ job.daysLeft }}j<span v-if="job.sessionTime"> à {{ job.sessionTime }}</span></td>
                         <td>
                             <div class="relative">
                                 <button class="icon-btn" @click.stop="toggleJobMenu(job.id)">
@@ -74,7 +74,7 @@
         </div>
 
         <!-- Tabs -->
-        <div class="modal-tabs">
+        <div class="modal-tabs" v-show="!isEditing">
           <div class="tab-indicator" :style="indicatorStyle"></div>
           <button 
             v-for="tab in tabs" 
@@ -124,10 +124,12 @@
                   <label for="contractType">Type de Contrat <span class="required">*</span></label>
                   <select id="contractType" v-model="formData.contractType" required>
                     <option value="">Sélectionner un type</option>
-                    <option value="cdi">CDI</option>
-                    <option value="cdd">CDD</option>
-                    <option value="stage">Stage</option>
-                    <option value="freelance">Freelance</option>
+                    <option value="CDI">CDI (Contrat à durée indéterminée)</option>
+                    <option value="CDD">CDD (Contrat à durée déterminée)</option>
+                    <option value="Stage">Stage</option>
+                    <option value="Alternance">Alternance</option>
+                    <option value="Freelance / Indépendant">Freelance / Indépendant</option>
+                    <option value="Intérim">Intérim</option>
                   </select>
                 </div>
               </div>
@@ -147,9 +149,11 @@
                 <div class="form-group">
                   <label for="remote">Mode de Travail</label>
                   <select id="remote" v-model="formData.remote">
-                    <option value="onsite">Sur site</option>
-                    <option value="hybrid">Hybride</option>
-                    <option value="remote">Télétravail</option>
+                    <option value="Présentiel">Présentiel</option>
+                    <option value="Télétravail (Remote)">Télétravail (Remote)</option>
+                    <option value="Hybride">Hybride</option>
+                    <option value="Sur site client">Sur site client</option>
+                    <option value="Travail en déplacement">Travail en déplacement</option>
                   </select>
                 </div>
               </div>
@@ -175,6 +179,26 @@
                   >
                 </div>
               </div>
+
+              <div class="form-row" v-if="isEditing">
+                <div class="form-group">
+                  <label for="deadline-edit">Date & Heure Limite de Candidature</label>
+                  <input 
+                    type="datetime-local" 
+                    id="deadline-edit" 
+                    v-model="formData.deadline"
+                  >
+                </div>
+
+                <div class="form-group">
+                  <label for="dateLancementQcm-edit">Date & Heure du QCM</label>
+                  <input 
+                    type="datetime-local" 
+                    id="dateLancementQcm-edit" 
+                    v-model="formData.dateLancementQcm"
+                  >
+                </div>
+              </div>
             </div>
 
             <!-- Tab 2: Description du Poste -->
@@ -187,7 +211,7 @@
                     v-model="formData.description" 
                     rows="5"
                     placeholder="Décrivez les responsabilités, missions et objectifs du poste..."
-                    required
+                    :required="!isEditing"
                   ></textarea>
                 </div>
               </div>
@@ -200,7 +224,7 @@
                     v-model="formData.requirements" 
                     rows="4"
                     placeholder="Listez les compétences techniques et soft skills nécessaires (une par ligne)..."
-                    required
+                    :required="!isEditing"
                   ></textarea>
                 </div>
               </div>
@@ -367,8 +391,8 @@
               <div v-for="(q, qi) in generatedQuestions" :key="qi" class="qcm-question-card">
                 <div class="qcm-question-num">Q{{ qi + 1 }}</div>
                 <div class="qcm-question-body">
-                  <div style="overflow-x: auto; width: 100%; padding-bottom: 4px;">
-                    <input class="qcm-question-input" v-model="q.text" placeholder="Texte de la question" :style="{ width: Math.max(100, q.text.length) + 'ch', minWidth: '100%' }" />
+                  <div style="width: 100%; padding-bottom: 4px;">
+                    <textarea class="qcm-question-input" v-model="q.text" placeholder="Texte de la question" rows="3" style="width: 100%; resize: none; overflow-y: auto; min-height: 90px; line-height: 1.5; white-space: pre-wrap; word-wrap: break-word; field-sizing: content;"></textarea>
                   </div>
                   <div class="qcm-options">
                     <div v-for="(_opt, oi) in q.options" :key="oi" class="qcm-option-row">
@@ -380,7 +404,7 @@
                         v-model="q.correct"
                         class="qcm-radio"
                       />
-                      <input class="qcm-option-input" v-model="q.options[oi]" :placeholder="'Option ' + (oi + 1)" />
+                      <textarea class="qcm-option-input" v-model="q.options[oi]" :placeholder="'Option ' + (oi + 1)" rows="2" style="width: 100%; resize: none; overflow-y: auto; min-height: 60px; line-height: 1.4; white-space: pre-wrap; word-wrap: break-word; field-sizing: content;"></textarea>
                       <label :for="'opt-' + qi + '-' + oi" class="qcm-correct-label" :class="{ active: q.correct === oi }">✓</label>
                     </div>
                   </div>
@@ -415,6 +439,7 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, watch } from 'vue';
+import Swal from 'sweetalert2';
 import { useRouter } from 'vue-router';
 import { TrashIcon } from '@heroicons/vue/24/outline';
 import api from '../services/axios';
@@ -455,29 +480,37 @@ const confirmDeleteJob = async () => {
             fetchMyJobs();
         } catch (e) {
             console.error(e);
-            alert("Erreur lors de la suppression.");
+            Swal.fire({ title: 'Erreur', text: "Erreur lors de la suppression.", icon: 'error' });
         }
     }
+};
+
+// Helper: convert UTC date string to local datetime-local string (YYYY-MM-DDTHH:MM)
+const toLocalDatetimeInput = (dateStr: string): string => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 };
 
 const editJob = (job: any) => {
     isEditing.value = true;
     currentEditId.value = job.id;
     
-    // Populate form data
+    // Populate form data using local time for datetime-local inputs
     const raw = job.raw;
     formData.value = {
       title: raw.titre || '',
       category: raw.categorie || '',
       contractType: raw.typeDeContrat || '',
       location: raw.localisation || '',
-      remote: raw.modeDeTravail || 'onsite',
+      remote: raw.modeDeTravail || 'Présentiel',
       experience: raw.experienceRequise || '',
       salary: raw.salaire ? raw.salaire.toString() : '',
       description: raw.description || '',
       requirements: raw.competences || '',
-      deadline: raw.dateLimite ? new Date(raw.dateLimite).toISOString().slice(0, 16) : '',
-      dateLancementQcm: raw.dateLancementQcm ? new Date(raw.dateLancementQcm).toISOString().slice(0, 16) : '',
+      deadline: toLocalDatetimeInput(raw.dateLimite),
+      dateLancementQcm: toLocalDatetimeInput(raw.dateLancementQcm),
       positions: raw.nbPost || 1
     };
     
@@ -533,7 +566,7 @@ const formData = ref<PostFormData>({
   category: '',
   contractType: '',
   location: '',
-  remote: 'onsite',
+  remote: 'Présentiel',
   experience: '',
   salary: '',
   description: '',
@@ -555,16 +588,26 @@ const fetchMyJobs = async () => {
 };
 
 const displayJobs = computed(() => {
-    let list = jobsList.value.map(j => ({
-        id: j.id,
-        title: j.titre,
-        applicants: typeof j.candidatures === 'number' ? j.candidatures : (j.candidatures ? j.candidatures.length : 0),
-        daysLeft: j.dateLimite ? Math.max(0, Math.ceil((new Date(j.dateLimite).getTime() - new Date().getTime()) / (1000 * 3600 * 24))) : 0,
-        progress: Math.floor(Math.random() * 100),
-        quality: 'ÉLEVÉE',
-        status: (j.dateLimite && new Date(j.dateLimite) < new Date()) ? 'EXPIRÉE' : 'ACTIVE',
-        raw: j
-    }));
+    let list = jobsList.value.map(j => {
+        const targetDate = j.dateLancementQcm ? new Date(j.dateLancementQcm) : (j.dateLimite ? new Date(j.dateLimite) : null);
+        let daysLeft = 0;
+        let timeStr = '';
+        if (targetDate) {
+            daysLeft = Math.max(0, Math.ceil((targetDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24)));
+            timeStr = targetDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+        return {
+            id: j.id,
+            title: j.titre,
+            applicants: typeof j.candidatures === 'number' ? j.candidatures : (j.candidatures ? j.candidatures.length : 0),
+            daysLeft: daysLeft,
+            sessionTime: timeStr,
+            progress: Math.floor(Math.random() * 100),
+            quality: 'ÉLEVÉE',
+            status: (j.dateLimite && new Date(j.dateLimite) < new Date()) ? 'EXPIRÉE' : 'ACTIVE',
+            raw: j
+        };
+    });
     
     if (!props.searchQuery.trim()) return list;
     const q = props.searchQuery.toLowerCase();
@@ -581,13 +624,14 @@ const createNewPost = () => {
       category: '',
       contractType: '',
       location: '',
-      remote: 'onsite',
+      remote: 'Présentiel',
       experience: '',
       salary: '',
       description: '',
       requirements: '',
       deadline: '',
-      positions: 1
+      positions: 1,
+      dateLancementQcm: ''
     };
     
     showCreateModal.value = true;
@@ -605,18 +649,20 @@ const closeCreateModal = () => {
       category: '',
       contractType: '',
       location: '',
-      remote: 'onsite',
+      remote: 'Présentiel',
       experience: '',
       salary: '',
       description: '',
       requirements: '',
       deadline: '',
-      positions: 1
+      positions: 1,
+      dateLancementQcm: ''
     };
 };
 
 const switchTab = (tabId: string) => {
     currentTab.value = tabId;
+    nextTick(() => updateIndicator());
 };
 
 
@@ -624,47 +670,54 @@ const switchTab = (tabId: string) => {
 const submitPost = async () => {
     if (formData.value.deadline && formData.value.dateLancementQcm) {
         if (new Date(formData.value.dateLancementQcm) <= new Date(formData.value.deadline)) {
-            alert("La date et l'heure du QCM doivent être après la date limite de candidature !");
+            Swal.fire({ title: 'Erreur', text: "La date et l'heure du QCM doivent être après la date limite de candidature !", icon: 'error' });
             return;
         }
     }
 
     try {
-        const payload = {
-            titre: formData.value.title,
-            categorie: formData.value.category,
-            localisation: formData.value.location,
-            typeDeContrat: formData.value.contractType,
-            modeDeTravail: formData.value.remote,
-            experienceRequise: formData.value.experience,
-            salaire: formData.value.salary ? parseFloat(formData.value.salary) : undefined,
-            description: formData.value.description,
-            competences: formData.value.requirements,
-            icon: 'fa-solid fa-briefcase',
-            iconColor: '#3b82f6',
-            nbPost: formData.value.positions,
-            dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : null,
-            dateLancementQcm: formData.value.dateLancementQcm ? new Date(formData.value.dateLancementQcm).toISOString() : null
+        // Build payload - when editing, only send non-empty fields
+        const buildPayload = () => {
+            const raw: any = {
+                titre: formData.value.title || undefined,
+                categorie: formData.value.category || undefined,
+                localisation: formData.value.location || undefined,
+                typeDeContrat: formData.value.contractType || undefined,
+                modeDeTravail: formData.value.remote || undefined,
+                experienceRequise: formData.value.experience || undefined,
+                salaire: formData.value.salary ? parseFloat(formData.value.salary) : undefined,
+                description: formData.value.description || undefined,
+                competences: formData.value.requirements || undefined,
+                icon: 'fa-solid fa-briefcase',
+                iconColor: '#3b82f6',
+                nbPost: formData.value.positions || undefined,
+                dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : undefined,
+                dateLancementQcm: formData.value.dateLancementQcm ? new Date(formData.value.dateLancementQcm).toISOString() : undefined,
+            };
+            // Remove undefined keys so NestJS validation doesn't fail on empty optional fields
+            return Object.fromEntries(Object.entries(raw).filter(([_, v]) => v !== undefined));
         };
+        
+        const payload = buildPayload();
         
         if (isEditing.value && currentEditId.value) {
             await api.put(`/Entreprise/offres/${currentEditId.value}`, payload);
-            alert('Poste modifié avec succès !');
+            Swal.fire({ title: 'Succès', text: 'Poste modifié avec succès !', icon: 'success' });
         } else {
             // Check if backend already created it during QCM Generation to avoid duplicate
             if (createdOffreId.value) {
               await api.put(`/Entreprise/offres/${createdOffreId.value}`, payload);
-              alert('Poste publié avec succès !');
+              Swal.fire({ title: 'Succès', text: 'Poste publié avec succès !', icon: 'success' });
               createdOffreId.value = null;
             } else {
               await api.post('/Entreprise/offres', payload);
-              alert('Poste publié avec succès !');
+              Swal.fire({ title: 'Succès', text: 'Poste publié avec succès !', icon: 'success' });
             }
         }
         
         closeCreateModal();
         fetchMyJobs();
-    } catch(e) { console.error(e); alert("Erreur lors de l'enregistrement !"); }
+    } catch(e) { console.error(e); Swal.fire({ title: 'Erreur', text: "Erreur lors de l'enregistrement !", icon: 'error' }); }
 };
 
 // ─── QCM Dialog state ────────────────────────────────────────────
@@ -709,7 +762,7 @@ const mapApiQuestions = (questions: any[]): QCMQuestion[] => {
  */
 const generateQCM = async () => {
   if (!formData.value.title) {
-    alert('Veuillez d\'abord renseigner le titre du poste (onglet 1).');
+    Swal.fire({ title: 'Erreur', text: 'Veuillez d\'abord renseigner le titre du poste (onglet 1).', icon: 'error' });
     return;
   }
   showQCMDialog.value = true;
@@ -807,7 +860,7 @@ const regenerateQCM = async () => {
 
 const saveQCM = async () => {
   if (generatedQuestions.value.length === 0 || !createdOffreId.value) {
-    alert("Aucune question générée à valider ou offre non créée.");
+    Swal.fire({ title: 'Erreur', text: "Aucune question générée à valider ou offre non créée.", icon: 'error' });
     return;
   }
 
@@ -835,7 +888,7 @@ const saveQCM = async () => {
     }
 
     showQCMDialog.value = false;
-    alert("Questions générées avec succès et enregistrées pour cette offre !");
+    Swal.fire({ title: 'Succès', text: "Questions générées avec succès et enregistrées pour cette offre !", icon: 'success' });
   } catch (e: any) {
     console.error('[QCM] Erreur lors de la sauvegarde :', e);
     qcmError.value = `❌ ${e.message || 'Erreur pendant la sauvegarde'}`;
