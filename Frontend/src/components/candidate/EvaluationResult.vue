@@ -179,19 +179,19 @@
         </div>
         <div class="space-y-4 mt-4">
           <div v-for="(ans, i) in testAnswers" :key="i" class="p-4 rounded-xl border" :class="ans.isCorrect ? 'bg-emerald-50/50 border-emerald-100' : 'bg-rose-50/50 border-rose-100'">
-            <p class="font-semibold text-slate-800 text-sm mb-3">Q{{i+1}}. {{ ans.question }}</p>
+            <p class="font-semibold text-slate-800 text-sm mb-3 whitespace-pre-wrap break-words">Q{{i+1}}. {{ ans.question }}</p>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
+              <div class="min-w-0">
                 <span class="text-slate-500 font-medium">Votre réponse :</span>
-                <p class="mt-1 font-medium" :class="ans.isCorrect ? 'text-emerald-600' : 'text-rose-600'">
+                <p class="mt-1 font-medium whitespace-pre-wrap break-words" :class="ans.isCorrect ? 'text-emerald-600' : 'text-rose-600'">
                   <span v-if="ans.isCorrect">✓</span>
                   <span v-else>✗</span>
                   {{ ans.selectedAnswer }}
                 </p>
               </div>
-              <div v-if="!ans.isCorrect">
+              <div v-if="!ans.isCorrect" class="min-w-0">
                 <span class="text-slate-500 font-medium">Bonne réponse :</span>
-                <p class="mt-1 font-medium text-emerald-600">✓ {{ ans.correctAnswer }}</p>
+                <p class="mt-1 font-medium text-emerald-600 whitespace-pre-wrap break-words">✓ {{ ans.correctAnswer }}</p>
               </div>
             </div>
           </div>

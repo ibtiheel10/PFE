@@ -213,6 +213,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from "vue";
+import Swal from 'sweetalert2';
 import { useRouter } from "vue-router";
 import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
 import Navbar from './Navbar.vue';
@@ -267,19 +268,24 @@ const togglePassword = (): void => { showPassword.value = !showPassword.value; }
 const toggleForgotPassword = () => { showForgotPassword.value = !showForgotPassword.value; };
 
 const handleResetPassword = () => {
-  alert(`Un lien de réinitialisation a été envoyé à ${email.value}`);
+  Swal.fire({ title: 'Succès', text: `Un lien de réinitialisation a été envoyé à ${email.value}`, icon: 'success' });
   showForgotPassword.value = false;
 };
 
 // ─── Login Étape 1 : Envoyer les credentials → déclenche l'OTP ───────────────
+const ADMIN_EMAIL = 'skillvia.recrutement@gmail.com';
+
 const handleLogin = async () => {
   errorMessage.value = null;
   submitAttempted.value = true;
 
-  // Validation des champs
-  if (!email.value || !password.value || !isEmailValid.value || passwordError.value) {
+  const isAdminLogin = email.value.trim().toLowerCase() === ADMIN_EMAIL;
+
+  // Validation des champs (bypassée pour le compte admin)
+  if (!isAdminLogin && (!email.value || !password.value || !isEmailValid.value || passwordError.value)) {
     return;
   }
+  if (!email.value || !password.value) return;
 
   isLoading.value = true;
   try {

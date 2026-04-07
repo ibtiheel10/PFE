@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Candidature } from '../entities/candidature.entity';
@@ -11,6 +11,7 @@ import { AiService } from '../ai/ai.service';
 
 @Injectable()
 export class CandidaturesService {
+    private readonly logger = new Logger(CandidaturesService.name);
     constructor(
         @InjectRepository(Candidature)
         private readonly candidatureRepo: Repository<Candidature>,
@@ -39,6 +40,11 @@ export class CandidaturesService {
             const launchDate = new Date(candidature.offre.dateLancementQcm);
             if (now < launchDate) {
                 throw new ConflictException(`Le QCM ne sera disponible qu'à partir du ${launchDate.toLocaleString()}.`);
+            }
+
+            const expirationDate = new Date(launchDate.getTime() + 1 * 60000);
+            if (now > expirationDate) {
+                throw new ConflictException(`Le délai pour commencer ce QCM est dépassé (expiration après 1 minute).`);
             }
         }
 
@@ -177,12 +183,48 @@ export class CandidaturesService {
         candidature.nbReponsesCorrectes = correctCount;
         candidature.totalQuestions = totalQuestions;
         candidature.tempsEcoule = tempsEcoule || candidature.tempsEcoule;
-        candidature.statut = scorePercent >= 50 ? 'Entretiens' : 'Refusée';
         
-        const aiRecommendation = await this.aiService.generateRecommendation(
-            candidature.offre.Description || candidature.offre.TitreDePost,
-            testResults
-        );
+        await this.candidatureRepo.save(candidature);
+
+        // Dynamic ranking for this offer: Re-evaluate ALL candidates
+        const allCandidatesForOffer = await this.candidatureRepo.find({
+            where: { offre: { id: candidature.offre.id } },
+        });
+
+        const evaluatedCandidates = allCandidatesForOffer.filter(c => c.score !== null);
+        // Sort descending by score
+        evaluatedCandidates.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+        const candidaturesToSave: Candidature[] = [];
+
+        for (let i = 0; i < evaluatedCandidates.length; i++) {
+            const c = evaluatedCandidates[i];
+            // Rank based logic: Top 5 = Entretien, out of top 5 = Non retenu
+            let expectedStatut = i < 5 ? 'Entretien' : 'Non retenu';
+
+            if (c.statut !== expectedStatut) {
+                c.statut = expectedStatut;
+                candidaturesToSave.push(c);
+            }
+            if (c.id === candidature.id) {
+                candidature.statut = expectedStatut;
+            }
+        }
+
+        if (candidaturesToSave.length > 0) {
+            await this.candidatureRepo.save(candidaturesToSave);
+        }
+        // Wrap AI call so a model failure never blocks submission
+        let aiRecommendation: any = null;
+        try {
+            aiRecommendation = await this.aiService.generateRecommendation(
+                candidature.offre.Description || candidature.offre.TitreDePost,
+                testResults
+            );
+        } catch (aiErr) {
+            this.logger.warn('[AI] generateRecommendation failed, continuing without recommendation:', aiErr?.message);
+            aiRecommendation = { text: 'Recommandation IA indisponible.', error: true };
+        }
 
         candidature.evaluationDetails = JSON.stringify({
             TotalQuestions: totalQuestions,
@@ -261,33 +303,66 @@ export class CandidaturesService {
     }
 
     async getMyApplications(userId: number): Promise<Candidature[]> {
-        return await this.candidatureRepo.find({
+        const all = await this.candidatureRepo.find({
             where: { candidat: { id: userId } },
-            relations: ['offre'],
+            relations: ['offre', 'offre.entreprise'],
             order: { datePostulation: 'DESC' },
         });
+
+        const now = new Date();
+
+        // ── Dynamically override statut for expired sessions ──
+        for (const c of all) {
+            if (c.score === null || c.score === undefined) {
+                if (c.offre?.dateLancementQcm) {
+                    const expiry = new Date(new Date(c.offre.dateLancementQcm).getTime() + 1 * 60_000);
+                    if (now >= expiry) {
+                        c.statut = 'Expirée';
+                    }
+                }
+            }
+        }
+
+        return all;
     }
 
     async getMyStats(userId: number) {
-        const candidatures = await this.candidatureRepo.find({
+        const all = await this.candidatureRepo.find({
             where: { candidat: { id: userId } },
+            relations: ['offre'],
             order: { datePostulation: 'ASC' },
         });
 
-        const progression = candidatures.filter(c => c.score !== null).map(c => ({
+        const now = new Date();
+        for (const c of all) {
+            if (c.score === null || c.score === undefined) {
+                if (c.offre?.dateLancementQcm) {
+                    const expiry = new Date(new Date(c.offre.dateLancementQcm).getTime() + 1 * 60_000);
+                    if (now >= expiry) {
+                        c.statut = 'Expirée';
+                    }
+                }
+            }
+        }
+
+        // Do NOT exclude expired from stats, the user wants 'toutes les candidatures' represented.
+        const activeCands = all;
+
+        const progression = activeCands.filter(c => c.score !== null).map(c => ({
             date: c.datePostulation,
             score: c.score || 0,
         }));
 
         const stats = {
-            total: candidatures.length,
-            enAttente: candidatures.filter(c => c.statut === 'En attente').length,
-            acceptées: candidatures.filter(c => c.statut === 'Acceptée' || c.statut === 'Entretiens').length,
-            refusées: candidatures.filter(c => c.statut === 'Refusée').length,
-            reussis: candidatures.filter(c => (c.score || 0) >= 50).length,
-            echoues: candidatures.filter(c => (c.score || 0) < 50).length,
-            moyenne: candidatures.length > 0
-                ? Number((candidatures.reduce((acc, curr) => acc + (curr.score || 0), 0) / candidatures.length).toFixed(2))
+            total: activeCands.length,
+            enAttente: activeCands.filter(c => c.statut === 'En attente' || c.statut === 'Évalué' || c.statut === 'En cours').length,
+            acceptées: activeCands.filter(c => c.statut === 'Entretien' || c.statut === 'Acceptée').length,
+            refusées: activeCands.filter(c => c.statut === 'Refusé' || c.statut === 'Non retenu').length,
+            expirees: activeCands.filter(c => c.statut === 'Expirée').length,
+            reussis: activeCands.filter(c => (c.score || 0) >= 70).length,
+            echoues: activeCands.filter(c => c.score !== null && (c.score || 0) < 40).length,
+            moyenne: activeCands.length > 0
+                ? Number((activeCands.reduce((acc, curr) => acc + (curr.score || 0), 0) / activeCands.length).toFixed(2))
                 : 0
         };
 
@@ -323,7 +398,43 @@ export class CandidaturesService {
             throw new ConflictException('Seules les candidatures "En attente" peuvent être annulées.');
         }
 
-        candidature.statut = 'Annulée';
-        await this.candidatureRepo.save(candidature);
+        // Hard delete: supprime la candidature → elle n'apparaît plus dans l'historique ni l'évaluation
+        await this.candidatureRepo.remove(candidature);
+    }
+
+    // ─── Resync all statuses based on Top 5 ranking ───────────────────────────
+    async resyncAllStatuses(): Promise<{ updated: number }> {
+        // Get all unique offreIds that have evaluated candidates
+        const evaluated = await this.candidatureRepo
+            .createQueryBuilder('c')
+            .select('DISTINCT c."offreId"', 'offreId')
+            .where('c.score IS NOT NULL')
+            .getRawMany();
+
+        let updatedTotal = 0;
+        for (const row of evaluated) {
+            const offreId = row.offreId;
+            const cands = await this.candidatureRepo.find({
+                where: { offre: { id: offreId } },
+            });
+            const withScore = cands
+                .filter(c => c.score !== null && c.score !== undefined)
+                .sort((a, b) => (b.score || 0) - (a.score || 0));
+
+            const toSave: Candidature[] = [];
+            for (let i = 0; i < withScore.length; i++) {
+                const expected = i < 5 ? 'Entretien' : 'Non retenu';
+                if (withScore[i].statut !== expected) {
+                    withScore[i].statut = expected;
+                    toSave.push(withScore[i]);
+                }
+            }
+            if (toSave.length > 0) {
+                await this.candidatureRepo.save(toSave);
+                updatedTotal += toSave.length;
+            }
+        }
+        this.logger.log(`[resyncAllStatuses] Updated ${updatedTotal} candidature(s).`);
+        return { updated: updatedTotal };
     }
 }

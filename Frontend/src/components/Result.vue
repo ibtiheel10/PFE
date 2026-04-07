@@ -156,28 +156,30 @@
             <div class="donut-center">
               <apexchart type="donut" height="200" :options="donutChartOptions" :series="donutChartSeries"></apexchart>
             </div>
-            <div class="donut-legend">
+            <div class="donut-legend flex flex-wrap gap-3 mt-2 justify-center">
               <div class="legend-item"><span class="dot blue-dot"></span> En cours</div>
               <div class="legend-item"><span class="dot green-dot"></span> Accepté</div>
               <div class="legend-item"><span class="dot red-dot"></span> Refusé</div>
+              <div class="legend-item"><span class="dot" style="background: #64748b;"></span> Expiré</div>
             </div>
           </div>
 
-          <!-- Tips Card -->
-          <div class="tips-card animate-fade-up" style="animation-delay: 0.2s">
+          <!-- AI Recommendation Card -->
+          <div v-if="aiRecommendation" class="tips-card animate-fade-up" style="animation-delay: 0.2s">
             <div class="tips-icon">
-              <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+              <!-- AI Sparkles Icon -->
+              <svg class="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4L12 2zM5.5 5.5l1.5 4.5 4.5 1.5-4.5 1.5L5.5 17.5 4 13 0 11.5 4 10l1.5-4.5zm13 13l1.5 4.5 4.5 1.5-4.5 1.5L18.5 30l-1.5-4.5L12.5 24l4.5-1.5z"></path>
               </svg>
             </div>
             <div>
-              <p class="tips-title">Conseil Skillvia</p>
-              <p class="tips-text">{{ isSuccess ? 'Votre profil est maintenant visible par les recruteurs. Complétez votre profil pour maximiser vos chances.' : 'Révisez les compétences clés et repassez l\'évaluation dans quelques jours pour améliorer votre score.' }}</p>
+              <p class="tips-title">Recommandation IA Skillvia</p>
+              <p class="tips-text whitespace-pre-wrap">{{ aiRecommendation.text }}</p>
             </div>
           </div>
+
         </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -191,6 +193,8 @@ const route = useRoute();
 const router = useRouter();
 const score = ref(0);
 const candidature = ref<CandidatureResponse | null>(null);
+const aiRecommendation = ref<{text: string; error?: boolean} | null>(null);
+const testResults = ref<{question: string, selectedAnswer: string, correctAnswer: string, isCorrect: boolean}[]>([]);
 
 
 const evalStats = ref({
@@ -226,6 +230,10 @@ onMounted(async () => {
                   evalStats.value.tempsEcoule = details.Temps || 'N/A';
                   evalStats.value.bonnesReponses = `${details.CorrectAnswers}/${details.TotalQuestions}`;
                   evalStats.value.topPercent = details.TopPercent ? `Top ${details.TopPercent}%` : 'N/A';
+                  
+                  aiRecommendation.value = details.aiRecommendation || null;
+                  testResults.value = details.answers || [];
+
                   const competenceMap: Record<string, { total: number; count: number }> = {};
                   for (const c of evaluatedCandidatures) {
                       if (c.evaluationDetails) {
@@ -252,7 +260,8 @@ onMounted(async () => {
       }
 
       const resStats = await getMesStats();
-      donutChartSeries.value = [resStats.stats.enAttente, resStats.stats.acceptées, resStats.stats.refusées];
+      // Added resStats.stats.expirees
+      donutChartSeries.value = [resStats.stats.enAttente, resStats.stats.acceptées, resStats.stats.refusées, resStats.stats.expirees || 0];
       
       if (resStats.progression && resStats.progression.length > 0) {
           const dates = resStats.progression.map(p => new Date(p.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
@@ -260,12 +269,27 @@ onMounted(async () => {
           lineChartOptions.value = { ...lineChartOptions.value, xaxis: { ...lineChartOptions.value.xaxis, categories: dates } };
           lineChartSeries.value = [{ name: 'Score', data: scores }];
       }
-  } catch (err) {
+  } catch (err: any) {
+      if (err.response?.status === 403) {
+          import('sweetalert2').then(Swal => {
+              Swal.default.fire('Accès refusé', "L'évaluation n'est pas encore terminée ou le score n'est pas finalisé.", 'error');
+          });
+          router.push('/candidat/dashboard');
+          return;
+      }
       console.error('Error loading result data:', err);
   }
 });
 
-const isSuccess = computed(() => score.value >= 70);
+const isSuccess = computed(() => {
+    if (candidature.value?.statut === 'Entretien' || candidature.value?.statut === 'Acceptée') {
+        return true;
+    } else if (candidature.value?.statut === 'Non retenu' || candidature.value?.statut === 'Refusé') {
+        return false;
+    }
+    // Fallback while pending/waiting
+    return score.value >= 70;
+});
 const competencies = ref<{name: string, score: number}[]>([]);
 
 // ── Charts ──────────────────────────────
@@ -311,11 +335,11 @@ const radialChartOptions = ref({
     labels: ['Score Final'],
 });
 
-const donutChartSeries = ref([0, 0, 0]);
+const donutChartSeries = ref([0, 0, 0, 0]);
 const donutChartOptions = ref({
     chart: { type: 'donut', background: 'transparent', fontFamily: 'Inter, sans-serif' },
-    labels: ['En cours', 'Accepté', 'Refusé'],
-    colors: ['#3b82f6', '#10b981', '#f43f5e'],
+    labels: ['En cours', 'Accepté', 'Refusé', 'Expiré'],
+    colors: ['#3b82f6', '#10b981', '#f43f5e', '#64748b'],
     plotOptions: {
         pie: {
             donut: {
@@ -335,8 +359,7 @@ const donutChartOptions = ref({
     tooltip: { enabled: true, theme: 'light' }
 });
 
-const goToJobs = () => router.push('/candidat/jobs');
-const goToDashboard = () => router.push('/candidat/dashboard');
+
 </script>
 
 <style scoped>

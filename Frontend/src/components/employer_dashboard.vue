@@ -10,13 +10,8 @@
         <div class="h-16 flex items-center border-b border-gray-100 overflow-hidden whitespace-nowrap"
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
           <div class="flex items-center gap-3">
-             <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30 flex-shrink-0">
-                S
-             </div>
-             <div v-if="!isSidebarCollapsed" class="flex flex-col transition-opacity duration-200">
-                <span class="font-bold text-gray-900 text-lg tracking-tight">Skillvia</span>
-                <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Recruteur</span>
-             </div>
+             <LogoIcon customClass="w-9 h-9 flex-shrink-0" />
+                <span class="font-black text-[#1e40af] text-[24px] tracking-tight">Skillvia</span>
           </div>
         </div>
 
@@ -128,9 +123,6 @@
                         </div>
                         <a href="#" @click.prevent="showEditProfile = true; showProfileMenu = false;" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
                             <UserCircleIcon class="w-4 h-4" /> Edit Profil
-                        </a>
-                        <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                            <Cog6ToothIcon class="w-4 h-4" /> Paramètres
                         </a>
                          <div class="h-px bg-gray-100 my-1"></div>
                         <a href="#" @click.prevent="handleLogout" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
@@ -292,7 +284,7 @@
                         <div class="card jobs-card">
                            <div class="card-header">
                                 <h3>Mes Postes Actifs</h3>
-                                <span class="badge-total">{{ employerJobs.length }} TOTAL</span>
+                                <span class="badge-total">{{ displayJobs.length }} TOTAL</span>
                            </div>
                            
                            <div class="jobs-list">
@@ -327,7 +319,7 @@
                                        </div>
                                         <div class="meta-item">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-                                            Session dans {{ job.daysLeft }}j
+                                            Session dans {{ job.daysLeft }}j<span v-if="job.sessionTime"> à {{ job.sessionTime }}</span>
                                         </div>
                                    </div>
                                    <div class="job-footer">
@@ -518,9 +510,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import api from '../services/axios';
+import LogoIcon from './LogoIcon.vue';
 import Top5Candidates from './top_5_condidat.vue';
 import ListeCondidat from './liste_condidat.vue';
 import ListePosteEntreprise from './liste_poste_entreprise.vue';
@@ -613,6 +606,16 @@ onMounted(async () => {
     notifInterval = setInterval(fetchNotifs, 15000);
 });
 
+watch(activeNav, async (newVal) => {
+    if (newVal === 'Tableau de bord') {
+        try {
+            dashboardData.value = await getEntrepriseDashboard();
+        } catch(e) {
+            console.error('Erreur de rafraîchissement du dashboard:', e);
+        }
+    }
+});
+
 import { onUnmounted } from 'vue';
 onUnmounted(() => {
     if (notifInterval) clearInterval(notifInterval);
@@ -625,7 +628,7 @@ const toggleProfileMenu = () => {
 
 const handleLogout = async () => {
     try {
-        await axios.post('http://localhost:5173/api/auth/logout');
+        await api.post('/auth/logout');
     } catch (e) { console.error(e); }
     localStorage.removeItem('userToken');
     localStorage.removeItem('userRole');
@@ -651,7 +654,7 @@ const saveProfile = async () => {
             payload.newPassword = newPassword.value;
         }
 
-        const res = await axios.patch('http://localhost:5173/api/Entreprise/mon-profil', payload, config);
+        const res = await api.patch('/Entreprise/mon-profil', payload);
         
         profileSuccessMessage.value = 'Profil mis à jour avec succès.';
         
@@ -890,9 +893,9 @@ const candidatesSource = computed(() => {
             id: c.candidatId,
             name: c.prenom || 'Candidat inconnu',
             time: 'Enregistré',
-            role: 'Candidat Évalué',
+            role: c.role || 'Candidat Évalué',
             score: c.score || 0,
-            status: status.toUpperCase(),
+            statut: c.statut || status,
             statusClass: statusClass,
             avatar: `https://i.pravatar.cc/150?u=${c.candidatId}`
         };
@@ -900,15 +903,26 @@ const candidatesSource = computed(() => {
 });
 
 const displayJobs = computed(() => {
-    let list = employerJobs.value.map(j => ({
-        id: j.id,
-        title: j.titre || j.categorie, // Utiliser le titre ou la catégorie
-        applicants: (j as any).candidatures || 0,
-        daysLeft: (j as any).daysLeft !== undefined ? (j as any).daysLeft : 30,
-        progress: 100,
-        quality: 'ÉLEVÉE',
-        status: (j as any).status || 'ACTIVE'
-    }));
+    let list = employerJobs.value.map(j => {
+        let daysLeft = 0;
+        let timeStr = '';
+        const targetDate = (j as any).dateLancementQcm ? new Date((j as any).dateLancementQcm) : ((j as any).dateLimite ? new Date((j as any).dateLimite) : null);
+        if (targetDate) {
+            daysLeft = Math.max(0, Math.ceil((targetDate.getTime() - new Date().getTime()) / (1000 * 3600 * 24)));
+            timeStr = targetDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        return {
+            id: j.id,
+            title: j.titre || j.categorie, // Utiliser le titre ou la catégorie
+            applicants: typeof (j as any).candidatures === 'number' ? (j as any).candidatures : ((j as any).candidatures ? (j as any).candidatures.length : 0),
+            daysLeft: daysLeft,
+            sessionTime: timeStr,
+            progress: 100,
+            quality: 'ÉLEVÉE',
+            status: ((j as any).dateLimite && new Date((j as any).dateLimite) < new Date()) ? 'EXPIRÉE' : 'ACTIVE'
+        };
+    }).filter(j => j.status === 'ACTIVE');
     
     if (!searchQuery.value.trim()) return list;
     const q = searchQuery.value.toLowerCase();

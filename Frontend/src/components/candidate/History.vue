@@ -79,25 +79,24 @@
 
                         <!-- Action Button -->
                         <div class="action-section">
-                            <!-- Cancel button only for 'En cours' -->
-                            <button
-                                v-if="app.status === 'En cours'"
-                                @click.stop="handleCancel(app.id)"
-                                class="btn-cancel"
-                                title="Annuler la candidature"
-                            >
-                                <i class="fa-solid fa-xmark"></i>
-                                <span>Annuler</span>
-                            </button>
-                            <span v-else class="text-xs text-gray-400 italic">
+                            <div v-if="app.status === 'En attente'" class="flex flex-col items-end gap-1">
+                                <span class="text-xs text-gray-400 italic max-w-[200px] text-right">Candidature en cours d’évaluation.</span>
+                                <button
+                                    @click.stop="handleCancel(app.id)"
+                                    class="btn-cancel"
+                                    title="Annuler la candidature"
+                                >
+                                    <i class="fa-solid fa-xmark"></i>
+                                    <span>Annuler</span>
+                                </button>
+                            </div>
+                            <span v-else class="text-xs text-gray-400 italic max-w-[200px] text-right">
                                 {{
-                                  app.status === 'Entretiens'
-                                    ? 'Entretien programmé'
-                                    : app.status === 'Acceptée'
-                                      ? 'Candidature acceptée'
-                                      : app.status === 'Annulée'
-                                        ? 'Candidature annulée'
-                                        : 'Candidature refusée'
+                                  app.status === 'Entretien'
+                                    ? 'Candidat parmi les Top 5, sélectionné pour avancer.'
+                                    : app.status === 'Non retenu'
+                                      ? 'Candidat filtré automatiquement.'
+                                      : ''
                                 }}
                             </span>
                         </div>
@@ -130,6 +129,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
+import Swal from 'sweetalert2';
 import { useRouter } from 'vue-router';
 import { getMesCandidatures, deleteCandidature } from '../../services/candidatureService';
 
@@ -164,7 +164,13 @@ const fetchApplications = async () => {
             jobTitle: app.offre.TitreDePost,
             company: (app.offre as any).entreprise?.nom || (app.offre as any).entreprise?.Nom || (app.offre as any).user?.Entreprise?.Nom || (app.offre as any).user?.entreprise?.nom || 'Entreprise Confidentielle',
             category: app.offre.Categorie,
-            status: app.statut === 'En attente' ? 'En cours' : (app.statut === 'Refusés' ? 'Refusée' : app.statut),
+            status: (() => {
+                const s = (app.statut || '').toLowerCase();
+                if (s === 'expirée' || s.includes('expir')) return 'Expirée';
+                if (s.includes('refus') || s.includes('non retenu')) return 'Non retenu';
+                if (s.includes('entretien') || s.includes('accept')) return 'Entretien';
+                return 'En attente';
+            })(),
             date: app.datePostulation,
             dateDisplay: new Date(app.datePostulation).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' })
         }));
@@ -179,17 +185,17 @@ onMounted(() => {
 
 const tabs = [
     { id: 'all', label: 'Tout' },
-    { id: 'En cours', label: 'En cours' },
-    { id: 'Entretiens', label: 'Entretiens' },
-    { id: 'Acceptée', label: 'Acceptées' },
-    { id: 'Refusée', label: 'Refusées' },
-    { id: 'Annulée', label: 'Annulées' },
+    { id: 'En attente', label: 'En attente' },
+    { id: 'Entretien', label: 'Entretiens' },
+    { id: 'Non retenu', label: 'Non retenues' },
 ];
 
 // --- Computed (live from Backend) ---
 
 const filteredApplications = computed(() => {
-    let result = allMyApplications.value;
+    // 1. Exclude 'Expirée' from the history altogether
+    let result = allMyApplications.value.filter(app => app.status !== 'Expirée');
+    
     if (activeTab.value !== 'all') {
         result = result.filter(app => app.status === activeTab.value);
     }
@@ -214,33 +220,27 @@ const getJobIconColor = (app: any) => getVisualMeta(app.category).iconColor;
 
 const getStatusLineColor = (status: string) => {
     switch (status) {
-        case 'Entretiens': return 'bg-orange-500';
-        case 'Acceptée': return 'bg-green-500';
-        case 'Refusée': 
-        case 'Refusés': return 'bg-red-500';
-        case 'Annulée': return 'bg-gray-400';
-        default: return 'bg-blue-500';
+        case 'Entretien': return 'bg-green-500';
+        case 'Non retenu': return 'bg-red-500';
+        case 'En attente': return 'bg-orange-400';
+        default: return 'bg-blue-400';
     }
 };
 
 const getStatusBadgeClass = (status: string) => {
     switch (status) {
-        case 'Entretiens': return 'status-interview';
-        case 'Acceptée': return 'status-accepted';
-        case 'Refusée':
-        case 'Refusés': return 'status-rejected';
-        case 'Annulée': return 'status-cancelled';
+        case 'Entretien': return 'status-accepted'; // vert
+        case 'Non retenu': return 'status-rejected'; // rouge
+        case 'En attente': return 'status-pending'; // orange
         default: return 'status-review';
     }
 };
 
 const getStatusIcon = (status: string) => {
     switch (status) {
-        case 'Entretiens': return 'fa-solid fa-calendar-check';
-        case 'Acceptée': return 'fa-solid fa-circle-check';
-        case 'Refusée':
-        case 'Refusés': return 'fa-solid fa-circle-xmark';
-        case 'Annulée': return 'fa-solid fa-ban';
+        case 'Entretien': return 'fa-solid fa-circle-check';
+        case 'Non retenu': return 'fa-solid fa-circle-xmark';
+        case 'En attente': return 'fa-solid fa-hourglass-half';
         default: return 'fa-solid fa-clock';
     }
 };
@@ -255,14 +255,11 @@ const handleCancel = async (appId: number) => {
         await deleteCandidature(appId);
         showToast('Candidature annulée avec succès.');
         
-        // Mettre à jour le statut au lieu de supprimer
-        const appToUpdate = allMyApplications.value.find(a => a.id === appId);
-        if (appToUpdate) {
-            appToUpdate.status = 'Annulée';
-        }
+        // Supprimer totalement de la liste pour qu'elle disparaisse et permettre de repostuler
+        allMyApplications.value = allMyApplications.value.filter(a => a.id !== appId);
     } catch (e: any) {
         console.error(e);
-        alert(e.response?.data?.message || "Erreur lors de l'annulation.");
+        Swal.fire({ title: 'Erreur', text: e.response?.data?.message || "Erreur lors de l'annulation.", icon: 'error' });
     }
 };
 </script>
@@ -456,6 +453,7 @@ const handleCancel = async (appId: number) => {
 .status-accepted { background: #ecfdf5; color: #10b981; }
 .status-rejected { background: #fef2f2; color: #ef4444; }
 .status-cancelled { background: #f1f5f9; color: #64748b; }
+.status-pending { background: #fff7ed; color: #ea580c; }
 
 .action-section {
     display: flex;

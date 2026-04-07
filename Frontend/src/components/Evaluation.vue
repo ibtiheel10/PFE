@@ -3,9 +3,7 @@
     <!-- Header -->
     <header class="eval-header">
       <div class="header-left">
-        <div class="logo-icon">
-          <i class="fa-solid fa-graduation-cap"></i>
-        </div>
+        <LogoIcon customClass="w-10 h-10 flex-shrink-0" />
         <div class="header-title">
           <h1>Skillvia Assessment</h1>
           <p>Software Architecture Fundamentals</p>
@@ -104,7 +102,9 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
+import Swal from 'sweetalert2';
 import { useRouter } from 'vue-router';
+import LogoIcon from './LogoIcon.vue';
 
 const router = useRouter();
 
@@ -211,7 +211,7 @@ const submitQuiz = () => {
   
   const percentage = Math.round((score / totalQuestions.value) * 100);
   
-  alert('Evaluation Terminée!');
+  Swal.fire({ title: 'Terminé', text: 'Evaluation Terminée!', icon: 'success' });
   router.push(`/result?score=${percentage}`);
 };
 </script>
@@ -363,6 +363,8 @@ const submitQuiz = () => {
   color: #1e293b;
   line-height: 1.5;
   margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* Answers Section */
@@ -439,6 +441,7 @@ const submitQuiz = () => {
 /* Answer Content */
 .answer-content {
   flex: 1;
+  min-width: 0;
 }
 
 .answer-text {
@@ -447,12 +450,16 @@ const submitQuiz = () => {
   color: #1e293b;
   margin: 0 0 6px 0;
   line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .answer-hint {
   font-size: 13px;
   color: #64748b;
   margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .answer-option.selected .answer-hint {

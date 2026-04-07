@@ -232,8 +232,9 @@
       <div class="footer-container">
         <div class="footer-content">
           <div class="footer-section">
-            <div class="footer-logo">
-              <img src="../assets/logo.png" alt="Skillvia" />
+            <div class="footer-logo" style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+              <LogoIcon customClass="w-8 h-8 flex-shrink-0" />
+              <span class="font-black text-[#1e40af] text-[20px] tracking-tight leading-none">Skillvia</span>
             </div>
             <p>La plateforme de recrutement par compétences</p>
           </div>
@@ -266,6 +267,7 @@
 <script setup lang="ts">
 import { onMounted } from 'vue';
 import Navbar from './Navbar.vue';
+import LogoIcon from './LogoIcon.vue';
 
 const featureCards = [
   { icon: 'fa-solid fa-brain', title: 'Évaluations scientifiques', desc: 'QCM validés par des experts pour mesurer objectivement les compétences techniques et comportementales.' },

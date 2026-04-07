@@ -3,12 +3,10 @@
     <!-- Navigation / Top Bar -->
     <header class="top-nav">
       <div class="nav-content">
-        <div class="logo-section" @click="router.push('/employer-dashboard')" style="cursor: pointer;">
-          <div class="logo-icon">
-            <img src="../assets/logo.png" alt="Skillvia Logo" width="28" height="28" />
-          </div>
+        <div class="logo-section" @click="router.push('/employer-dashboard')" style="cursor: pointer; display: flex; align-items: center; gap: 8px;">
+          <LogoIcon customClass="w-8 h-8 flex-shrink-0" />
           <div class="logo-text">
-            <span class="brand-text">Skillvia</span>
+            <span class="font-black text-[#1e40af] text-[20px] tracking-tight leading-none">Skillvia</span>
           </div>
         </div>
         
@@ -68,7 +66,7 @@
                 <span class="posted-time">{{ job.postedTime }}</span>
                 <span class="dot" v-if="job.daysLeft">•</span>
                 <span class="days-left text-orange" v-if="job.daysLeft">
-                  Session dans {{ job.daysLeft }}j
+                  Session dans {{ job.daysLeft }}j à {{ job.testTime }}
                 </span>
               </div>
             </div>
@@ -226,6 +224,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { MockData, type Job } from '../services/MockData';
+import LogoIcon from './LogoIcon.vue';
 
 const router = useRouter();
 const route = useRoute();

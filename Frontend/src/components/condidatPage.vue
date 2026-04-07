@@ -10,13 +10,8 @@
         <div class="h-16 flex items-center border-b border-gray-100 overflow-hidden whitespace-nowrap"
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
           <div class="flex items-center gap-3">
-             <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/30 flex-shrink-0">
-                S
-             </div>
-             <div v-if="!isSidebarCollapsed" class="flex flex-col transition-opacity duration-200">
-                <span class="font-bold text-gray-900 text-lg tracking-tight">Skillvia</span>
-                <span class="text-[10px] text-gray-500 font-medium uppercase tracking-wider">Recrutement</span>
-             </div>
+             <LogoIcon customClass="w-9 h-9 flex-shrink-0" />
+                <span class="font-black text-[#1e40af] text-[24px] tracking-tight">Skillvia</span>
           </div>
         </div>
 
@@ -107,9 +102,6 @@
                         <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
                             <UserCircleIcon class="w-4 h-4" /> Mon Profil
                         </a>
-                        <a href="#" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
-                            <Cog6ToothIcon class="w-4 h-4" /> Paramètres
-                        </a>
                          <div class="h-px bg-gray-100 my-1"></div>
                         <a href="#" @click.prevent="handleLogout" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors">
                             <ArrowRightOnRectangleIcon class="w-4 h-4" /> Se déconnecter
@@ -158,23 +150,22 @@
                     <section>
                          <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-bold text-gray-800">Candidatures récentes</h3>
-                            <button @click="goToJobs" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">Voir tout</button>
+                            <button @click="handleNav('Historique des Candidatures')" class="text-sm font-medium text-blue-600 hover:text-blue-700 hover:underline">Voir tout</button>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5" v-if="dashboard && dashboard.recentApplications.length > 0">
-                             <!-- Loop through real applications -->
-                            <div v-for="app in dashboard.recentApplications" :key="app.id" class="application-card" @click="openApplication(app.offre.TitreDePost)">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5" v-if="dashboard && recentNonExpired.length > 0">
+                             <!-- Loop through real non-expired applications -->
+                            <div v-for="app in recentNonExpired" :key="app.id" class="application-card">
                                 <div class="flex justify-between items-start mb-4">
                                      <div class="card-icon card-icon-teal">
                                         <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" /></svg>
                                      </div>
-                                     <span class="status-badge" :class="app.statut === 'En attente' ? 'status-badge-orange' : 'status-badge-blue'">{{ app.statut }}</span>
+                                     <span class="status-badge" :class="getAppStatusClass(app)">{{ getAppStatusLabel(app) }}</span>
                                 </div>
                                 <div>
-                                    <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors card-title">{{ app.offre.TitreDePost }}</h4>
+                                    <h4 class="font-bold text-gray-900 card-title">{{ app.offre.TitreDePost }}</h4>
                                     <p class="text-sm text-gray-500 mb-4">{{ app.offre.Categorie }} • {{ app.offre.Localisation }}</p>
                                     <div class="flex items-center justify-between mt-auto pt-4 border-t border-gray-50">
                                         <span class="text-xs text-gray-400 font-medium">Postulé le {{ new Date(app.datePostulation).toLocaleDateString() }}</span>
-                                        <button @click.stop="openDetails" class="action-btn action-btn-secondary">Détails</button>
                                     </div>
                                 </div>
                             </div>
@@ -293,17 +284,74 @@
             </div>
         </div>
 
+        <!-- HISTORIQUE DES CANDIDATURES -->
+        <div v-else-if="activeNav === 'Historique des Candidatures'" class="max-w-5xl mx-auto animate-fade-in-up">
+            <div class="mb-6">
+                <h2 class="text-2xl font-bold text-gray-900 tracking-tight">Historique des Candidatures</h2>
+                <p class="text-sm text-gray-500 mt-1">Toutes vos candidatures actives et traitées (hors sessions expirées).</p>
+            </div>
+
+            <!-- Loading -->
+            <div v-if="historyLoading" class="flex justify-center py-16">
+                <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+
+            <!-- Empty -->
+            <div v-else-if="historyApplications.length === 0" class="bg-white rounded-2xl p-16 text-center border border-dashed border-gray-300">
+                <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <ClockIcon class="w-8 h-8 text-gray-300" />
+                </div>
+                <h4 class="text-gray-900 font-bold mb-1">Aucune candidature dans l'historique</h4>
+                <p class="text-gray-500 text-sm mb-6">Les sessions expirées n'apparaissent pas ici.</p>
+                <button @click="goToJobs" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-bold text-sm shadow-lg shadow-blue-500/20 hover:bg-blue-700 transition">Explorer les offres</button>
+            </div>
+
+            <!-- Table -->
+            <div v-else class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                            <th class="text-xs uppercase text-gray-400 font-bold px-6 py-4">Poste</th>
+                            <th class="text-xs uppercase text-gray-400 font-bold px-6 py-4">Catégorie</th>
+                            <th class="text-xs uppercase text-gray-400 font-bold px-6 py-4">Date</th>
+                            <th class="text-xs uppercase text-gray-400 font-bold px-6 py-4">Score</th>
+                            <th class="text-xs uppercase text-gray-400 font-bold px-6 py-4">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr
+                            v-for="app in historyApplications"
+                            :key="app.id"
+                            class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors"
+                        >
+                            <td class="px-6 py-4">
+                                <div class="font-semibold text-gray-800 text-sm">{{ app.offre.TitreDePost }}</div>
+                                <div class="text-xs text-gray-400">{{ app.offre.Localisation }}</div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-600">{{ app.offre.Categorie }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500">{{ new Date(app.datePostulation).toLocaleDateString('fr-FR') }}</td>
+                            <td class="px-6 py-4">
+                                <span v-if="app.score !== null" class="font-bold text-sm" :class="getScoreColor(app.score || 0)">{{ app.score }}%</span>
+                                <span v-else class="text-xs text-gray-400">—</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="status-badge" :class="getAppStatusClass(app)">{{ getAppStatusLabel(app) }}</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- OTHER VIEWS PLACEHOLDER -->
         <div v-else class="h-full flex flex-col items-center justify-center text-center animate-fade-in">
             <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-                <!-- Icon based on activeNav -->
                  <BriefcaseIcon v-if="activeNav === 'Jobs'" class="w-10 h-10 text-gray-400" />
-                 <ClockIcon v-else-if="activeNav === 'Historique des Candidatures'" class="w-10 h-10 text-gray-400" />
                  <ChartBarIcon v-else class="w-10 h-10 text-gray-400" />
             </div>
             <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ activeNav }}</h2>
             <p class="text-gray-500 max-w-md mx-auto mb-8">Cette section est en cours de développement. Revenez bientôt pour voir les nouvelles fonctionnalités !</p>
-            <button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30" @click="activeNav = 'Dashboard'">
+            <button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30" @click="activeNav = 'Tableau de bord'">
                 Retour au Tableau de bord
             </button>
         </div>
@@ -314,10 +362,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
+
 import { useRouter } from 'vue-router';
+import LogoIcon from './LogoIcon.vue';
 import axios from 'axios';
 import { getDashboardData, getMonProfil, type DashboardData, type CandidatProfile } from '../services/candidatService';
+import { getMesCandidatures } from '../services/candidatureService';
 import { 
     Squares2X2Icon, 
     BriefcaseIcon, 
@@ -328,7 +379,6 @@ import {
     ChevronDownIcon,
 
     UserCircleIcon,
-    Cog6ToothIcon
 } from '@heroicons/vue/24/outline';
 import { BoltIcon, ArrowRightOnRectangleIcon } from '@heroicons/vue/24/solid'; // Using solid for some accents
 
@@ -344,6 +394,28 @@ const isSidebarCollapsed = ref(false);
 const dashboard = ref<DashboardData | null>(null);
 const profile = ref<CandidatProfile | null>(null);
 const loading = ref(true);
+
+// ─── Historique des Candidatures state ───────────────────────────────────────
+const allCandidatures = ref<any[]>([]);
+const historyLoading = ref(false);
+
+/**
+ * Returns true if the candidature is an expired QCM session.
+ * The backend now robustly tags these with statut === 'Expirée'.
+ */
+const isExpiredCandidate = (c: any): boolean => {
+    return c.statut === 'Expirée';
+};
+
+/** Candidatures shown in Historique (all non-expired) */
+const historyApplications = computed(() =>
+    allCandidatures.value.filter(c => !isExpiredCandidate(c))
+);
+
+/** Candidatures shown in the "Candidatures récentes" dashboard widget (last 2 non-expired) */
+const recentNonExpired = computed(() =>
+    (dashboard.value?.recentApplications ?? []).filter(c => !isExpiredCandidate(c)).slice(0, 2)
+);
 
 const toggleSidebar = () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value;
@@ -372,13 +444,24 @@ onMounted(async () => {
     }
 });
 
-const handleNav = (itemName: string) => {
+const handleNav = async (itemName: string) => {
     if (itemName === 'Offres') {
         router.push('/jobs');
     } else if (itemName === 'Mes Résultats') {
         router.push('/result');
     } else {
         activeNav.value = itemName;
+        // Load history data lazily when the user navigates to Historique
+        if (itemName === 'Historique des Candidatures' && allCandidatures.value.length === 0) {
+            historyLoading.value = true;
+            try {
+                allCandidatures.value = await getMesCandidatures();
+            } catch (e) {
+                console.error('Erreur chargement historique:', e);
+            } finally {
+                historyLoading.value = false;
+            }
+        }
     }
 };
 
@@ -415,15 +498,25 @@ const handleLogout = async () => {
     router.push('/login');
 };
 
-const openApplication = (title: string) => {
-    alert('Ouverture de la candidature: ' + title);
+// ─── Status helpers for Candidatures récentes ───────────────────────────────
+// The status field in the DB may be stale. We normalise here so that any
+// variant of "Refusé/Refusée/Non retenu" → 'Non retenu' (red), and any
+// variant of "Entretien/Acceptée" → 'Entretien' (green). Everything else → orange.
+const normalizeAppStatus = (app: any): string => {
+    const s = (app.statut || '').toLowerCase();
+    if (s.includes('refus') || s.includes('non retenu')) return 'Non retenu';
+    if (s.includes('entretien') || s.includes('accept')) return 'Entretien';
+    return 'En attente';
 };
 
-
-
-const openDetails = () => {
-    alert('Affichage des détails du rendez-vous');
+const getAppStatusClass = (app: any): string => {
+    const s = normalizeAppStatus(app);
+    if (s === 'Entretien') return 'status-badge-green';
+    if (s === 'Non retenu') return 'status-badge-red';
+    return 'status-badge-orange';
 };
+
+const getAppStatusLabel = (app: any): string => normalizeAppStatus(app);
 </script>
 
 <style scoped>
@@ -645,17 +738,25 @@ const openDetails = () => {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
+.status-badge-green {
+  background: #d1fae5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
 .status-badge-orange {
   background: #ffedd5;
   color: #ea580c;
   border: 1px solid #fed7aa;
 }
 
-.status-badge-blue {
-  background: #dbeafe;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
+.status-badge-red {
+  background: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
 }
+
+/* Blue badge removed — Entretien uses green */
 
 .action-btn {
   font-size: 0.75rem;
