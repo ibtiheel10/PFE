@@ -153,9 +153,6 @@
                 <a href="#" @click.prevent="openEditProfile" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition-colors">
                   <UserCircleIcon class="w-4 h-4" /> Modifier le profil
                 </a>
-                <a href="#" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-colors">
-                  <Cog6ToothIcon class="w-4 h-4" /> Paramètres
-                </a>
                 <div class="h-px bg-gray-100 my-1"></div>
                 <a href="#" @click.prevent="handleLogout" class="flex items-center gap-2.5 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors">
                   <ArrowRightOnRectangleIcon class="w-4 h-4" /> Se déconnecter
@@ -294,7 +291,6 @@ import {
     BellIcon,
     ChevronDownIcon,
     UserCircleIcon,
-    Cog6ToothIcon,
     ArrowRightOnRectangleIcon,
     ClipboardDocumentCheckIcon
 } from '@heroicons/vue/24/outline';

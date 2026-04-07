@@ -9,15 +9,31 @@
 
       <!-- ── Hero Section ── -->
       <div class="hero-section">
-        <div class="hero-badge" :class="isSuccess ? 'hero-badge-success' : 'hero-badge-failure'">
-          <svg v-if="isSuccess" class="badge-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <svg v-else class="badge-icon failure-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+        <div class="hero-badge-container">
+          <div class="hero-badge" :class="isSuccess ? 'hero-badge-success' : 'hero-badge-failure'">
+            <svg v-if="isSuccess" class="badge-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <svg v-else class="badge-icon failure-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <!-- Security Badge Overlay -->
+          <div class="security-verify-badge">
+            <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+            </svg>
+            VERIFIED
+          </div>
         </div>
+
         <h1 class="hero-title">{{ isSuccess ? 'Félicitations !' : 'Évaluation terminée' }}</h1>
+        <div class="hero-security-tag">
+          <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+          RÉSULTAT SÉCURISÉ PAR L'IA SKILLVIA
+        </div>
         <p class="hero-subtitle">
           {{ isSuccess
             ? 'Excellent travail ! Vous avez validé les compétences requises. Votre profil est maintenant visible par les recruteurs.'
@@ -215,9 +231,19 @@
       </div>
 
       <!-- ── Footer ── -->
-      <div class="eval-footer">
-        <p>Besoin d'aide ? <a href="/contact" class="footer-link">Contacter le support Skillvia</a></p>
-      </div>
+      <footer class="eval-footer-secure">
+        <div class="footer-secure-wrap">
+          <div class="secure-tag">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+            </svg>
+            Environnement sécurisé
+          </div>
+          <div class="footer-dot"></div>
+          <p class="footer-text">Propulsé par Skillvia Recruitment Platform</p>
+        </div>
+        <p class="footer-help">Besoin d'aide ? <a href="/support" class="footer-link">Contacter le support</a></p>
+      </footer>
 
     </div>
   </div>
@@ -234,12 +260,24 @@ const route = useRoute();
 const scoreDisplay = ref(0);
 const evalStats = ref({ tempsEcoule: 'N/A', bonnesReponses: 'N/A', topPercent: 'N/A' });
 const skills = ref<{ name: string; score: number; description?: string }[]>([]);
-const isSuccess = computed(() => scoreDisplay.value >= 70);
+const candidature = ref<any>(null);
+const isSuccess = computed(() => {
+    if (candidature.value?.statut === 'Entretien' || candidature.value?.statut === 'Acceptée') return true;
+    if (candidature.value?.statut === 'Non retenu' || candidature.value?.statut === 'Refusé') return false;
+    return scoreDisplay.value >= 70;
+});
 const aiRecommendation = ref<any>(null);
 const testAnswers = ref<any[]>([]);
 
 onMounted(async () => {
   document.documentElement.classList.remove('dark', 'dark-mode');
+  
+  // Try to maintain fullscreen if coming from the evaluation session
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(() => {
+        // Silent fail (expected if user didn't interact or browser blocked)
+    });
+  }
 
   try {
     const candidatureIdParam = route.query.candidatureId;
@@ -258,6 +296,7 @@ onMounted(async () => {
 
     if (targetCandidatureId) {
       const data = await getCandidatureById(targetCandidatureId);
+      candidature.value = data;
       scoreDisplay.value = data?.score ?? 0;
 
       if (data?.evaluationDetails) {
@@ -485,11 +524,81 @@ const goToJobs = () => router.push('/candidat/jobs');
 .btn-icon { width: 16px; height: 16px; }
 
 /* ── Footer ── */
-.eval-footer { text-align: center; font-size: 12px; color: #94a3b8; font-weight: 500; }
-.footer-link { color: #3b82f6; text-decoration: none; font-weight: 600; }
+.eval-footer-secure {
+  margin-top: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.footer-secure-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: white;
+  padding: 6px 16px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.secure-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #059669;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.footer-dot { width: 4px; height: 4px; background: #cbd5e1; border-radius: 50%; }
+.footer-text { font-size: 11px; font-weight: 600; color: #94a3b8; margin: 0; }
+.footer-help { font-size: 12px; color: #94a3b8; font-weight: 500; margin: 0; }
+.footer-link { color: #3b82f6; text-decoration: none; font-weight: 600; margin-left: 4px; }
 .footer-link:hover { text-decoration: underline; }
 
-/* ── Responsive ── */
+/* Security Badge */
+.hero-badge-container { position: relative; margin-bottom: 8px; }
+.security-verify-badge {
+  position: absolute;
+  bottom: -6px;
+  right: -10px;
+  background: #1e293b;
+  color: white;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: 1px;
+  border: 2px solid white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.hero-security-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  color: #3b82f6;
+  background: #eff6ff;
+  padding: 4px 12px;
+  border-radius: 20px;
+  letter-spacing: 0.5px;
+}
+
+/* ── Glassmorphism Upgrade ── */
+.score-card, .skills-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+}
+
 @media (max-width: 640px) {
   .score-card { flex-direction: column; align-items: center; }
   .card-divider { width: 100%; height: 1px; }
