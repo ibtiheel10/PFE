@@ -394,7 +394,6 @@
         <div v-else-if="activeNav === 'Gestion Utilisateurs'" class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
             <div class="flex justify-between items-center">
                 <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Utilisateurs</h2>
-                <button @click="showCreateUserModal = true" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-all">+ Ajouter un utilisateur</button>
             </div>
 
             <!-- Success / Error banner -->
