@@ -271,7 +271,7 @@ onMounted(async () => {
       }
   } catch (err: any) {
       if (err.response?.status === 403) {
-          import('sweetalert2').then(Swal => {
+          import('../services/swal').then(module => { const Swal = module.default;
               Swal.default.fire('Accès refusé', "L'évaluation n'est pas encore terminée ou le score n'est pas finalisé.", 'error');
           });
           router.push('/candidat/dashboard');

@@ -23,7 +23,7 @@
              @click.prevent="handleNav(item.name)"
              class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap"
              :class="[
-                activeNav === item.name ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
+                activeNav === item.name ? 'nav-item-active shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
                 isSidebarCollapsed ? 'justify-center px-0' : ''
              ]"
              :title="isSidebarCollapsed ? item.name : ''"
@@ -31,10 +31,10 @@
             <component 
               :is="item.icon" 
               class="w-5 h-5 transition-colors flex-shrink-0"
-              :class="activeNav === item.name ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'" 
+              :class="activeNav === item.name ? 'nav-icon-active' : 'text-gray-400 group-hover:text-gray-600'" 
             />
             <span v-if="!isSidebarCollapsed" class="font-medium text-sm transition-opacity duration-200">{{ item.name }}</span>
-            <div v-if="!isSidebarCollapsed && item.badge" class="ml-auto bg-blue-100 text-blue-700 py-0.5 px-2 rounded-full text-xs font-bold">
+            <div v-if="!isSidebarCollapsed && item.badge" class="nav-badge ml-auto py-0.5 px-2 rounded-full text-xs font-bold">
               {{ item.badge }}
             </div>
           </a>
@@ -351,7 +351,7 @@
             </div>
             <h2 class="text-2xl font-bold text-gray-900 mb-2">{{ activeNav }}</h2>
             <p class="text-gray-500 max-w-md mx-auto mb-8">Cette section est en cours de développement. Revenez bientôt pour voir les nouvelles fonctionnalités !</p>
-            <button class="bg-blue-600 text-white px-6 py-3 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg shadow-blue-500/30" @click="activeNav = 'Tableau de bord'">
+            <button class="bg-[#1e40af] text-white px-6 py-3 rounded-xl font-bold hover:bg-[#1e3a8a] transition shadow-lg shadow-[#1e40af]/30" @click="activeNav = 'Tableau de bord'">
                 Retour au Tableau de bord
             </button>
         </div>
@@ -521,6 +521,18 @@ const getAppStatusLabel = (app: any): string => normalizeAppStatus(app);
 
 <style scoped>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* ── Active nav item ── */
+.nav-item-active {
+  background-color: rgba(30, 64, 175, 0.1);
+  color: #1e40af;
+  outline: 1px solid rgba(30, 64, 175, 0.2);
+}
+.nav-icon-active { color: #1e40af; }
+.nav-badge {
+  background-color: rgba(30, 64, 175, 0.1);
+  color: #1e40af;
+}
 
 /* Additional custom animations */
 @keyframes fadeInUp {

@@ -173,7 +173,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import Swal from 'sweetalert2';
+import Swal from '../services/swal';
 import { useRoute, useRouter } from 'vue-router';
 import api from '../services/axios';
 
@@ -369,7 +369,7 @@ html, body, #app { background: #F3F4F6 !important; }
   border-radius: 6px;
   transition: color .15s, background .15s;
 }
-.back-btn:hover { color: #2563EB; background: #EFF6FF; }
+.back-btn:hover { color: #1e40af; background: #EFF6FF; }
 
 /* ── Job header ─────────────────────── */
 .job-title {
@@ -426,7 +426,7 @@ html, body, #app { background: #F3F4F6 !important; }
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.stat-icon.blue   { background: #EFF6FF; color: #2563EB; }
+.stat-icon.blue   { background: #EFF6FF; color: #1e40af; }
 .stat-icon.green  { background: #F0FDF4; color: #16A34A; }
 .stat-icon.purple { background: #F5F3FF; color: #7C3AED; }
 .stat-icon.orange { background: #FFF7ED; color: #EA580C; }
@@ -463,7 +463,7 @@ html, body, #app { background: #F3F4F6 !important; }
 
 .qcm-icon {
   width: 40px; height: 40px;
-  background: linear-gradient(135deg, #6366F1, #3B82F6);
+  background: linear-gradient(135deg, #6366F1, #1e40af);
   border-radius: 11px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
@@ -477,7 +477,7 @@ html, body, #app { background: #F3F4F6 !important; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: #2563EB;
+  background: #1e40af;
   color: #fff;
   border: none;
   border-radius: 8px;
@@ -488,7 +488,7 @@ html, body, #app { background: #F3F4F6 !important; }
   transition: background .18s, transform .18s;
   font-family: 'Inter', sans-serif;
 }
-.btn-ai:hover { background: #1D4ED8; transform: translateY(-1px); }
+.btn-ai:hover { background: #1e3a8a; transform: translateY(-1px); }
 
 /* ── Questions ──────────────────────── */
 .q-list {
@@ -512,7 +512,7 @@ html, body, #app { background: #F3F4F6 !important; }
 
 .q-badge {
   width: 30px; height: 30px; min-width: 30px;
-  background: linear-gradient(135deg, #6366F1, #2563EB);
+  background: linear-gradient(135deg, #6366F1, #1e40af);
   color: #fff;
   border-radius: 8px;
   font-size: 0.65rem;
@@ -546,7 +546,7 @@ html, body, #app { background: #F3F4F6 !important; }
   transition: border-color .15s, background .15s;
   min-height: 36px;
 }
-.opt:hover { border-color: #93C5FD; background: #EFF6FF; }
+.opt:hover { border-color: #93a8d4; background: #EFF6FF; }
 
 .opt.correct {
   background: #F0FDF4;
@@ -600,7 +600,7 @@ html, body, #app { background: #F3F4F6 !important; }
   font-size: 0.7rem;
   font-weight: 700;
 }
-.pts-tech { background: #EFF6FF; color: #2563EB; border: 1px solid #BFDBFE; }
+.pts-tech { background: #EFF6FF; color: #1e40af; border: 1px solid #BFDBFE; }
 .pts-soft { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
 
 .badge-type {
@@ -611,7 +611,7 @@ html, body, #app { background: #F3F4F6 !important; }
   font-size: 0.7rem;
   font-weight: 600;
 }
-.type-tech { background: #EFF6FF; color: #1D4ED8; }
+.type-tech { background: #EFF6FF; color: #1e3a8a; }
 .type-soft { background: #FAF5FF; color: #6D28D9; }
 
 /* Delete button */
@@ -697,7 +697,7 @@ html, body, #app { background: #F3F4F6 !important; }
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: #2563EB;
+  background: #1e40af;
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -710,7 +710,7 @@ html, body, #app { background: #F3F4F6 !important; }
   box-shadow: 0 4px 14px rgba(37,99,235,0.3);
 }
 .btn-publish:hover:not(:disabled) {
-  background: #1D4ED8;
+  background: #1e3a8a;
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(37,99,235,0.38);
 }
@@ -785,7 +785,7 @@ html, body, #app { background: #F3F4F6 !important; }
   padding: 0.6rem 1.25rem;
   font-size: 0.85rem;
   font-weight: 700;
-  color: #2563EB;
+  color: #1e40af;
   cursor: pointer;
   transition: all 0.2s;
   font-family: 'Inter', sans-serif;

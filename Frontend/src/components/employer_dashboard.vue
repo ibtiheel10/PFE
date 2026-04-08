@@ -24,7 +24,7 @@
              @click.prevent="activeNav = item.name"
              class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap"
              :class="[
-                activeNav === item.name ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
+                activeNav === item.name ? 'nav-item-active shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
                 isSidebarCollapsed ? 'justify-center px-0' : ''
              ]"
              :title="isSidebarCollapsed ? item.name : ''"
@@ -32,7 +32,7 @@
             <component 
               :is="item.icon" 
               class="w-5 h-5 transition-colors flex-shrink-0"
-              :class="activeNav === item.name ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'" 
+              :class="activeNav === item.name ? 'nav-icon-active' : 'text-gray-400 group-hover:text-gray-600'" 
             />
             <span v-if="!isSidebarCollapsed" class="font-medium text-sm transition-opacity duration-200">{{ item.name }}</span>
           </a>
@@ -46,7 +46,7 @@
       <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 transition-all duration-300">
         <!-- Left Side: Toggle & Title -->
         <div class="flex items-center gap-4">
-            <button @click="toggleSidebar" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none ring-offset-2 focus:ring-2 ring-blue-500/20">
+            <button @click="toggleSidebar" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none ring-offset-2 focus:ring-2 ring-[#1e40af]/20">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6">
                     <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                     <line x1="9" y1="3" x2="9" y2="21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -73,7 +73,7 @@
                     <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
                         <div class="px-4 py-3 border-b border-gray-50 flex justify-between items-center">
                             <h3 class="text-sm font-bold text-gray-900">Notifications</h3>
-                            <button v-if="unreadCount > 0" @click="handleMarkAllRead" class="text-xs text-blue-600 hover:underline">Marquer tout comme lu</button>
+                            <button v-if="unreadCount > 0" @click="handleMarkAllRead" class="text-xs text-[#1e40af] hover:underline">Marquer tout comme lu</button>
                         </div>
                         <div class="max-h-[28rem] overflow-y-auto">
                             <div 
@@ -81,7 +81,7 @@
                                 :key="notif.id" 
                                 @click="handleNotifClick(notif)"
                                 class="px-4 py-3 flex gap-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
-                                :class="!notif.lu ? 'bg-blue-50/30' : ''"
+                                :class="!notif.lu ? 'bg-[#eff6ff]/30' : ''"
                             >
                                 <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm" :class="getNotifBgClass(notif.type)">
                                     {{ getNotifIcon(notif.type) }}
@@ -89,7 +89,7 @@
                                 <div>
                                     <p class="text-sm font-medium" :class="!notif.lu ? 'text-gray-900 font-bold' : 'text-gray-800'">{{ notif.titre }}</p>
                                     <p class="text-xs text-gray-600 mt-0.5 line-clamp-2">{{ notif.message }}</p>
-                                    <span class="text-[10px] font-medium uppercase mt-1 block" :class="!notif.lu ? 'text-blue-600' : 'text-gray-400'">{{ formatNotifTime(notif.createdAt) }}</span>
+                                    <span class="text-[10px] font-medium uppercase mt-1 block" :class="!notif.lu ? 'text-[#1e40af]' : 'text-gray-400'">{{ formatNotifTime(notif.createdAt) }}</span>
                                 </div>
                             </div>
                             <div v-if="notifications.length === 0" class="px-4 py-8 text-center">
@@ -97,7 +97,7 @@
                             </div>
                         </div>
                         <div class="px-4 py-2 border-t border-gray-50 text-center">
-                            <button class="text-xs text-gray-500 hover:text-blue-600 font-medium">Voir toutes les notifications</button>
+                            <button class="text-xs text-gray-500 hover:text-[#1e40af] font-medium">Voir toutes les notifications</button>
                         </div>
                     </div>
                 </transition>
@@ -109,7 +109,7 @@
                     <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random&color=fff&rounded=true&bold=true`" alt="User" class="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm" />
                     <div class="hidden md:flex flex-col items-start">
                         <span class="text-sm font-bold text-gray-700 leading-none">{{ userName }}</span>
-                        <span class="text-[11px] font-medium text-blue-600 mt-1">RH Manager</span>
+                        <span class="text-[11px] font-medium text-[#1e40af] mt-1">RH Manager</span>
                     </div>
                     <ChevronDownIcon class="w-4 h-4 text-gray-400" />
                 </button>
@@ -121,7 +121,7 @@
                             <p class="text-sm font-bold text-gray-900">{{ userName }}</p>
                             <p class="text-xs text-gray-500 truncate">{{ userEmail }}</p>
                         </div>
-                        <a href="#" @click.prevent="showEditProfile = true; showProfileMenu = false;" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-blue-600 transition-colors">
+                        <a href="#" @click.prevent="showEditProfile = true; showProfileMenu = false;" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-600 hover:bg-gray-50 hover:text-[#1e40af] transition-colors">
                             <UserCircleIcon class="w-4 h-4" /> Edit Profil
                         </a>
                          <div class="h-px bg-gray-100 my-1"></div>
@@ -243,12 +243,12 @@
                                 <svg viewBox="0 0 700 200" preserveAspectRatio="none" class="wave-chart">
                                     <defs>
                                         <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                            <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:0.3" />
-                                            <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:0" />
+                                            <stop offset="0%" style="stop-color:#1e40af;stop-opacity:0.3" />
+                                            <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0" />
                                         </linearGradient>
                                         <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" style="stop-color:#2563EB" />
-                                            <stop offset="100%" style="stop-color:#3B82F6" />
+                                            <stop offset="0%" style="stop-color:#1e40af" />
+                                            <stop offset="100%" style="stop-color:#1e40af" />
                                         </linearGradient>
                                     </defs>
                                     
@@ -266,7 +266,7 @@
                                           class="chart-line-path transition-all duration-700"/>
                                     
                                     <!-- Dot indicators -->
-                                    <circle :cx="chartPaths.lastX" :cy="chartPaths.lastY" r="5" fill="#2563EB" class="chart-dot pulse-dot"/>
+                                    <circle :cx="chartPaths.lastX" :cy="chartPaths.lastY" r="5" fill="#1e40af" class="chart-dot pulse-dot"/>
                                     <circle :cx="chartPaths.lastX" :cy="chartPaths.lastY" r="3" fill="#FFFFFF"/>
                                 </svg>
                                 
@@ -290,7 +290,7 @@
                            <div class="jobs-list">
                                <div class="job-item" v-for="job in displayJobs.slice(0, 3)" :key="job.title">
                                    <div class="job-header">
-                                       <h4 @click="goToJobDetails(job.id)" style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#2563EB'" onmouseout="this.style.color='inherit'">{{ job.title }}</h4>
+                                       <h4 @click="goToJobDetails(job.id)" style="cursor: pointer; transition: color 0.2s;" onmouseover="this.style.color='#1e40af'" onmouseout="this.style.color='inherit'">{{ job.title }}</h4>
                                        <div class="relative">
                                            <button class="menu-dots" @click.stop="toggleJobMenu(job.id)">
                                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
@@ -302,8 +302,8 @@
                                                    <button @click.stop="renameJob(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                                                        <PencilSquareIcon class="w-4 h-4 text-gray-400" /> Renommer la poste
                                                    </button>
-                                                   <button @click.stop="showRecommendations(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-blue-600 hover:bg-blue-50 transition-colors">
-                                                       <SparklesIcon class="w-4 h-4 text-blue-600" /> Recommandations IA
+                                                   <button @click.stop="showRecommendations(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-[#1e40af] hover:bg-[#eff6ff] transition-colors">
+                                                       <SparklesIcon class="w-4 h-4 text-[#1e40af]" /> Recommandations IA
                                                    </button>
                                                    <button @click.stop="deleteJob(job.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
                                                        <TrashIcon class="w-4 h-4" /> Supprimer
@@ -383,7 +383,7 @@
           <div class="modal-dialog" style="max-width: 600px;" @click.stop>
               <div class="modal-icon-wrapper" style="margin-bottom: 1rem;">
                   <div class="modal-icon-bg" style="background: #eff6ff;">
-                      <SparklesIcon class="w-8 h-8 text-blue-600" />
+                      <SparklesIcon class="w-8 h-8 text-[#1e40af]" />
                   </div>
               </div>
               <h3 class="modal-title" style="margin-bottom: 0.5rem;">Recommandations IA</h3>
@@ -391,20 +391,20 @@
               
               <div class="modal-body-content" style="min-height: 200px; display: flex; flex-direction: column;">
                   <div v-if="recommendationsLoading" class="flex flex-col items-center justify-center py-8">
-                     <i class="fa-solid fa-spinner fa-spin text-3xl text-blue-600 mb-4"></i>
+                     <i class="fa-solid fa-spinner fa-spin text-3xl text-[#1e40af] mb-4"></i>
                      <p class="text-gray-500 text-sm">Génération des recommandations...</p>
                   </div>
                   <div v-else-if="currentRecommendations" class="bg-gray-50 p-4 rounded-xl border border-gray-100">
                      <div class="flex gap-4 mb-4">
                         <div class="flex-1">
                            <span class="text-xs font-bold text-gray-500 uppercase">Score Moyen</span>
-                           <p class="text-lg font-bold text-blue-600">{{ currentRecommendations.score }}%</p>
+                           <p class="text-lg font-bold text-[#1e40af]">{{ currentRecommendations.score }}%</p>
                         </div>
                         <div class="flex-1" v-if="currentRecommendations.niveau">
                            <span class="text-xs font-bold text-gray-500 uppercase">Niveau Global</span>
                            <p class="text-lg font-bold" :class="{
                               'text-green-600': currentRecommendations.niveau === 'Avancé',
-                              'text-blue-600': currentRecommendations.niveau === 'Intermédiaire',
+                              'text-[#1e40af]': currentRecommendations.niveau === 'Intermédiaire',
                               'text-orange-600': currentRecommendations.niveau === 'Débutant'
                            }">{{ currentRecommendations.niveau }}</p>
                         </div>
@@ -439,7 +439,7 @@
           <div class="modal-dialog" @click.stop>
               <div class="modal-icon-wrapper">
                   <div class="modal-icon-bg info">
-                      <PencilSquareIcon class="w-8 h-8 text-blue-600" />
+                      <PencilSquareIcon class="w-8 h-8 text-[#1e40af]" />
                   </div>
               </div>
               <h3 class="modal-title">Renommer le poste</h3>
@@ -931,6 +931,14 @@ const displayJobs = computed(() => {
 </script>
 
 <style scoped>
+/* ── Active nav item ── */
+.nav-item-active {
+  background-color: rgba(30, 64, 175, 0.1);
+  color: #1e40af;
+  outline: 1px solid rgba(30, 64, 175, 0.2);
+}
+.nav-icon-active { color: #1e40af; }
+
 /* Additional custom animations */
 @keyframes fadeInUp {
     from {
@@ -1086,7 +1094,7 @@ const displayJobs = computed(() => {
 }
 
 .bg-blue { 
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
 }
 .bg-blue svg { stroke: #FFFFFF; }
 
@@ -1302,12 +1310,12 @@ const displayJobs = computed(() => {
 .modal-btn-delete:hover { background: #DC2626; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
 
 .modal-btn-confirm {
-    background: #2563EB;
+    background: #1e40af;
     color: white;
     border: none;
 }
 
-.modal-btn-confirm:hover { background: #1D4ED8; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+.modal-btn-confirm:hover { background: #1e3a8a; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
 
 .modal-body-input {
     text-align: left;
@@ -1325,7 +1333,7 @@ const displayJobs = computed(() => {
 
 .custom-modal-input:focus {
     outline: none;
-    border-color: #3B82F6;
+    border-color: #1e40af;
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
 }
 
@@ -1372,7 +1380,7 @@ const displayJobs = computed(() => {
 }
 
 .view-all {
-    color: #2563EB;
+    color: #1e40af;
     text-decoration: none;
     font-weight: 600;
     font-size: 0.8rem;
@@ -1505,7 +1513,7 @@ const displayJobs = computed(() => {
 .big-score {
     font-size: 1.25rem;
     font-weight: 800;
-    color: #2563EB;
+    color: #1e40af;
 }
 
 .trend-mini {
@@ -1595,7 +1603,7 @@ const displayJobs = computed(() => {
 
 .progress-val {
     height: 100%;
-    background: #2563EB;
+    background: #1e40af;
     border-radius: 2px;
 }
 
@@ -1631,7 +1639,7 @@ const displayJobs = computed(() => {
 
 /* Promo Card */
 .promo-card {
-    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
     border-radius: 12px;
     padding: 1.25rem;
     color: white;
@@ -1654,7 +1662,7 @@ const displayJobs = computed(() => {
 
 .ai-btn {
     background: white;
-    color: #1D4ED8;
+    color: #1e3a8a;
     border: none;
     padding: 0.5rem 0.8rem;
     border-radius: 6px;
@@ -1812,7 +1820,7 @@ const displayJobs = computed(() => {
 }
 
 .edit-profile-input:focus {
-    border-color: #3B82F6;
+    border-color: #1e40af;
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
@@ -1844,11 +1852,11 @@ const displayJobs = computed(() => {
 }
 
 .edit-profile-btn.save {
-    background: #3B82F6;
+    background: #1e40af;
     color: #ffffff;
 }
 
 .edit-profile-btn.save:hover {
-    background: #2563EB;
+    background: #1e40af;
 }
 </style>

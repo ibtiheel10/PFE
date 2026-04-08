@@ -299,7 +299,7 @@
 
     // ─── Social Login ────────────────────────────────────────────
     const handleSocialLogin = (provider: string) => {
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:3333/api';
+      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
       window.location.href = `${backendUrl}/auth/${provider.toLowerCase()}?role=${selectedRole.value}`;
     };
 
@@ -742,16 +742,16 @@
 .role-btn.router-link-active,
 .role-btn.router-link-exact-active,
 .role-btn.active {
-  border: 1px solid #93c5fd !important;
-  color: #3b82f6 !important;
+  border: 1px solid #1e40af !important;
+  color: #1e40af !important;
   background-color: #eff6ff !important;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.1);
+  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.12);
 }
 
 .role-btn.router-link-active i,
 .role-btn.router-link-exact-active i,
 .role-btn.active i {
-  color: #3b82f6 !important;
+  color: #1e40af !important;
 }
 
 /* FORM */

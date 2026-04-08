@@ -319,7 +319,7 @@ watch(currentPage, fetchJobs);
 
 /* ─── Hero Banner ─── */
 .hero-banner {
-  background: linear-gradient(135deg, #1a1f5e 0%, #1f5bff 60%, #38bdf8 100%);
+  background: linear-gradient(135deg, #1a1f5e 0%, #1e40af 60%, #38bdf8 100%);
   padding: 40px 24px 32px;
   position: relative;
   overflow: hidden;
@@ -439,7 +439,7 @@ watch(currentPage, fetchJobs);
   gap: 8px;
   height: 44px;
   padding: 0 22px;
-  background: linear-gradient(135deg, #1f5bff, #3b82f6);
+  background: linear-gradient(135deg, #1e40af, #1e40af);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -449,12 +449,12 @@ watch(currentPage, fetchJobs);
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.25s;
-  box-shadow: 0 4px 16px rgba(31,91,255,0.4);
+  box-shadow: 0 4px 16px rgba(30,64,175,0.4);
 }
 
 .search-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 24px rgba(31,91,255,0.5);
+  box-shadow: 0 6px 24px rgba(30,64,175,0.5);
 }
 
 /* Hero Stats */
@@ -523,7 +523,7 @@ watch(currentPage, fetchJobs);
   transition: color 0.2s;
 }
 
-.breadcrumb a:hover { color: #1f5bff; }
+.breadcrumb a:hover { color: #1e40af; }
 
 .separator-icon { font-size: 10px; color: #cbd5e1; }
 
@@ -561,7 +561,7 @@ watch(currentPage, fetchJobs);
   align-items: center;
   justify-content: center;
   font-size: 18px;
-  color: #1f5bff;
+  color: #1e40af;
   flex-shrink: 0;
 }
 
@@ -580,7 +580,7 @@ watch(currentPage, fetchJobs);
 }
 
 .results-count strong {
-  color: #1f5bff;
+  color: #1e40af;
   font-weight: 700;
 }
 
@@ -619,16 +619,16 @@ watch(currentPage, fetchJobs);
 }
 
 .sort-chip:hover {
-  border-color: #1f5bff;
-  color: #1f5bff;
+  border-color: #1e40af;
+  color: #1e40af;
   background: #eff6ff;
 }
 
 .sort-chip.active {
-  background: linear-gradient(135deg, #1f5bff, #3b82f6);
+  background: linear-gradient(135deg, #1e40af, #1e40af);
   border-color: transparent;
   color: #fff;
-  box-shadow: 0 3px 10px rgba(31,91,255,0.3);
+  box-shadow: 0 3px 10px rgba(30,64,175,0.3);
 }
 
 /* ─── Empty State ─── */
@@ -650,7 +650,7 @@ watch(currentPage, fetchJobs);
   align-items: center;
   justify-content: center;
   font-size: 32px;
-  color: #93c5fd;
+  color: #93a8d4;
   margin-bottom: 20px;
 }
 
@@ -673,7 +673,7 @@ watch(currentPage, fetchJobs);
   gap: 8px;
   height: 40px;
   padding: 0 20px;
-  background: #1f5bff;
+  background: #1e40af;
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -712,7 +712,7 @@ watch(currentPage, fetchJobs);
   top: 0;
   bottom: 0;
   width: 4px;
-  background: linear-gradient(180deg, #1f5bff, #38bdf8);
+  background: linear-gradient(180deg, #1e40af, #38bdf8);
   border-radius: 16px 0 0 16px;
   opacity: 0;
   transition: opacity 0.3s;
@@ -721,8 +721,8 @@ watch(currentPage, fetchJobs);
 .job-card:hover .card-accent { opacity: 1; }
 
 .job-card:hover {
-  box-shadow: 0 12px 40px rgba(31,91,255,0.12);
-  border-color: rgba(31,91,255,0.2);
+  box-shadow: 0 12px 40px rgba(30,64,175,0.12);
+  border-color: rgba(30,64,175,0.2);
   transform: translateY(-3px);
 }
 
@@ -761,7 +761,7 @@ watch(currentPage, fetchJobs);
   transition: color 0.2s;
 }
 
-.job-card:hover .job-title { color: #1f5bff; }
+.job-card:hover .job-title { color: #1e40af; }
 
 .job-meta {
   display: flex;
@@ -851,7 +851,7 @@ watch(currentPage, fetchJobs);
   transition: all 0.2s;
 }
 
-.skill-tag:hover { background: #eff6ff; color: #1f5bff; border-color: #bfdbfe; }
+.skill-tag:hover { background: #eff6ff; color: #1e40af; border-color: #bfdbfe; }
 
 .skill-tag.more { background: transparent; border-color: #e2e8f0; color: #94a3b8; }
 
@@ -901,7 +901,7 @@ watch(currentPage, fetchJobs);
   gap: 8px;
   height: 38px;
   padding: 0 20px;
-  background: linear-gradient(135deg, #1f5bff, #3b82f6);
+  background: linear-gradient(135deg, #1e40af, #1e40af);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -910,7 +910,7 @@ watch(currentPage, fetchJobs);
   font-family: 'Inter', sans-serif;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
-  box-shadow: 0 3px 10px rgba(31,91,255,0.3);
+  box-shadow: 0 3px 10px rgba(30,64,175,0.3);
   white-space: nowrap;
 }
 
@@ -918,7 +918,7 @@ watch(currentPage, fetchJobs);
 
 .job-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(31,91,255,0.4);
+  box-shadow: 0 6px 20px rgba(30,64,175,0.4);
 }
 
 .job-btn:hover i { transform: translateX(4px); }
@@ -950,16 +950,16 @@ watch(currentPage, fetchJobs);
 }
 
 .page-btn:hover:not(:disabled):not(.active) {
-  border-color: #1f5bff;
-  color: #1f5bff;
+  border-color: #1e40af;
+  color: #1e40af;
   background: #eff6ff;
 }
 
 .page-btn.active {
-  background: linear-gradient(135deg, #1f5bff, #3b82f6);
-  border-color: #1f5bff;
+  background: linear-gradient(135deg, #1e40af, #1e40af);
+  border-color: #1e40af;
   color: #fff;
-  box-shadow: 0 3px 10px rgba(31,91,255,0.35);
+  box-shadow: 0 3px 10px rgba(30,64,175,0.35);
 }
 
 .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -1001,7 +1001,7 @@ watch(currentPage, fetchJobs);
   color: #94a3b8;
 }
 
-.footer-left i { color: #1f5bff; }
+.footer-left i { color: #1e40af; }
 
 .footer-links { display: flex; gap: 24px; }
 
@@ -1012,7 +1012,7 @@ watch(currentPage, fetchJobs);
   transition: color 0.2s;
 }
 
-.footer-links a:hover { color: #1f5bff; }
+.footer-links a:hover { color: #1e40af; }
 
 /* ─── Job Card Animations ─── */
 .job-list-enter-active {

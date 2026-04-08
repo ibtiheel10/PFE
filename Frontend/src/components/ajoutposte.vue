@@ -121,7 +121,7 @@
               <label>Couleur Icône</label>
               <div style="display: flex; gap: 10px; align-items: center;">
                  <input v-model="form.iconColor" type="color" style="width: 50px; height: 42px; padding: 2px;" />
-                 <input v-model="form.iconColor" type="text" placeholder="#3b82f6" style="flex: 1;" />
+                 <input v-model="form.iconColor" type="text" placeholder="#1e40af" style="flex: 1;" />
               </div>
             </div>
           </div>
@@ -218,7 +218,7 @@
             </div>
 
             <!-- Affichage des questions générées -->
-            <div v-if="qcmLoading" class="qcm-loading" style="margin-top: 15px; text-align: center; color: #2563EB;">
+            <div v-if="qcmLoading" class="qcm-loading" style="margin-top: 15px; text-align: center; color: #1e40af;">
                <i class="fa-solid fa-spinner fa-spin"></i> Génération des questions en cours...
             </div>
             
@@ -276,7 +276,7 @@
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+import Swal from '../services/swal';
 import { generateQuestionsForOffre, regenerateQuestionsForOffre, saveQuestionsForOffre } from '../services/entrepriseService';
 
 const router = useRouter();
@@ -308,7 +308,7 @@ const form = ref({
   mcqQuestionsCount: 15,
   mcqPassScore:      70,
   icon:              'fa-solid fa-briefcase',
-  iconColor:         '#3b82f6',
+  iconColor:         '#1e40af',
 });
 
 // ── Validation per step ──
@@ -500,7 +500,7 @@ const generateQCM = async () => {
 
 /* ── Header ── */
 .ap-header {
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #1e40af 100%);
   padding: 32px 40px 0;
   position: relative;
   overflow: hidden;
@@ -595,7 +595,7 @@ const generateQCM = async () => {
 .step.active .step-dot {
   background: #fff;
   border-color: #fff;
-  color: #1d4ed8;
+  color: #1e40af;
 }
 .step.done .step-dot {
   background: #10b981;
@@ -650,7 +650,7 @@ const generateQCM = async () => {
   padding-bottom: 16px;
   border-bottom: 1.5px solid #f1f5f9;
 }
-.card-label i { color: #1d4ed8; }
+.card-label i { color: #1e40af; }
 
 /* Fields */
 .field {
@@ -693,7 +693,7 @@ textarea {
   outline: none;
 }
 input:focus, select:focus, textarea:focus {
-  border-color: #1d4ed8;
+  border-color: #1e40af;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(29,78,216,0.1);
 }
@@ -714,7 +714,7 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
 }
 .qcm-box-header h3 { margin: 0 0 4px; font-size: 14px; font-weight: 700; color: #1e3a8a; }
 .btn-generate-qcm {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  background: linear-gradient(135deg, #1e40af, #1e40af);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -742,7 +742,7 @@ textarea { resize: vertical; min-height: 100px; line-height: 1.6; }
   border-top: 1.5px solid #f1f5f9;
 }
 .btn-next {
-  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  background: linear-gradient(135deg, #1e40af, #1e40af);
   color: #fff;
   border: none;
   border-radius: 12px;

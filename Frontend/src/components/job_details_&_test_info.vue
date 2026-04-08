@@ -98,7 +98,7 @@
            <section class="detail-card">
               <div class="section-title">
                  <span class="icon-blue-marker">
-                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
                  </span>
                  <h2>Compétences requises</h2>
               </div>
@@ -323,7 +323,7 @@ onMounted(() => {
 }
 .search-wrap:focus-within {
   background: #FFFFFF;
-  border-color: #93C5FD;
+  border-color: #93a8d4;
   box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
   transform: translateY(-1px);
 }
@@ -332,7 +332,7 @@ onMounted(() => {
   transition: color 0.3s;
 }
 .search-wrap:focus-within .search-icon {
-  color: #2563EB;
+  color: #1e40af;
 }
 .search-wrap input {
   border: none;
@@ -358,7 +358,7 @@ onMounted(() => {
   transition: color 0.2s;
 }
 .nav-link:hover, .nav-link.active {
-  color: #2563EB;
+  color: #1e40af;
 }
 
 .user-area {
@@ -423,9 +423,9 @@ onMounted(() => {
   display: flex;
   align-items: center;
 }
-.home-link:hover { color: #2563EB; }
+.home-link:hover { color: #1e40af; }
 .breadcrumb .text-gray { color: #6B7280; }
-.breadcrumb .text-gray:hover { color: #2563EB; }
+.breadcrumb .text-gray:hover { color: #1e40af; }
 .breadcrumb .separator { 
     margin: 0 0.75rem; 
     color: #D1D5DB; 
@@ -550,10 +550,10 @@ onMounted(() => {
 .btn-premium .icon {
     display: flex;
     align-items: center;
-    color: #2563EB;
+    color: #1e40af;
 }
 .btn-primary {
-  background: #2563EB;
+  background: #1e40af;
   color: white;
   border: none;
   padding: 0.6rem 1.5rem;
@@ -625,7 +625,7 @@ onMounted(() => {
 }
 .skill-badge {
   background: #EFF6FF;
-  color: #2563EB;
+  color: #1e40af;
   font-weight: 600;
   padding: 0.4rem 1rem;
   border-radius: 6px;
@@ -644,7 +644,7 @@ onMounted(() => {
 }
 .step-circle {
   width: 32px; height: 32px;
-  background: #2563EB;
+  background: #1e40af;
   color: white;
   border-radius: 50%;
   display: flex;
@@ -706,11 +706,11 @@ onMounted(() => {
 
 .check-icon {
   width: 32px; height: 32px;
-  background: #2563EB;
+  background: #1e40af;
   border-radius: 50%; /* circle? Icon likely checked circle */
   background: none; 
   /* Using SVG directly for better control */
-  color: #2563EB;
+  color: #1e40af;
   display: flex;
   align-items: center;
 }
@@ -718,14 +718,14 @@ onMounted(() => {
 .check-icon {
     width: 28px; height: 28px;
     background: #EFF6FF;
-    color: #2563EB;
+    color: #1e40af;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 .check-icon svg {
-    stroke: #2563EB;
+    stroke: #1e40af;
     width: 18px; height: 18px;
 }
 
@@ -773,7 +773,7 @@ onMounted(() => {
 
 .start-test-btn {
   width: 100%;
-  background: #2563EB;
+  background: #1e40af;
   color: white;
   border: none;
   padding: 0.85rem;
@@ -788,7 +788,7 @@ onMounted(() => {
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
   transition: background 0.2s;
 }
-.start-test-btn:hover { background: #1D4ED8; }
+.start-test-btn:hover { background: #1e3a8a; }
 
 .test-meta {
   text-align: center;
@@ -836,7 +836,7 @@ onMounted(() => {
 }
 .help-content a {
   font-size: 0.8rem;
-  color: #2563EB;
+  color: #1e40af;
   text-decoration: none;
   font-weight: 600;
 }
@@ -850,7 +850,7 @@ onMounted(() => {
 }
 .count-badge {
   background: #EFF6FF;
-  color: #2563EB;
+  color: #1e40af;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 2px 8px;
@@ -913,7 +913,7 @@ onMounted(() => {
   padding: 0.75rem 1rem !important;
   border-radius: 0 0 8px 8px;
 }
-.text-blue { color: #2563EB; }
+.text-blue { color: #1e40af; }
 
 .empty-mini {
   font-size: 0.8rem;

@@ -95,7 +95,7 @@ const handleSubmit = () => {
     setTimeout(() => {
       submitted.value = false;
       formData.value = { name: '', email: '', company: '', companySize: '1-10 employés' };
-    }, 3333);
+    }, 5000);
   }, 1500);
 };
 </script>

@@ -54,7 +54,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
-import Swal from 'sweetalert2';
+import Swal from '../services/swal';
 
 const props = defineProps({
   show: Boolean,

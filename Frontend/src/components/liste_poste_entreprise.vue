@@ -25,7 +25,7 @@
                 </thead>
                 <tbody>
                     <tr v-for="job in displayJobs" :key="job.title">
-                        <td class="fw-600" style="cursor: pointer; color: #2563EB;" @click="goToJobDetails(job.id)">{{ job.title }}</td>
+                        <td class="fw-600" style="cursor: pointer; color: #1e40af;" @click="goToJobDetails(job.id)">{{ job.title }}</td>
                         <td><span class="status-tag" :class="job.status === 'ACTIVE' ? 'active' : 'draft'">{{ job.status }}</span></td>
                         <td>{{ job.applicants }}</td>
                         <td>Session dans {{ job.daysLeft }}j<span v-if="job.sessionTime"> à {{ job.sessionTime }}</span></td>
@@ -326,7 +326,7 @@
           <div class="qcm-panel-header">
             <div>
               <h2 class="qcm-panel-title">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:8px;color:#3B82F6">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-4px;margin-right:8px;color:#1e40af">
                   <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
                 </svg>
                 QCM généré par l'IA
@@ -439,7 +439,7 @@
 
 <script setup lang="ts">
 import { ref, computed, nextTick, onMounted, watch } from 'vue';
-import Swal from 'sweetalert2';
+import Swal from '../services/swal';
 import { useRouter } from 'vue-router';
 import { TrashIcon } from '@heroicons/vue/24/outline';
 import api from '../services/axios';
@@ -689,7 +689,7 @@ const submitPost = async () => {
                 description: formData.value.description || undefined,
                 competences: formData.value.requirements || undefined,
                 icon: 'fa-solid fa-briefcase',
-                iconColor: '#3b82f6',
+                iconColor: '#1e40af',
                 nbPost: formData.value.positions || undefined,
                 dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : undefined,
                 dateLancementQcm: formData.value.dateLancementQcm ? new Date(formData.value.dateLancementQcm).toISOString() : undefined,
@@ -786,7 +786,7 @@ const generateQCM = async () => {
         description: formData.value.description || formData.value.title,
         competences: formData.value.requirements || '',
         icon: 'fa-solid fa-briefcase',
-        iconColor: '#3b82f6',
+        iconColor: '#1e40af',
         nbPost: formData.value.positions || 1,
         dateLimite: formData.value.deadline
           ? new Date(formData.value.deadline).toISOString()
@@ -981,7 +981,7 @@ onMounted(() => {
 }
 
 .new-post-btn {
-    background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -1127,7 +1127,7 @@ onMounted(() => {
 
 .progress-val {
     height: 100%;
-    background: linear-gradient(90deg, #3B82F6 0%, #2563EB 100%);
+    background: linear-gradient(90deg, #1e40af 0%, #1e40af 100%);
     border-radius: 10px;
     transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
@@ -1276,7 +1276,7 @@ onMounted(() => {
     position: absolute;
     top: 4px;
     bottom: 4px;
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%); /* Blue Gradient */
+    background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%); /* Blue Gradient */
     border-radius: 8px;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 1;
@@ -1302,7 +1302,7 @@ onMounted(() => {
 }
 
 .tab-btn:hover {
-    color: #3B82F6;
+    color: #1e40af;
 }
 
 .tab-btn.active {
@@ -1419,7 +1419,7 @@ select {
 
 select:hover {
     background-color: #F8F9FA;
-    border-color: #3B82F6;
+    border-color: #1e40af;
     box-shadow: 0 3px 10px rgba(59, 130, 246, 0.12), 0 1px 3px rgba(0, 0, 0, 0.05);
     transform: translateY(-1px);
 }
@@ -1435,7 +1435,7 @@ input:focus,
 select:focus,
 textarea:focus {
     outline: none;
-    border-color: #3B82F6;
+    border-color: #1e40af;
     background: white;
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15), 0 4px 12px rgba(59, 130, 246, 0.1);
     transform: translateY(-2px);
@@ -1460,7 +1460,7 @@ textarea {
     width: 18px;
     height: 18px;
     cursor: pointer;
-    accent-color: #2563EB;
+    accent-color: #1e40af;
 }
 
 .checkbox-label span {
@@ -1491,7 +1491,7 @@ textarea {
 }
 
 .btn-generate {
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
     color: white;
     border: none;
     padding: 0.75rem 1.5rem;
@@ -1562,7 +1562,7 @@ textarea {
 }
 
 .btn-submit {
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+    background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
     color: white;
     box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
     border-radius: 10px;
@@ -1677,12 +1677,12 @@ textarea {
 .modal-btn-delete:hover { background: #DC2626; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
 
 .modal-btn-confirm {
-    background: #2563EB;
+    background: #1e40af;
     color: white;
     border: none;
 }
 
-.modal-btn-confirm:hover { background: #1D4ED8; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+.modal-btn-confirm:hover { background: #1e3a8a; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
 
 .modal-body-input {
     text-align: left;
@@ -1700,7 +1700,7 @@ textarea {
 
 .custom-modal-input:focus {
     outline: none;
-    border-color: #3B82F6;
+    border-color: #1e40af;
     box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
 }
 
@@ -1779,7 +1779,7 @@ textarea {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #6366F1, #3B82F6, #06B6D4, #8B5CF6, #6366F1);
+    background: linear-gradient(90deg, #6366F1, #1e40af, #06B6D4, #8B5CF6, #6366F1);
     background-size: 200% 100%;
     animation: headerShimmer 3s linear infinite;
 }
@@ -1867,7 +1867,7 @@ textarea {
 .qcm-desc-label {
     font-size: 0.75rem;
     font-weight: 700;
-    color: #2563EB;
+    color: #1e40af;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     margin: 0 0 0.5rem 0;
@@ -1913,7 +1913,7 @@ textarea {
 }
 .qcm-config-field input[type="number"]:hover,
 .qcm-config-field select:hover {
-    border-color: #93C5FD;
+    border-color: #93a8d4;
     background: #F8FAFF;
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(59,130,246,0.1);
@@ -1921,7 +1921,7 @@ textarea {
 .qcm-config-field input[type="number"]:focus,
 .qcm-config-field select:focus {
     outline: none;
-    border-color: #3B82F6;
+    border-color: #1e40af;
     box-shadow: 0 0 0 4px rgba(59,130,246,0.18), 0 4px 12px rgba(59,130,246,0.12);
     transform: translateY(-1px);
 }
@@ -1938,7 +1938,7 @@ textarea {
     font-weight: 500;
 }
 .qcm-loading p {
-    background: linear-gradient(135deg, #4F46E5, #3B82F6, #06B6D4);
+    background: linear-gradient(135deg, #4F46E5, #1e40af, #06B6D4);
     background-size: 200% 100%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -1965,7 +1965,7 @@ textarea {
     inset: 0;
     border: 3px solid transparent;
     border-top-color: #6366F1;
-    border-right-color: #3B82F6;
+    border-right-color: #1e40af;
     animation: spinOuter 1.1s linear infinite;
 }
 .qcm-spinner::after {
@@ -2037,7 +2037,7 @@ textarea {
 }
 .btn-regenerate svg { transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); }
 .btn-regenerate:hover {
-    background: linear-gradient(135deg, #6366F1, #3B82F6);
+    background: linear-gradient(135deg, #6366F1, #1e40af);
     border-color: #6366F1;
     color: white;
     transform: translateY(-2px);
@@ -2076,7 +2076,7 @@ textarea {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 2px;
-    background: linear-gradient(90deg, #6366F1, #3B82F6, #06B6D4);
+    background: linear-gradient(90deg, #6366F1, #1e40af, #06B6D4);
     opacity: 0;
     transition: opacity 0.3s;
 }
@@ -2091,7 +2091,7 @@ textarea {
     width: 32px;
     height: 32px;
     min-width: 32px;
-    background: linear-gradient(135deg, #6366F1 0%, #2563EB 100%);
+    background: linear-gradient(135deg, #6366F1 0%, #1e40af 100%);
     color: white;
     border-radius: 10px;
     font-size: 0.7rem;
@@ -2123,7 +2123,7 @@ textarea {
     transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
     box-sizing: border-box;
 }
-.qcm-question-input:hover { border-color: #93C5FD; background: #F0F9FF; }
+.qcm-question-input:hover { border-color: #93a8d4; background: #F0F9FF; }
 .qcm-question-input:focus {
     outline: none;
     border-color: #6366F1;
@@ -2224,7 +2224,7 @@ textarea {
     font-weight: 700;
     font-size: 0.875rem;
     cursor: pointer;
-    background: linear-gradient(135deg, #6366F1 0%, #3B82F6 60%, #0EA5E9 100%);
+    background: linear-gradient(135deg, #6366F1 0%, #1e40af 60%, #0EA5E9 100%);
     color: white;
     border: none;
     box-shadow: 0 4px 15px rgba(99,102,241,0.35), inset 0 1px 0 rgba(255,255,255,0.25);

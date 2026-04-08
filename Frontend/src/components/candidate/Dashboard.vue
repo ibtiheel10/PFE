@@ -2,7 +2,7 @@
     <div class="p-6 md:p-8 max-w-7xl mx-auto space-y-8">
 
         <!-- Welcome Banner -->
-        <div class="banner-card bg-gradient-to-br from-blue-500 to-blue-700 relative overflow-hidden rounded-3xl p-7 md:p-9 text-white">
+        <div class="banner-card bg-gradient-to-br from-[#1e40af] to-[#1e3a8a] relative overflow-hidden rounded-3xl p-7 md:p-9 text-white">
             <!-- Animated rings -->
             <div class="ring ring-1"></div>
             <div class="ring ring-2"></div>
@@ -88,7 +88,7 @@
                         </div>
                         <h4 class="font-bold text-gray-700 mb-1">Aucune candidature</h4>
                         <p class="text-sm text-gray-400 mb-5">Vous n'avez encore postulé à aucune offre.</p>
-                        <button @click="goToJobs" class="inline-flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-blue-700 active:scale-95 transition-all shadow-sm shadow-blue-200">
+                        <button @click="goToJobs" class="inline-flex items-center gap-2 bg-[#1e40af] text-white px-5 py-2.5 rounded-xl font-semibold text-sm hover:bg-[#1e3a8a] active:scale-95 transition-all shadow-sm shadow-blue-200">
                             <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                             Explorer les offres
                         </button>
@@ -107,11 +107,11 @@
                             <div class="flex-1 p-5">
                                 <div class="flex items-start justify-between gap-3 mb-3">
                                     <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform duration-300">
-                                        <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                                        <svg class="w-5 h-5 text-[#1e40af]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
                                     </div>
                                     <span class="status-pill" :class="getStatusBadgeClass(app.statut)">{{ getDisplayStatus(app.statut) }}</span>
                                 </div>
-                                <h4 class="font-bold text-gray-900 group-hover:text-blue-600 transition-colors duration-200 truncate text-[15px] mb-1">{{ app.offre?.TitreDePost }}</h4>
+                                <h4 class="font-bold text-gray-900 group-hover:text-[#1e40af] transition-colors duration-200 truncate text-[15px] mb-1">{{ app.offre?.TitreDePost }}</h4>
                                 <p class="text-xs text-gray-400 mb-4 flex items-center gap-1">
                                     <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                                     Postulé le {{ new Date(app.datePostulation).toLocaleDateString('fr-FR') }}
@@ -166,8 +166,8 @@
                             <span class="trend-text">Basé sur <strong>{{ results.length }}</strong> évaluation(s)</span>
                         </div>
                         <div class="flex items-center gap-3 text-xs text-gray-500">
-                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-blue-300 inline-block"></span>Votre score</span>
-                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-blue-500 inline-block"></span>Moyenne</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-[#93a8d4] inline-block"></span>Votre score</span>
+                            <span class="flex items-center gap-1"><span class="w-3 h-3 rounded-sm bg-[#1e40af] inline-block"></span>Moyenne</span>
                         </div>
                     </div>
                 </section>
@@ -181,7 +181,7 @@
                     <div class="sidebar-card-header">
                         <h3 class="font-bold text-gray-900">Suggestions pour vous</h3>
                         <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
-                            <BoltIcon class="w-4 h-4 text-blue-600" />
+                            <BoltIcon class="w-4 h-4 text-[#1e40af]" />
                         </div>
                     </div>
 
@@ -207,12 +207,12 @@
                             class="suggestion-item"
                             @click="goToJob(offre.id)"
                         >
-                            <div class="suggestion-accent" :style="{ backgroundColor: '#3B82F6' }"></div>
+                            <div class="suggestion-accent" :style="{ backgroundColor: '#1e40af' }"></div>
                             <div class="flex-1 min-w-0 py-3 pr-4">
-                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600 truncate transition-colors duration-200 mb-0.5">{{ offre.TitreDePost }}</h4>
+                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-[#1e40af] truncate transition-colors duration-200 mb-0.5">{{ offre.TitreDePost }}</h4>
                                 <p class="text-xs text-gray-400 mb-2">{{ (offre as any).entreprise?.nom || (offre as any).entreprise?.Nom || (offre as any).user?.Entreprise?.Nom || (offre as any).user?.entreprise?.nom || 'Entreprise Confidentielle' }} &bull; {{ offre.Localisation }}</p>
                                 <div class="flex items-center gap-2 flex-wrap">
-                                    <span v-if="offre.Categorie" class="text-[10px] font-semibold bg-blue-50 text-blue-600 px-2 py-0.5 rounded-md">{{ offre.Categorie }}</span>
+                                    <span v-if="offre.Categorie" class="text-[10px] font-semibold bg-blue-50 text-[#1e40af] px-2 py-0.5 rounded-md">{{ offre.Categorie }}</span>
                                     <span v-if="offre.ModeDeTravail" class="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">{{ offre.ModeDeTravail }}</span>
                                 </div>
                             </div>
@@ -220,7 +220,7 @@
                     </div>
 
                     <div class="p-3 border-t border-gray-50">
-                        <button @click="goToJobs" class="w-full text-xs font-bold text-blue-600 hover:text-blue-800 uppercase tracking-wider py-1 hover:bg-blue-50 rounded-lg transition-colors duration-200">Voir tout</button>
+                        <button @click="goToJobs" class="w-full text-xs font-bold text-[#1e40af] hover:text-[#1e3a8a] uppercase tracking-wider py-1 hover:bg-blue-50 rounded-lg transition-colors duration-200">Voir tout</button>
                     </div>
                 </div>
 
@@ -228,7 +228,7 @@
                 <div class="sidebar-card section-enter" style="animation-delay:0.25s">
                     <div class="sidebar-card-header">
                         <h3 class="font-bold text-gray-900">Derniers Résultats</h3>
-                        <button @click="goToResults" class="text-xs font-semibold text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">Voir tout</button>
+                        <button @click="goToResults" class="text-xs font-semibold text-[#1e40af] hover:text-[#1e3a8a] bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition-colors">Voir tout</button>
                     </div>
                     <div class="p-2">
                         <!-- Loading -->
@@ -554,25 +554,25 @@ const goToResults = () => router.push('/resultats');
 }
 
 .bar-1 {
-  background-color: #93c5fd;
-  box-shadow: 0 2px 4px rgba(147, 197, 253, 0.2);
+  background-color: #93a8d4;
+  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
 }
 
 .bar-1:hover {
-  background-color: #60a5fa;
+  background-color: #6b84c0;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(147, 197, 253, 0.4);
+  box-shadow: 0 4px 8px rgba(30, 64, 175, 0.4);
 }
 
 .bar-2 {
-  background-color: #3b82f6;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+  background-color: #1e40af;
+  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.2);
 }
 
 .bar-2:hover {
-  background-color: #2563eb;
+  background-color: #1e3a8a;
   transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 4px 8px rgba(30, 64, 175, 0.4);
 }
 
 .bar-tooltip {
@@ -709,7 +709,7 @@ const goToResults = () => router.push('/resultats');
 
 .banner-cta {
   background: white;
-  color: #1d4ed8;
+  color: #1e40af;
   padding: 0.75rem 1.5rem;
   border-radius: 1rem;
   font-weight: 700;
@@ -731,13 +731,13 @@ const goToResults = () => router.push('/resultats');
   gap: 0.375rem;
   font-size: 0.875rem;
   font-weight: 600;
-  color: #2563eb;
+  color: #1e40af;
   background: #eff6ff;
   padding: 0.375rem 0.875rem;
   border-radius: 0.5rem;
   transition: all 0.2s;
 }
-.see-all-btn:hover { background: #dbeafe; color: #1e40af; }
+.see-all-btn:hover { background: #dbeafe; color: #1e3a8a; }
 
 .status-pill {
   padding: 0.125rem 0.625rem;
@@ -772,7 +772,7 @@ const goToResults = () => router.push('/resultats');
   border-radius: 0.75rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #2563eb;
+  color: #1e40af;
   background: #eff6ff;
   display: flex;
   align-items: center;
@@ -781,7 +781,7 @@ const goToResults = () => router.push('/resultats');
   transition: all 0.2s;
 }
 .app-card:hover .app-card-btn {
-  background: #2563eb;
+  background: #1e40af;
   color: white;
 }
 .app-card-btn:active { transform: scale(0.98); }

@@ -138,7 +138,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import Swal from 'sweetalert2';
+import Swal from '../../services/swal';
 import { useRouter, useRoute } from 'vue-router';
 import api from '@/services/axios';
 

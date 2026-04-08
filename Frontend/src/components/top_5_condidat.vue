@@ -140,7 +140,7 @@ const getStatusClass = (statutText: string): string => {
 
 .view-all {
     font-size: 0.8rem;
-    color: #2563EB;
+    color: #1e40af;
     font-weight: 600;
     text-decoration: none;
 }
@@ -204,7 +204,7 @@ const getStatusClass = (statutText: string): string => {
     border: 1.5px solid white;
 }
 .status-indicator.green-fill { background: #10B981; }
-.status-indicator.blue-fill { background: #2563EB; }
+.status-indicator.blue-fill { background: #1e40af; }
 .status-indicator.orange-fill { background: #F59E0B; }
 
 .c-name-lg {
@@ -214,7 +214,7 @@ const getStatusClass = (statutText: string): string => {
 
 .role-badge {
     background: #EFF6FF;
-    color: #2563EB;
+    color: #1e40af;
     font-weight: 600;
     padding: 2px 6px;
     border-radius: 4px;

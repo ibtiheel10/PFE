@@ -129,7 +129,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import Swal from 'sweetalert2';
+import Swal from '../../services/swal';
 import { useRouter } from 'vue-router';
 import { getMesCandidatures, deleteCandidature } from '../../services/candidatureService';
 
@@ -138,7 +138,7 @@ const getVisualMeta = (categorie: string) => {
     if (!categorie) return { icon: 'fa-solid fa-briefcase', iconColor: '#64748b' };
     const cat = categorie.toLowerCase();
     if (cat.includes('it') || cat.includes('dev') || cat.includes('tech'))
-        return { icon: 'fa-solid fa-code', iconColor: '#3b82f6' };
+        return { icon: 'fa-solid fa-code', iconColor: '#1e40af' };
     if (cat.includes('design') || cat.includes('ux'))
         return { icon: 'fa-solid fa-palette', iconColor: '#ec4899' };
     if (cat.includes('marketing') || cat.includes('com'))
@@ -247,7 +247,7 @@ const getStatusIcon = (status: string) => {
 
 const showToast = (msg: string) => {
     toastMessage.value = msg;
-    setTimeout(() => { toastMessage.value = ''; }, 3333);
+    setTimeout(() => { toastMessage.value = ''; }, 5000);
 };
 
 const handleCancel = async (appId: number) => {
@@ -320,7 +320,7 @@ const handleCancel = async (appId: number) => {
 
 .tab-btn.active {
     background: #ffffff;
-    color: #3b82f6;
+    color: #1e40af;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -364,7 +364,7 @@ const handleCancel = async (appId: number) => {
 .application-card:hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-    border-color: #3b82f640;
+    border-color: #1e40af40;
 }
 
 .status-line {
@@ -448,7 +448,7 @@ const handleCancel = async (appId: number) => {
     font-weight: 600;
 }
 
-.status-review { background: #eff6ff; color: #3b82f6; }
+.status-review { background: #eff6ff; color: #1e40af; }
 .status-interview { background: #fff7ed; color: #f97316; }
 .status-accepted { background: #ecfdf5; color: #10b981; }
 .status-rejected { background: #fef2f2; color: #ef4444; }
@@ -569,7 +569,7 @@ const handleCancel = async (appId: number) => {
     align-items: center;
     gap: 8px;
     padding: 10px 20px;
-    background: #3b82f6;
+    background: #1e40af;
     color: white;
     border: none;
     border-radius: 8px;
@@ -578,7 +578,7 @@ const handleCancel = async (appId: number) => {
     cursor: pointer;
     transition: background 0.2s;
 }
-.btn-reset:hover { background: #2563eb; }
+.btn-reset:hover { background: #1e3a8a; }
 
 /* Toast Notification */
 .toast-notification {

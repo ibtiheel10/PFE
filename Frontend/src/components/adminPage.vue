@@ -639,7 +639,7 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import Swal from 'sweetalert2';
+import Swal from '../services/swal';
 import LogoIcon from './LogoIcon.vue';
 import { 
     Squares2X2Icon, 
@@ -820,15 +820,17 @@ const fetchAdminData = async () => {
 
         const config = { headers: { Authorization: `Bearer ${token}` } };
         
-        const [statsRes, usersRes, companiesRes, logsRes, contactRes] = await Promise.all([
+        const [statsRes, usersRes, companiesRes, logsRes, contactRes, notificationsRes] = await Promise.all([
             axios.get(`${API_BASE}/api/admin/dashboard/stats`, config),
             axios.get(`${API_BASE}/api/admin/users`, config),
             axios.get(`${API_BASE}/api/admin/entreprises`, config),
             axios.get(`${API_BASE}/api/admin/logs`, config),
-            axios.get(`${API_BASE}/api/contact`, config)
+            axios.get(`${API_BASE}/api/contact`, config),
+            axios.get(`${API_BASE}/api/notifications`, config)
         ]);
 
         dashboardStats.value = statsRes.data;
+        notifications.value = notificationsRes.data;
         
         users.value = usersRes.data.map((u: any) => ({
             id: u.id,
@@ -943,6 +945,42 @@ const handleDeleteContact = async (id: number) => {
         contactMessages.value = contactMessages.value.filter(m => m.id !== id);
     } catch (e) {
         console.error('Erreur delete contact', e);
+    }
+};
+
+// ── Notifications Actions ─────────────────────────────────
+const fetchNotifications = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) return;
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const res = await axios.get(`${API_BASE}/api/notifications`, config);
+        notifications.value = res.data;
+    } catch (e) {
+        console.error('Erreur fetch notifications', e);
+    }
+};
+
+const markNotificationRead = async (id: number) => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.patch(`${API_BASE}/api/notifications/${id}/read`, {}, config);
+        const notif = notifications.value.find(n => n.id === id);
+        if (notif) notif.lu = true;
+    } catch (e) {
+        console.error('Erreur mark notification read', e);
+    }
+};
+
+const markAllNotificationsRead = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.patch(`${API_BASE}/api/notifications/mark-all-read`, {}, config);
+        notifications.value.forEach(n => n.lu = true);
+    } catch (e) {
+        console.error('Erreur mark all notifications read', e);
     }
 };
 

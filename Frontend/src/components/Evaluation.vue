@@ -102,7 +102,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
-import Swal from 'sweetalert2';
+import Swal from '../services/swal';
 import { useRouter } from 'vue-router';
 import LogoIcon from './LogoIcon.vue';
 

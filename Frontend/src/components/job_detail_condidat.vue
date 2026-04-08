@@ -369,7 +369,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue';
-import Swal from 'sweetalert2';
+import Swal from '../services/swal';
 import { useRoute } from 'vue-router';
 import LogoIcon from './LogoIcon.vue';
 import { getOffreById, type OffreEmploi } from '../services/offreService';

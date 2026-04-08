@@ -450,7 +450,7 @@ const goToJobs = () => router.push('/candidat/jobs');
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .blue-box { background: #eff6ff; }
-.blue-box .sicon { color: #3b82f6; }
+.blue-box .sicon { color: #1e40af; }
 .green-box { background: #ecfdf5; }
 .green-box .sicon { color: #10b981; }
 .amber-box { background: #fffbeb; }
@@ -502,7 +502,7 @@ const goToJobs = () => router.push('/candidat/jobs');
   flex: 1;
   display: flex; align-items: center; justify-content: center; gap: 8px;
   padding: 14px 20px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, #1e40af, #1e3a8a);
   color: white; font-size: 14px; font-weight: 700;
   border: none; border-radius: 14px; cursor: pointer;
   box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
@@ -555,7 +555,7 @@ const goToJobs = () => router.push('/candidat/jobs');
 .footer-dot { width: 4px; height: 4px; background: #cbd5e1; border-radius: 50%; }
 .footer-text { font-size: 11px; font-weight: 600; color: #94a3b8; margin: 0; }
 .footer-help { font-size: 12px; color: #94a3b8; font-weight: 500; margin: 0; }
-.footer-link { color: #3b82f6; text-decoration: none; font-weight: 600; margin-left: 4px; }
+.footer-link { color: #1e40af; text-decoration: none; font-weight: 600; margin-left: 4px; }
 .footer-link:hover { text-decoration: underline; }
 
 /* Security Badge */
@@ -583,7 +583,7 @@ const goToJobs = () => router.push('/candidat/jobs');
   gap: 6px;
   font-size: 10px;
   font-weight: 800;
-  color: #3b82f6;
+  color: #1e40af;
   background: #eff6ff;
   padding: 4px 12px;
   border-radius: 20px;

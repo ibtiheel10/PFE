@@ -16,8 +16,8 @@
         @click="activeFilter = tab.key"
         class="px-4 py-2 rounded-full text-sm font-semibold border transition-all duration-200"
         :class="activeFilter === tab.key
-          ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
-          : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300 hover:text-blue-600'"
+          ? 'bg-[#1e40af] text-white border-[#1e40af] shadow-sm'
+          : 'bg-white text-gray-600 border-gray-200 hover:border-[#1e40af]/40 hover:text-[#1e40af]'"
       >
         {{ tab.label }}
         <span
@@ -29,7 +29,7 @@
 
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center items-center py-16">
-      <div class="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      <div class="w-8 h-8 border-4 border-[#1e40af] border-t-transparent rounded-full animate-spin"></div>
     </div>
 
     <!-- Empty State -->
@@ -98,7 +98,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
             </svg>
             <span class="font-medium text-gray-500 mr-1">Score obtenu :</span>
-            <span class="font-bold text-blue-700">{{ typeof evaluation.score === 'number' ? Math.round(evaluation.score) : evaluation.score }} %</span>
+            <span class="font-bold text-[#1e40af]">{{ typeof evaluation.score === 'number' ? Math.round(evaluation.score) : evaluation.score }} %</span>
           </div>
         </div>
 
@@ -107,7 +107,7 @@
           <span
             v-for="(skill, index) in evaluation.skills"
             :key="index"
-            class="px-2.5 py-1 text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-100/50 rounded-lg"
+            class="px-2.5 py-1 text-[11px] font-bold text-[#1e40af] bg-blue-50 border border-blue-100/50 rounded-lg"
           >
             {{ skill }}
           </span>
@@ -125,7 +125,7 @@
             @click="handleEvaluationAction(evaluation)"
             class="w-full py-3 rounded-xl font-bold text-[13px] transition-all duration-200"
             :class="evaluation.status === 'open'
-              ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40'
+              ? 'bg-[#1e40af] hover:bg-[#1e3a8a] text-white shadow-lg shadow-[#1e40af]/20 hover:shadow-[#1e40af]/40'
               : evaluation.status === 'done'
                 ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-lg shadow-purple-600/20 hover:shadow-purple-600/40'
                 : evaluation.status === 'in_progress'
@@ -173,7 +173,7 @@ const statusBadgeClass = (status: string) => {
   if (status === 'open') return 'bg-green-100 text-green-700';
   if (status === 'done') return 'bg-purple-100 text-purple-700';
   if (status === 'expired') return 'bg-orange-100 text-orange-700';
-  if (status === 'scheduled') return 'bg-blue-100 text-blue-700';
+  if (status === 'scheduled') return 'bg-blue-100 text-[#1e40af]';
   if (status === 'in_progress') return 'bg-yellow-100 text-yellow-700';
   return 'bg-red-50 text-red-600';
 };

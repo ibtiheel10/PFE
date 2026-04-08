@@ -471,7 +471,7 @@ const toggleSelectAll = () => {
 
 .search-wrap-lg:focus-within {
     background: white;
-    border-color: #2563EB;
+    border-color: #1e40af;
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
@@ -516,7 +516,7 @@ const toggleSelectAll = () => {
 }
 
 .filter-select-modern:focus {
-    border-color: #2563EB;
+    border-color: #1e40af;
     box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
     background: white;
 }
@@ -563,22 +563,22 @@ const toggleSelectAll = () => {
 }
 
 .checkbox-wrapper:hover {
-    border-color: #2563EB;
+    border-color: #1e40af;
     transform: scale(1.1);
 }
 
 .checkbox-wrapper.checked {
-    background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-    border-color: #2563EB;
+    background: linear-gradient(135deg, #1e40af 0%, #1e40af 100%);
+    border-color: #1e40af;
     transform: scale(1.05);
 }
 
 .bulk-btn.primary {
-    background: #2563EB;
+    background: #1e40af;
     color: white;
     border: none;
 }
-.bulk-btn.primary:hover { background: #1D4ED8; }
+.bulk-btn.primary:hover { background: #1e3a8a; }
 
 .bulk-btn.secondary {
     background: white;
@@ -694,7 +694,7 @@ const toggleSelectAll = () => {
     border: 2px solid white;
 }
 .status-indicator.green-fill, .status-indicator.text-green { background: #10B981; }
-.status-indicator.blue-fill, .status-indicator.text-blue { background: #2563EB; }
+.status-indicator.blue-fill, .status-indicator.text-blue { background: #1e40af; }
 .status-indicator.orange-fill, .status-indicator.text-orange { background: #F59E0B; }
 
 .candidate-details {
@@ -719,7 +719,7 @@ const toggleSelectAll = () => {
 
 .role-badge {
     background: #EFF6FF;
-    color: #2563EB;
+    color: #1e40af;
     font-weight: 600;
     font-size: 0.75rem;
     padding: 4px 10px;
@@ -758,7 +758,7 @@ const toggleSelectAll = () => {
     transition: stroke-dasharray 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .green-fill .circle { stroke: #10B981; }
-.blue-fill .circle { stroke: #2563EB; }
+.blue-fill .circle { stroke: #1e40af; }
 .orange-fill .circle { stroke: #F59E0B; }
 .red-fill .circle { stroke: #EF4444; }
 
@@ -900,9 +900,9 @@ const toggleSelectAll = () => {
 }
 
 .page-btn.active {
-    background: #2563EB;
+    background: #1e40af;
     color: white;
-    border-color: #2563EB;
+    border-color: #1e40af;
 }
 
 .page-btn.disabled {

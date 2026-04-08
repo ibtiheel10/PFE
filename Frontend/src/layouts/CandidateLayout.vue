@@ -23,7 +23,7 @@
             :to="item.path"
             class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap"
             :class="[
-              isActive(item.path) ? 'bg-blue-50 text-blue-600 shadow-sm ring-1 ring-blue-100' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
+              isActive(item.path) ? 'nav-item-active shadow-sm' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
               isSidebarCollapsed ? 'justify-center px-0' : ''
             ]"
             :title="isSidebarCollapsed ? item.name : ''"
@@ -31,7 +31,7 @@
             <component
               :is="item.icon"
               class="w-5 h-5 transition-colors flex-shrink-0"
-              :class="isActive(item.path) ? 'text-blue-600' : 'text-gray-400 group-hover:text-gray-600'"
+              :class="isActive(item.path) ? 'nav-icon-active' : 'text-gray-400 group-hover:text-gray-600'"
             />
             <span v-if="!isSidebarCollapsed" class="font-medium text-sm transition-opacity duration-200">{{ item.name }}</span>
           </router-link>
@@ -541,6 +541,14 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
+/* ── Active nav item ── */
+.nav-item-active {
+  background-color: rgba(30, 64, 175, 0.1);
+  color: #1e40af;
+  outline: 1px solid rgba(30, 64, 175, 0.2);
+}
+.nav-icon-active { color: #1e40af; }
+
 @keyframes fadeInUp {
     from { opacity: 0; transform: translateY(20px); }
     to   { opacity: 1; transform: translateY(0); }
