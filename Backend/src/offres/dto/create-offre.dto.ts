@@ -56,4 +56,9 @@ export class CreateOffreDto {
     @IsOptional()
     @IsNumber()
     NbPost?: number;
+
+    @ApiPropertyOptional({ description: 'Score minimum requis pour être Accepté (0-100)', default: 50 })
+    @IsOptional()
+    @IsNumber()
+    seuilMinimal?: number;
 }

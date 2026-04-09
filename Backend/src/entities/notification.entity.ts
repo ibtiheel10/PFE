@@ -28,7 +28,8 @@ export type NotificationType =
     | 'CANDIDAT_NON_RETENU'
     | 'MOT_DE_PASSE_MODIFIE'
     | 'PROFIL_MIS_A_JOUR'
-    | 'MESSAGE_ADMIN';
+    | 'MESSAGE_ADMIN'
+    | 'MESSAGE_ENTREPRISE';
 
 @Entity('notifications')
 export class Notification {

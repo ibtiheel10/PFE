@@ -276,6 +276,19 @@
                     placeholder="1"
                   >
                 </div>
+
+                <div class="form-group">
+                  <label for="seuilMinimal">Seuil minimal d'acceptation (%)</label>
+                  <input
+                    type="number"
+                    id="seuilMinimal"
+                    v-model="formData.seuilMinimal"
+                    min="0"
+                    max="100"
+                    placeholder="50"
+                  >
+                  <span style="font-size:0.72rem;color:#94a3b8;margin-top:4px;display:block;">Score minimum pour être Accepté</span>
+                </div>
               </div>
 
 
@@ -511,7 +524,8 @@ const editJob = (job: any) => {
       requirements: raw.competences || '',
       deadline: toLocalDatetimeInput(raw.dateLimite),
       dateLancementQcm: toLocalDatetimeInput(raw.dateLancementQcm),
-      positions: raw.nbPost || 1
+      positions: raw.nbPost || 1,
+      seuilMinimal: raw.seuilMinimal ?? 50
     };
     
     showCreateModal.value = true;
@@ -558,6 +572,7 @@ interface PostFormData {
   deadline: string;
   dateLancementQcm: string;
   positions: number;
+  seuilMinimal: number;
 }
 
 // Form data
@@ -573,7 +588,8 @@ const formData = ref<PostFormData>({
   requirements: '',
   deadline: '',
   dateLancementQcm: '',
-  positions: 1
+  positions: 1,
+  seuilMinimal: 50
 });
 
 const jobsList = ref<any[]>([]);
@@ -631,6 +647,7 @@ const createNewPost = () => {
       requirements: '',
       deadline: '',
       positions: 1,
+      seuilMinimal: 50,
       dateLancementQcm: ''
     };
     
@@ -656,6 +673,7 @@ const closeCreateModal = () => {
       requirements: '',
       deadline: '',
       positions: 1,
+      seuilMinimal: 50,
       dateLancementQcm: ''
     };
 };
@@ -691,6 +709,7 @@ const submitPost = async () => {
                 icon: 'fa-solid fa-briefcase',
                 iconColor: '#1e40af',
                 nbPost: formData.value.positions || undefined,
+                seuilMinimal: formData.value.seuilMinimal ?? 50,
                 dateLimite: formData.value.deadline ? new Date(formData.value.deadline).toISOString() : undefined,
                 dateLancementQcm: formData.value.dateLancementQcm ? new Date(formData.value.dateLancementQcm).toISOString() : undefined,
             };
@@ -788,6 +807,7 @@ const generateQCM = async () => {
         icon: 'fa-solid fa-briefcase',
         iconColor: '#1e40af',
         nbPost: formData.value.positions || 1,
+        seuilMinimal: formData.value.seuilMinimal ?? 50,
         dateLimite: formData.value.deadline
           ? new Date(formData.value.deadline).toISOString()
           : new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString(),

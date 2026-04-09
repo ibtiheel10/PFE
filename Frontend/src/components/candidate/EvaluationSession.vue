@@ -1,6 +1,13 @@
 <template>
   <div class="evaluation-session-page min-h-screen bg-slate-50 font-sans flex flex-col items-center relative select-none">
     
+    <!-- Anti-cheat banner -->
+    <div class="w-full bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] text-white text-center py-2 px-4 flex items-center justify-center gap-2 text-[11px] font-semibold tracking-wide z-50">
+      <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      Mode Anti-triche activé — Changement d'onglet, copie/collage et outils de développement sont surveillés.
+      <span class="ml-2 px-2 py-0.5 bg-white/20 rounded-full text-[10px] font-bold">{{ infractionsCount }}/{{ MAX_INFRACTIONS }} avertissements</span>
+    </div>
+    
     <!-- Top Header Bar -->
     <header class="w-full bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
       <!-- Blue top progress bar -->
@@ -133,6 +140,43 @@
       <div class="w-1 h-1 bg-slate-300 rounded-full"></div>
       <div>Propulsé par Skillvia</div>
     </footer>
+
+    <!-- Anti-cheat warning modal -->
+    <transition name="fade">
+      <div v-if="showAntiCheatModal" class="fixed inset-0 z-[200] flex items-center justify-center p-4" style="background:rgba(15,23,42,0.7);backdrop-filter:blur(6px)">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden">
+          <div class="bg-gradient-to-r from-[#1e3a8a] to-[#1e40af] px-6 py-5 flex items-center gap-3">
+            <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+            </div>
+            <div>
+              <h2 class="text-white font-bold text-lg leading-tight">Mode Anti-triche QCM</h2>
+              <p class="text-white/70 text-xs mt-0.5">Évaluation équitable et sécurisée</p>
+            </div>
+          </div>
+          <div class="px-6 py-5">
+            <p class="text-slate-600 text-sm leading-relaxed mb-4">
+              Le mode anti-triche est activé afin d'assurer une évaluation équitable. Le système surveille automatiquement les actions suspectes.
+            </p>
+            <div class="space-y-2.5 mb-5">
+              <div v-for="rule in antiCheatRules" :key="rule.text" class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
+                <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" :class="rule.color">
+                  <span class="text-sm">{{ rule.icon }}</span>
+                </div>
+                <p class="text-[13px] text-slate-700 font-medium leading-snug">{{ rule.text }}</p>
+              </div>
+            </div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5 flex items-start gap-2">
+              <svg class="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              <p class="text-[12px] text-amber-700 font-medium">Toute violation peut entraîner un avertissement, l'arrêt ou l'annulation de l'évaluation.</p>
+            </div>
+            <button @click="showAntiCheatModal = false" class="w-full py-3 bg-[#1e40af] hover:bg-[#1e3a8a] text-white font-bold rounded-xl transition-colors text-sm">
+              J'ai compris — Commencer l'évaluation
+            </button>
+          </div>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -288,6 +332,15 @@ onUnmounted(() => {
 const infractionsCount = ref(0);
 const MAX_INFRACTIONS = 3;
 const isCancelled = ref(false);
+const showAntiCheatModal = ref(true); // Show on mount
+
+const antiCheatRules = [
+    { icon: '🚫', text: 'Changement d\'onglet ou de fenêtre interdit', color: 'bg-red-100' },
+    { icon: '📋', text: 'Copier/coller et sélection de texte désactivés', color: 'bg-orange-100' },
+    { icon: '🔧', text: 'Outils de développement bloqués (F12, Ctrl+Shift+I)', color: 'bg-yellow-100' },
+    { icon: '📸', text: 'Capture d\'écran détectée et signalée', color: 'bg-purple-100' },
+    { icon: '⛶', text: 'Restez en plein écran pendant toute la durée du test', color: 'bg-blue-100' },
+];
 
 const handleInfraction = (type: string) => {
     if (isCancelled.value) return; // Prevent infinite loop of alerts
@@ -435,3 +488,8 @@ const handleNext = async (forced = false) => {
 };
 
 </script>
+
+<style scoped>
+.fade-enter-active, .fade-leave-active { transition: opacity 0.25s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>

@@ -70,34 +70,38 @@
 
                 <!-- Notifications Dropdown -->
                 <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
-                    <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50">
+                    <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
                         <div class="px-4 py-3 border-b border-gray-50 flex justify-between items-center">
-                            <h3 class="text-sm font-bold text-gray-900">Notifications</h3>
-                            <button v-if="unreadCount > 0" @click="handleMarkAllRead" class="text-xs text-[#1e40af] hover:underline">Marquer tout comme lu</button>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm font-bold text-gray-900">Notifications</h3>
+                                <span v-if="unreadCount > 0" class="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">{{ unreadCount }} non lues</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <button v-if="unreadCount > 0" @click="handleMarkAllRead" class="text-[11px] text-[#1e40af] font-semibold hover:underline">Tout marquer lu</button>
+                                <button v-if="notifications.length > 0" @click="handleDeleteAll" class="text-[11px] text-red-500 font-semibold hover:underline">Tout supprimer</button>
+                            </div>
                         </div>
                         <div class="max-h-[28rem] overflow-y-auto">
                             <div 
                                 v-for="notif in notifications" 
-                                :key="notif.id" 
-                                @click="handleNotifClick(notif)"
-                                class="px-4 py-3 flex gap-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 transition-colors cursor-pointer"
-                                :class="!notif.lu ? 'bg-[#eff6ff]/30' : ''"
+                                :key="notif.id"
+                                class="px-4 py-3 flex gap-3 border-b border-gray-50 last:border-0 transition-colors group relative"
+                                :class="!notif.lu ? 'bg-[#eff6ff]/30' : 'hover:bg-gray-50'"
                             >
-                                <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm" :class="getNotifBgClass(notif.type)">
-                                    {{ getNotifIcon(notif.type) }}
+                                <div class="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center" :class="getNotifBgClass(notif.type)" v-html="getNotifIcon(notif.type)"></div>
+                                <div class="flex-1 min-w-0 cursor-pointer" @click="handleNotifClick(notif)">
+                                    <p class="text-sm" :class="!notif.lu ? 'text-gray-900 font-bold' : 'text-gray-700 font-medium'">{{ notif.titre }}</p>
+                                    <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ notif.message }}</p>
+                                    <span class="text-[10px] font-medium mt-1 block" :class="!notif.lu ? 'text-[#1e40af]' : 'text-gray-400'">{{ formatNotifTime(notif.createdAt) }}</span>
                                 </div>
-                                <div>
-                                    <p class="text-sm font-medium" :class="!notif.lu ? 'text-gray-900 font-bold' : 'text-gray-800'">{{ notif.titre }}</p>
-                                    <p class="text-xs text-gray-600 mt-0.5 line-clamp-2">{{ notif.message }}</p>
-                                    <span class="text-[10px] font-medium uppercase mt-1 block" :class="!notif.lu ? 'text-[#1e40af]' : 'text-gray-400'">{{ formatNotifTime(notif.createdAt) }}</span>
-                                </div>
+                                <button @click.stop="handleDeleteOne(notif.id)" class="opacity-0 group-hover:opacity-100 flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all mt-0.5">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                </button>
                             </div>
-                            <div v-if="notifications.length === 0" class="px-4 py-8 text-center">
-                                <p class="text-sm text-gray-500">Aucune nouvelle notification</p>
+                            <div v-if="notifications.length === 0" class="px-4 py-10 text-center">
+                                <svg class="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+                                <p class="text-sm text-gray-400">Aucune notification</p>
                             </div>
-                        </div>
-                        <div class="px-4 py-2 border-t border-gray-50 text-center">
-                            <button class="text-xs text-gray-500 hover:text-[#1e40af] font-medium">Voir toutes les notifications</button>
                         </div>
                     </div>
                 </transition>
@@ -106,7 +110,7 @@
             <!-- Profile -->
             <div class="relative">
                 <button @click="toggleProfileMenu" class="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full border border-transparent hover:border-gray-200 transition-all">
-                    <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random&color=fff&rounded=true&bold=true`" alt="User" class="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm" />
+                    <img :src="editAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=random&color=fff&rounded=true&bold=true`" alt="User" class="w-9 h-9 rounded-full object-cover border border-gray-200 shadow-sm" />
                     <div class="hidden md:flex flex-col items-start">
                         <span class="text-sm font-bold text-gray-700 leading-none">{{ userName }}</span>
                         <span class="text-[11px] font-medium text-[#1e40af] mt-1">RH Manager</span>
@@ -302,9 +306,6 @@
                                                    <button @click.stop="renameJob(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                                                        <PencilSquareIcon class="w-4 h-4 text-gray-400" /> Renommer la poste
                                                    </button>
-                                                   <button @click.stop="showRecommendations(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-[#1e40af] hover:bg-[#eff6ff] transition-colors">
-                                                       <SparklesIcon class="w-4 h-4 text-[#1e40af]" /> Recommandations IA
-                                                   </button>
                                                    <button @click.stop="deleteJob(job.id)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
                                                        <TrashIcon class="w-4 h-4" /> Supprimer
                                                    </button>
@@ -480,6 +481,27 @@
                 <div v-if="profileErrorMessage" class="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
                   {{ profileErrorMessage }}
                 </div>
+
+                <!-- Avatar section -->
+                <div class="avatar-upload-section">
+                  <div class="avatar-preview">
+                    <img v-if="editAvatar" :src="editAvatar" alt="Photo de profil" class="avatar-img" @error="editAvatar = ''" />
+                    <div v-else class="avatar-placeholder">{{ editName.charAt(0).toUpperCase() }}</div>
+                    <button class="avatar-edit-btn" @click="triggerAvatarInput" title="Changer la photo">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                    </button>
+                  </div>
+                  <div class="avatar-info">
+                    <p class="avatar-name">{{ editName || 'Entreprise' }}</p>
+                    <button class="avatar-upload-btn" @click="triggerAvatarInput">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                      Importer une photo
+                    </button>
+                    <p class="avatar-hint">PNG, JPG · Max 2 MB</p>
+                  </div>
+                  <input ref="avatarInputRef" type="file" accept="image/*" class="hidden" @change="handleAvatarChange" />
+                </div>
+
                 <div class="edit-profile-field">
                   <label class="edit-profile-label">Nom de l'entreprise</label>
                   <input type="text" v-model="editName" class="edit-profile-input" />
@@ -520,7 +542,7 @@ import ListePosteEntreprise from './liste_poste_entreprise.vue';
 import { getEntrepriseDashboard } from '../services/dashboardService';
 import type { EntrepriseDashboardDto } from '../services/dashboardService';
 import { getMesOffres, type OffreEmploiResponse, getRecommandationsForOffre } from '../services/entrepriseService';
-import { getNotifications, markAsRead, markAllNotificationsRead, getNotifIcon, getNotifBgClass, formatNotifTime } from '../services/notificationService';
+import { getNotifications, markAsRead, markAllNotificationsRead, getNotifIcon, getNotifBgClass, formatNotifTime, deleteNotification, deleteAllNotifications } from '../services/notificationService';
 import type { Notification } from '../services/notificationService';
 import { 
     Squares2X2Icon, 
@@ -565,7 +587,23 @@ const currentRecommendations = ref<any>(null);
 const showEditProfile = ref(false);
 const editName = ref(userName.value);
 const editEmail = ref(userEmail.value);
+const editAvatar = ref(localStorage.getItem('entreprise_avatar') || '');
 const currentPassword = ref('');
+const avatarInputRef = ref<HTMLInputElement | null>(null);
+
+const triggerAvatarInput = () => avatarInputRef.value?.click();
+
+const handleAvatarChange = (e: Event) => {
+    const file = (e.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+        profileErrorMessage.value = 'Image trop volumineuse (max 2 MB).';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => { editAvatar.value = ev.target?.result as string; };
+    reader.readAsDataURL(file);
+};
 const newPassword = ref('');
 const profileSuccessMessage = ref('');
 const profileErrorMessage = ref('');
@@ -662,6 +700,11 @@ const saveProfile = async () => {
         userName.value = res.data.user.nom;
         userEmail.value = res.data.user.email;
         
+        // Save avatar locally
+        if (editAvatar.value) {
+            localStorage.setItem('entreprise_avatar', editAvatar.value);
+        }
+
         // Also sync local edit refs
         editName.value = res.data.user.nom;
         editEmail.value = res.data.user.email;
@@ -789,6 +832,20 @@ const handleMarkAllRead = async () => {
     } catch (e) { console.error(e); }
 };
 
+const handleDeleteOne = async (id: number) => {
+    try {
+        await deleteNotification(id);
+        notifications.value = notifications.value.filter(n => n.id !== id);
+    } catch (e) { console.error(e); }
+};
+
+const handleDeleteAll = async () => {
+    try {
+        await deleteAllNotifications();
+        notifications.value = [];
+    } catch (e) { console.error(e); }
+};
+
 const growthRate = computed(() => {
     // Use 30-day daily data to compute current week vs previous week
     const daily = dashboardData.value?.candidaturesLast30Days ?? [];
@@ -882,24 +939,14 @@ const navItems = [
 // --- Data Connection & Filtering ---
 const candidatesSource = computed(() => {
     if (!dashboardData.value || !dashboardData.value.meilleursCandidats) return [];
-    return dashboardData.value.meilleursCandidats.map(c => {
-        let status = c.statut || 'NOUVEAU';
-        let statusClass = 'new';
-        if (status.toLowerCase().includes('rejet')) statusClass = 'rejected';
-        else if (status.toLowerCase().includes('accept')) statusClass = 'interview';
-        else if (status.toLowerCase().includes('attente')) statusClass = 'evaluated';
-        
-        return {
-            id: c.candidatId,
-            name: c.prenom || 'Candidat inconnu',
-            time: 'Enregistré',
-            role: c.role || 'Candidat Évalué',
-            score: c.score || 0,
-            statut: c.statut || status,
-            statusClass: statusClass,
-            avatar: `https://i.pravatar.cc/150?u=${c.candidatId}`
-        };
-    });
+    return dashboardData.value.meilleursCandidats.map(c => ({
+        id: c.candidatId,
+        name: [c.nom, c.prenom].filter(Boolean).join(' ') || c.name || 'Candidat inconnu',
+        role: c.role || 'Candidat Évalué',
+        score: c.score ?? null,   // keep null — don't default to 0
+        statut: c.statut || 'En attente',
+        email: c.email || '',
+    }));
 });
 
 const displayJobs = computed(() => {
@@ -1725,6 +1772,23 @@ const displayJobs = computed(() => {
 
 
 /* Edit Profile Dialog */
+/* ── Avatar upload ── */
+.avatar-upload-section {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px; background: #f8fafc;
+    border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 4px;
+}
+.avatar-preview { position: relative; flex-shrink: 0; }
+.avatar-img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.avatar-placeholder { width: 64px; height: 64px; border-radius: 50%; background: #1e40af; color: white; font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+.avatar-edit-btn { position: absolute; bottom: 0; right: 0; width: 22px; height: 22px; border-radius: 50%; background: #1e40af; color: white; border: 2px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
+.avatar-edit-btn:hover { background: #1e3a8a; }
+.avatar-info { display: flex; flex-direction: column; gap: 4px; }
+.avatar-name { font-size: 0.9rem; font-weight: 700; color: #0f172a; margin: 0; }
+.avatar-upload-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; background: white; border: 1px solid #e2e8f0; color: #1e40af; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+.avatar-upload-btn:hover { background: #eff6ff; border-color: #1e40af; }
+.avatar-hint { font-size: 0.7rem; color: #94a3b8; margin: 0; }
+
 .modal-overlay, .edit-profile-overlay {
     position: fixed;
     inset: 0;

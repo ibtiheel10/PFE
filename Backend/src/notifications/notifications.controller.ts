@@ -2,6 +2,7 @@ import {
     Controller,
     Get,
     Patch,
+    Delete,
     Param,
     ParseIntPipe,
     UseGuards,
@@ -41,5 +42,17 @@ export class NotificationsController {
     @ApiOperation({ summary: 'Mark all notifications as read' })
     markAllRead(@Request() req: any) {
         return this.notificationsService.markAllRead(req.user.userId);
+    }
+
+    @Delete(':id')
+    @ApiOperation({ summary: 'Delete a single notification' })
+    deleteOne(@Param('id', ParseIntPipe) id: number, @Request() req: any) {
+        return this.notificationsService.deleteOne(id, req.user.userId);
+    }
+
+    @Delete()
+    @ApiOperation({ summary: 'Delete all notifications for current user' })
+    deleteAll(@Request() req: any) {
+        return this.notificationsService.deleteAll(req.user.userId);
     }
 }

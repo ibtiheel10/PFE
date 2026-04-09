@@ -424,4 +424,32 @@ export class EntrepriseController {
     async updateCandidatStatut(@Param('id') id: string, @Body() body: { statut: string; decision?: string }) {
         return this.entrepriseService.updateCandidatStatut(+id, body.statut, body.decision);
     }
+
+    /**
+     * DELETE /api/Entreprise/candidatures/:id
+     * Supprime une candidature (Owner only).
+     */
+    @Delete('candidatures/:id')
+    @ApiOperation({ summary: 'Delete a candidature (Owner only)' })
+    @ApiParam({ name: 'id', description: 'Candidature ID' })
+    @ApiResponse({ status: 200, description: 'Candidature deleted.' })
+    @ApiResponse({ status: 403, description: 'Forbidden.' })
+    @ApiResponse({ status: 404, description: 'Candidature not found.' })
+    async deleteCandidature(@Param('id') id: string, @Request() req: any) {
+        return this.entrepriseService.deleteCandidature(+id, req.user.userId);
+    }
+
+    /**
+     * POST /api/Entreprise/contact-candidat
+     * Envoie un email de contact à un candidat pour un entretien.
+     */
+    @Post('contact-candidat')
+    @ApiOperation({ summary: 'Send interview invitation email to a candidate' })
+    @ApiResponse({ status: 201, description: 'Email sent.' })
+    async contactCandidat(
+        @Body() body: { candidatEmail: string; subject: string; message: string },
+        @Request() req: any,
+    ) {
+        return this.entrepriseService.contactCandidat(body.candidatEmail, body.subject, body.message, req.user.userId);
+    }
 }

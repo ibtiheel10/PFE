@@ -33,9 +33,9 @@
                                 <div class="circular-chart" :class="getScoreColor(candidate)" style="width: 32px; height: 32px;">
                                     <svg viewBox="0 0 36 36" class="circular-chart-svg">
                                         <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
-                                        <path class="circle" :stroke-dasharray="candidate.score + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                        <path class="circle" :stroke-dasharray="(candidate.score ?? 0) + ', 100'" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
                                     </svg>
-                                    <span class="percentage" style="font-size: 0.6rem;">{{ candidate.score }}%</span>
+                                    <span class="percentage" style="font-size: 0.6rem;">{{ candidate.score !== null && candidate.score !== undefined ? candidate.score + '%' : '—' }}</span>
                                 </div>
                                 <span class="score-label" :class="getScoreTextClass(candidate)">{{ getScoreLabel(candidate) }}</span>
                             </div>
@@ -63,48 +63,49 @@ const props = defineProps<{
 defineEmits(['view-all']);
 
 const topCandidates = computed(() => {
-    // Clone and sort by score desc
-    const sorted = [...props.candidates].sort((a, b) => b.score - a.score);
-    // Take top 5
+    // Sort by score desc, null scores go last
+    const sorted = [...props.candidates].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
     return sorted.slice(0, 5);
 });
 
+const getDisplayStatus = (candidate: any): string => {
+    // Use statut from API (already computed by backend with seuilMinimal)
+    if (candidate.statut) return candidate.statut;
+    const score = candidate.score;
+    if (score === null || score === undefined) return 'En attente';
+    if (score >= 50) return 'Accepté';
+    return 'Refusé';
+};
+
 const getScoreColor = (candidate: any) => {
     const s = getDisplayStatus(candidate);
-    if (s === 'Entretien') return 'green-fill';
-    if (s === 'Non retenu') return 'red-fill';
-    return 'orange-fill'; // En attente
+    if (s === 'Accepté' || s === 'Entretien') return 'green-fill';
+    if (s === 'Refusé') return 'red-fill';
+    return 'orange-fill';
 };
 
 const getScoreTextClass = (candidate: any) => {
     const s = getDisplayStatus(candidate);
-    if (s === 'Entretien') return 'text-green';
-    if (s === 'Non retenu') return 'text-red';
+    if (s === 'Accepté' || s === 'Entretien') return 'text-green';
+    if (s === 'Refusé') return 'text-red';
     return 'text-orange';
 };
 
 const getScoreLabel = (candidate: any) => {
     const s = getDisplayStatus(candidate);
-    if (s === 'Entretien') return 'Bon+';
-    if (s === 'Non retenu') return 'Faible';
-    return 'Moyen'; // En attente
-};
-
-const getDisplayStatus = (candidate: any): string => {
-    // Since this component only renders top 5, any candidate here with a score is Entretien.
-    if (candidate.score !== null && candidate.score !== undefined) {
-        return 'Entretien';
-    }
-    
-    // For unevaluated candidates 
-    return 'En attente'; 
+    if (s === 'Accepté')    return 'Excellent';
+    if (s === 'Entretien')  return 'Entretien';
+    if (s === 'En attente') return 'En attente';
+    if (s === 'Refusé')     return 'Faible';
+    return '—';
 };
 
 const getStatusClass = (statutText: string): string => {
     const s = (statutText || '').toLowerCase();
-    if (s === 'entretien') return 'entretien'; // Vert
-    if (s === 'non retenu') return 'refused'; // Rouge
-    return 'pending'; // Orange
+    if (s === 'accepté')   return 'accepted';
+    if (s === 'entretien') return 'entretien';
+    if (s === 'refusé')    return 'refused';
+    return 'pending';
 };
 
 </script>
@@ -203,9 +204,10 @@ const getStatusClass = (statutText: string): string => {
     border-radius: 50%;
     border: 1.5px solid white;
 }
-.status-indicator.green-fill { background: #10B981; }
-.status-indicator.blue-fill { background: #1e40af; }
+.status-indicator.green-fill  { background: #22C55E; }
+.status-indicator.blue-fill   { background: #1e40af; }
 .status-indicator.orange-fill { background: #F59E0B; }
+.status-indicator.red-fill    { background: #EF4444; }
 
 .c-name-lg {
     font-weight: 600;
@@ -247,9 +249,15 @@ const getStatusClass = (statutText: string): string => {
     stroke-linecap: round;
     transition: stroke-dasharray 0.5s ease;
 }
-.green-fill .circle { stroke: #10B981; }
+.green-fill .circle { stroke: #22C55E; }
 .orange-fill .circle { stroke: #F59E0B; }
 .red-fill .circle { stroke: #EF4444; }
+.blue-fill .circle { stroke: #1e40af; }
+
+.text-green { color: #16A34A; }
+.text-orange { color: #D97706; }
+.text-red { color: #DC2626; }
+.text-blue { color: #1e40af; }
 
 .percentage {
     position: absolute;
@@ -264,9 +272,6 @@ const getStatusClass = (statutText: string): string => {
     font-size: 0.75rem;
     font-weight: 600;
 }
-.text-green { color: #16A34A; }
-.text-orange { color: #D97706; }
-.text-red { color: #DC2626; }
 
 /* Status Pill */
 .status-pill {
@@ -283,8 +288,11 @@ const getStatusClass = (statutText: string): string => {
     border-radius: 50%;
 }
 
-.status-pill.entretien { background: #F0FDF4; color: #16A34A; }
-.status-pill.entretien .status-dot { background: #22C55E; }
+.status-pill.accepted  { background: #f0fdf4; color: #16A34A; }
+.status-pill.accepted .status-dot  { background: #22C55E; }
+
+.status-pill.entretien { background: #eff6ff; color: #1e40af; }
+.status-pill.entretien .status-dot { background: #1e40af; }
 
 .status-pill.pending { background: #FFF7ED; color: #D97706; }
 .status-pill.pending .status-dot { background: #F59E0B; }

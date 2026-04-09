@@ -60,6 +60,9 @@ export class OffreEmploi {
     @Column({ type: 'boolean', default: false })
     qcmNotification1hEnvoyee: boolean;
 
+    @Column({ type: 'int', default: 50 })
+    seuilMinimal: number;
+
     @ManyToOne(() => User, { nullable: true })
     entreprise: User;
 

@@ -47,6 +47,14 @@ export class NotificationsService {
             .execute();
     }
 
+    async deleteOne(id: number, userId: number): Promise<void> {
+        await this.notifRepo.delete({ id, userId });
+    }
+
+    async deleteAll(userId: number): Promise<void> {
+        await this.notifRepo.delete({ userId });
+    }
+
     // ── Helpers for common notification scenarios ──────────────────
 
     async notifyCandidatureEnvoyee(userId: number, titrePoste: string) {

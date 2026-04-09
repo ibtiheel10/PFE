@@ -10,6 +10,7 @@ import { Candidature } from '../entities/candidature.entity';
 import { Question } from '../entities/question.entity';
 import { ReponseCandidat } from '../entities/reponse-candidat.entity';
 import { AiService } from '../ai/ai.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class EntrepriseService {
@@ -28,6 +29,7 @@ export class EntrepriseService {
         private readonly reponseRepo: Repository<ReponseCandidat>,
         private readonly aiService: AiService,
         private readonly configService: ConfigService,
+        private readonly notificationsService: NotificationsService,
     ) { }
 
     /** Helper: fetch an offre by UUID with optional relations, throws NotFoundException if not found */
@@ -256,16 +258,30 @@ export class EntrepriseService {
             .limit(5)
             .getMany();
 
-        const meilleursCandidats = topCandidats.map((c) => ({
-            candidatId: c.candidat?.id ?? 0,
-            prenom: c.candidat
-                ? `${c.candidat.nom}${c.candidat.prenom ? ' ' + c.candidat.prenom : ''}`
-                : 'Inconnu',
-            score: c.score,
-            role: c.offre?.TitreDePost ?? 'Poste inconnu',
-            note: c.decision,
-            statut: c.statut,
-        }));
+        const meilleursCandidats = topCandidats.map((c) => {
+            const score = c.score;
+            const seuil = c.offre?.seuilMinimal ?? 50;
+            let statut: string;
+            if (c.statut === 'Entretien') {
+                statut = 'Entretien';
+            } else if (score === null || score === undefined) {
+                statut = 'En attente';
+            } else if (score >= seuil) {
+                statut = 'Accepté';
+            } else {
+                statut = 'Refusé';
+            }
+            return {
+                candidatId: c.candidat?.id ?? 0,
+                name: c.candidat
+                    ? `${c.candidat.nom}${c.candidat.prenom ? ' ' + c.candidat.prenom : ''}`
+                    : 'Inconnu',
+                score,
+                role: c.offre?.TitreDePost ?? 'Poste inconnu',
+                statut,
+                email: c.candidat?.email,
+            };
+        });
 
         return {
             totalOffres,
@@ -313,6 +329,7 @@ export class EntrepriseService {
                     localisation: o.Localisation,
                     experienceRequise: o.ExperienceRequise,
                     nbPost: o.NbPost,
+                    seuilMinimal: o.seuilMinimal ?? 50,
                     competences: o.competences,
                     icon: o.icon,
                     iconColor: o.iconColor,
@@ -345,6 +362,7 @@ export class EntrepriseService {
             competences: dto.competences,
             icon: dto.icon,
             iconColor: dto.iconColor,
+            seuilMinimal: dto.seuilMinimal ?? 50,
             entreprise: dto.userId ? { id: dto.userId } : undefined,
         } as any);
         return await this.offreRepo.save(offre);
@@ -370,6 +388,7 @@ export class EntrepriseService {
             competences: dto.competences ?? offre.competences,
             icon: dto.icon ?? offre.icon,
             iconColor: dto.iconColor ?? offre.iconColor,
+            seuilMinimal: dto.seuilMinimal ?? offre.seuilMinimal,
         });
 
         return await this.offreRepo.save(offre);
@@ -697,25 +716,36 @@ Compétences: ${offre.competences || 'Non spécifié'}
             .orderBy('c.datePostulation', 'DESC')
             .getMany();
 
-        return candidatures.map((c) => ({
-            id: c.id,
-            candidatId: c.candidat?.id,
-            name: c.candidat
-                ? `${c.candidat.nom}${c.candidat.prenom ? ' ' + c.candidat.prenom : ''}`
-                : 'Inconnu',
-            email: c.candidat?.email,
-            role: c.offre?.TitreDePost ?? 'Poste inconnu',
-            score: c.score ?? 0,
-            statut: c.statut,
-            decision: c.decision,
-            datePostulation: c.datePostulation,
-            avatar: `https://i.pravatar.cc/150?u=${c.candidat?.id ?? 0}`,
-            status: c.statut?.toUpperCase() ?? 'EN ATTENTE',
-            statusClass: c.statut?.toLowerCase().includes('rejet') ? 'rejected'
-                : c.statut?.toLowerCase().includes('accept') ? 'interview'
-                    : c.statut?.toLowerCase().includes('attente') ? 'evaluated'
-                        : 'new',
-        }));
+        return candidatures.map((c) => {
+            const score = c.score; // keep null as null
+            const seuil = c.offre?.seuilMinimal ?? 50;
+            // Compute display status based on score (unless manually set to Entretien)
+            let displayStatut: string;
+            if (c.statut === 'Entretien') {
+                displayStatut = 'Entretien';
+            } else if (score === null || score === undefined) {
+                displayStatut = 'En attente'; // not evaluated yet
+            } else if (score >= seuil) {
+                displayStatut = 'Accepté';
+            } else {
+                displayStatut = 'Refusé'; // includes score = 0
+            }
+
+            return {
+                id: c.id,
+                candidatId: c.candidat?.id,
+                name: c.candidat
+                    ? `${c.candidat.nom}${c.candidat.prenom ? ' ' + c.candidat.prenom : ''}`
+                    : 'Inconnu',
+                email: c.candidat?.email,
+                role: c.offre?.TitreDePost ?? 'Poste inconnu',
+                score: score ?? null, // keep null, don't default to 0
+                statut: displayStatut,
+                decision: c.decision,
+                datePostulation: c.datePostulation,
+                avatar: `https://i.pravatar.cc/150?u=${c.candidat?.id ?? 0}`,
+            };
+        });
     }
 
     /** PATCH update candidature status (accept / reject) */
@@ -727,6 +757,85 @@ Compétences: ${offre.competences || 'Non spécifié'}
         if (decision !== undefined) candidature.decision = decision;
         await this.candidatureRepo.save(candidature);
         return { message: 'Statut mis à jour.', statut };
+    }
+
+    /** DELETE candidature (entreprise owner only) */
+    async deleteCandidature(candidatureId: number, userId: number) {
+        const candidature = await this.candidatureRepo.findOne({
+            where: { id: candidatureId },
+            relations: ['offre', 'offre.entreprise'],
+        });
+        if (!candidature) throw new NotFoundException(`Candidature ${candidatureId} introuvable.`);
+        if (Number(candidature.offre?.entreprise?.id) !== Number(userId))
+            throw new ForbiddenException('Vous n\'êtes pas autorisé à supprimer cette candidature.');
+        await this.candidatureRepo.remove(candidature);
+        return { message: 'Candidature supprimée avec succès.' };
+    }
+
+    /** POST contact-candidat — send interview invitation email + notification */
+    async contactCandidat(candidatEmail: string, subject: string, message: string, userId: number) {
+        const entreprise = await this.userRepo.findOneBy({ id: userId });
+        if (!entreprise) throw new NotFoundException('Entreprise introuvable.');
+
+        // Find the candidat by email to create a notification
+        const candidat = await this.userRepo.findOneBy({ email: candidatEmail });
+
+        const transporter = nodemailer.createTransport({
+            host: this.configService.get<string>('SMTP_HOST'),
+            port: this.configService.get<number>('SMTP_PORT'),
+            secure: false,
+            auth: {
+                user: this.configService.get<string>('SMTP_USER'),
+                pass: this.configService.get<string>('SMTP_PASS'),
+            },
+        });
+
+        const senderName = entreprise.nom || entreprise.email;
+
+        // Send email
+        await transporter.sendMail({
+            from: `"${senderName} via Skillvia" <${this.configService.get<string>('SMTP_FROM')}>`,
+            to: candidatEmail,
+            subject,
+            html: `
+                <div style="font-family:Inter,sans-serif;max-width:560px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;border:1px solid #e2e8f0;">
+                    <div style="background:linear-gradient(135deg,#1e40af,#1e3a8a);padding:28px 32px;">
+                        <h1 style="color:#fff;font-size:20px;margin:0;font-weight:800;">Skillvia</h1>
+                        <p style="color:rgba(255,255,255,0.75);font-size:13px;margin:4px 0 0;">Plateforme de recrutement par compétences</p>
+                    </div>
+                    <div style="padding:32px;">
+                        <h2 style="font-size:18px;font-weight:700;color:#0f172a;margin:0 0 16px;">${subject}</h2>
+                        <div style="font-size:14px;color:#475569;line-height:1.7;white-space:pre-line;">${message}</div>
+                    </div>
+                    <div style="padding:16px 32px;background:#f8fafc;border-top:1px solid #f1f5f9;font-size:12px;color:#94a3b8;">
+                        Ce message vous a été envoyé via la plateforme Skillvia par ${senderName}.
+                    </div>
+                </div>
+            `,
+        });
+
+        // Create in-app notification for the candidat
+        if (candidat) {
+            await this.notificationsService.createForUser(
+                candidat.id,
+                `Message de ${senderName}`,
+                message.length > 200 ? message.substring(0, 200) + '...' : message,
+                'MESSAGE_ENTREPRISE',
+            );
+
+            // Auto-update candidature status to 'Entretien'
+            const candidature = await this.candidatureRepo.findOne({
+                where: { candidat: { id: candidat.id }, offre: { entreprise: { id: userId } } },
+                relations: ['candidat', 'offre', 'offre.entreprise'],
+                order: { datePostulation: 'DESC' },
+            });
+            if (candidature) {
+                candidature.statut = 'Entretien';
+                await this.candidatureRepo.save(candidature);
+            }
+        }
+
+        return { message: 'Email et notification envoyés avec succès.' };
     }
 
     private mapQuestionsResponse(questions: Question[]) {

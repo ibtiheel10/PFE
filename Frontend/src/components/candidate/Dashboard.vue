@@ -179,9 +179,30 @@
                 <!-- Suggestions -->
                 <div class="sidebar-card section-enter" style="animation-delay:0.15s">
                     <div class="sidebar-card-header">
-                        <h3 class="font-bold text-gray-900">Suggestions pour vous</h3>
+                        <div>
+                            <h3 class="font-bold text-gray-900">Suggestions pour vous</h3>
+                            <p v-if="dominantSkill" class="text-[10px] text-[#1e40af] font-semibold mt-0.5">
+                                Basé sur votre compétence en <span class="underline">{{ dominantSkill }}</span>
+                            </p>
+                        </div>
                         <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
                             <BoltIcon class="w-4 h-4 text-[#1e40af]" />
+                        </div>
+                    </div>
+
+                    <!-- Skill badge -->
+                    <div v-if="dominantSkill && dominantSkillScore !== null" class="mx-4 mt-3 mb-1 flex items-center gap-2 bg-gradient-to-r from-[#eff6ff] to-[#f0fdf4] border border-[#1e40af]/10 rounded-xl px-3 py-2">
+                        <div class="w-7 h-7 rounded-lg bg-[#1e40af] flex items-center justify-center flex-shrink-0">
+                            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.346A3.001 3.001 0 0112 15a3 3 0 01-2.121-.879l-.346-.346z"/></svg>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[11px] font-bold text-gray-700 truncate">{{ dominantSkill }}</p>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div class="h-full bg-[#1e40af] rounded-full transition-all duration-700" :style="{ width: dominantSkillScore + '%' }"></div>
+                                </div>
+                                <span class="text-[10px] font-bold text-[#1e40af]">{{ dominantSkillScore }}%</span>
+                            </div>
                         </div>
                     </div>
 
@@ -195,25 +216,29 @@
                     </div>
 
                     <!-- No suggestions -->
-                    <div v-else-if="suggestions.length === 0" class="p-8 text-center text-gray-400 text-sm">
+                    <div v-else-if="smartSuggestions.length === 0" class="p-8 text-center text-gray-400 text-sm">
                         Aucune offre disponible pour le moment.
                     </div>
 
                     <!-- Suggestions list -->
                     <div v-else class="divide-y divide-gray-50">
                         <div
-                            v-for="offre in suggestions"
+                            v-for="offre in smartSuggestions"
                             :key="offre.id"
                             class="suggestion-item"
                             @click="goToJob(offre.id)"
                         >
-                            <div class="suggestion-accent" :style="{ backgroundColor: '#1e40af' }"></div>
+                            <div class="suggestion-accent" :style="{ backgroundColor: offre._matchColor || '#1e40af' }"></div>
                             <div class="flex-1 min-w-0 py-3 pr-4">
-                                <h4 class="font-bold text-sm text-gray-800 group-hover:text-[#1e40af] truncate transition-colors duration-200 mb-0.5">{{ offre.TitreDePost }}</h4>
-                                <p class="text-xs text-gray-400 mb-2">{{ (offre as any).entreprise?.nom || (offre as any).entreprise?.Nom || (offre as any).user?.Entreprise?.Nom || (offre as any).user?.entreprise?.nom || 'Entreprise Confidentielle' }} &bull; {{ offre.Localisation }}</p>
+                                <div class="flex items-start justify-between gap-1 mb-0.5">
+                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-[#1e40af] truncate transition-colors duration-200">{{ offre.TitreDePost }}</h4>
+                                    <span v-if="offre._matchScore" class="text-[9px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0" :style="{ background: offre._matchColor + '20', color: offre._matchColor }">{{ offre._matchScore }}%</span>
+                                </div>
+                                <p class="text-xs text-gray-400 mb-2">{{ (offre as any).entreprise?.nom || 'Entreprise Confidentielle' }} &bull; {{ offre.Localisation }}</p>
                                 <div class="flex items-center gap-2 flex-wrap">
                                     <span v-if="offre.Categorie" class="text-[10px] font-semibold bg-blue-50 text-[#1e40af] px-2 py-0.5 rounded-md">{{ offre.Categorie }}</span>
                                     <span v-if="offre.ModeDeTravail" class="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">{{ offre.ModeDeTravail }}</span>
+                                    <span v-if="offre._isMatch" class="text-[9px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md">✓ Correspond</span>
                                 </div>
                             </div>
                         </div>
@@ -354,6 +379,64 @@ const currentChartData = computed(() =>
 // ���� Suggestions pour vous ����������������������������������������������������������������������������������
 const suggestions = ref<OffreEmploi[]>([]);
 
+// -- Dominant skill analysis ---------------------------------------------------
+const dominantSkill = computed<string | null>(() => {
+    const map: Record<string, { total: number; count: number }> = {};
+    for (const c of allCandidatures.value) {
+        if (!c.evaluationDetails) continue;
+        try {
+            const d = JSON.parse(c.evaluationDetails);
+            if (d.ScoreParCompetence) {
+                for (const [key, val] of Object.entries(d.ScoreParCompetence)) {
+                    if (!map[key]) map[key] = { total: 0, count: 0 };
+                    map[key].total += Number(val);
+                    map[key].count += 1;
+                }
+            }
+        } catch {}
+    }
+    if (Object.keys(map).length === 0) return null;
+    return Object.entries(map)
+        .map(([k, v]) => ({ name: k, avg: v.total / v.count }))
+        .sort((a, b) => b.avg - a.avg)[0]?.name ?? null;
+});
+
+const dominantSkillScore = computed<number | null>(() => {
+    if (!dominantSkill.value) return null;
+    const vals: number[] = [];
+    for (const c of allCandidatures.value) {
+        if (!c.evaluationDetails) continue;
+        try {
+            const d = JSON.parse(c.evaluationDetails);
+            if (d.ScoreParCompetence?.[dominantSkill.value] !== undefined) {
+                vals.push(Number(d.ScoreParCompetence[dominantSkill.value]));
+            }
+        } catch {}
+    }
+    if (vals.length === 0) return null;
+    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+});
+
+// -- Smart suggestions � filter & rank by dominant skill ----------------------
+const smartSuggestions = computed(() => {
+    if (!suggestions.value.length) return [];
+    const skill = dominantSkill.value?.toLowerCase() ?? '';
+    const alreadyApplied = new Set(allCandidatures.value.map(c => c.offre?.id));
+    const pool = suggestions.value.filter(o => !alreadyApplied.has(o.id));
+    if (!skill) return pool.slice(0, 4).map(o => ({ ...o, _matchScore: null, _isMatch: false, _matchColor: '#1e40af' }));
+    const skillWords = skill.split(/[\s,\-\/]+/).filter((w: string) => w.length > 2);
+    return pool
+        .map(o => {
+            const text = `${(o.TitreDePost || '').toLowerCase()} ${(o.Categorie || '').toLowerCase()} ${((o as any).competences || '').toLowerCase()}`;
+            const matchCount = skillWords.filter((w: string) => text.includes(w)).length;
+            const matchScore = skillWords.length > 0 ? Math.round((matchCount / skillWords.length) * 100) : 0;
+            const color = matchScore >= 70 ? '#10b981' : matchScore >= 30 ? '#1e40af' : '#94a3b8';
+            return { ...o, _matchScore: matchScore || null, _isMatch: matchScore >= 30, _matchColor: color };
+        })
+        .sort((a: any, b: any) => (b._matchScore ?? 0) - (a._matchScore ?? 0))
+        .slice(0, 4);
+});
+
 // ���� Fetch all data ������������������������������������������������������������������������������������������������
 onMounted(async () => {
     try {
@@ -366,8 +449,8 @@ onMounted(async () => {
             allCandidatures.value = candidaturesData.value || [];
         }
         if (offresData.status === 'fulfilled') {
-            // Limiter à 3 suggestions
-            suggestions.value = (offresData.value || []).slice(0, 3);
+            // Charger plus d'offres pour le moteur de suggestions intelligent
+            suggestions.value = (offresData.value || []).slice(0, 20);
         }
     } catch (e) {
         console.error('Dashboard load error:', e);

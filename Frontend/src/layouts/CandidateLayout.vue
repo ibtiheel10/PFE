@@ -75,41 +75,46 @@
               <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-96 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 overflow-hidden">
                 <!-- Header -->
                 <div class="flex items-center justify-between px-4 py-3 border-b border-gray-50 bg-gray-50/80">
-                  <div>
+                  <div class="flex items-center gap-2">
                     <span class="text-sm font-bold text-gray-900">Notifications</span>
-                    <span v-if="unreadCount > 0" class="ml-2 px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">{{ unreadCount }} non lues</span>
+                    <span v-if="unreadCount > 0" class="px-1.5 py-0.5 bg-red-100 text-red-600 text-[10px] font-bold rounded-full">{{ unreadCount }} non lues</span>
                   </div>
-                  <button v-if="unreadCount > 0" @click="markAllRead" class="text-[11px] text-blue-600 font-semibold hover:text-blue-800">
-                    Tout marquer lu
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <button v-if="unreadCount > 0" @click="markAllRead" class="text-[11px] text-[#1e40af] font-semibold hover:underline">Tout marquer lu</button>
+                    <button v-if="notifications.length > 0" @click="deleteAll" class="text-[11px] text-red-500 font-semibold hover:underline">Tout supprimer</button>
+                  </div>
                 </div>
                 <!-- Loading -->
                 <div v-if="notifLoading" class="py-8 text-center">
-                  <div class="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+                  <div class="w-6 h-6 border-2 border-[#1e40af] border-t-transparent rounded-full animate-spin mx-auto"></div>
                 </div>
                 <!-- Notifications list -->
                 <div v-else class="max-h-80 overflow-y-auto divide-y divide-gray-50">
                   <div v-if="notifications.length === 0" class="py-10 text-center">
-                    <BellIcon class="w-8 h-8 text-gray-200 mx-auto mb-2" />
+                    <svg class="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
                     <p class="text-sm text-gray-400">Aucune notification</p>
                   </div>
                   <div
                     v-for="notif in notifications"
                     :key="notif.id"
-                    class="flex gap-3 px-4 py-3 transition-colors cursor-pointer group"
+                    class="flex gap-3 px-4 py-3 transition-colors group relative"
                     :class="notif.lu ? 'hover:bg-gray-50' : 'bg-blue-50/40 hover:bg-blue-50'"
-                    @click="handleMarkRead(notif.id)"
                   >
                     <div class="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                         :class="getNotifBgClass(notif.type)">
-                      <BellIcon class="w-5 h-5 opacity-70" :class="getNotifBgClass(notif.type).replace('bg-', 'text-').replace('-50', '-600')" />
+                         :class="getNotifBgClass(notif.type)"
+                         v-html="getNotifIcon(notif.type)">
                     </div>
-                    <div class="flex-1 min-w-0">
-                      <p class="text-[13px] font-semibold text-gray-800 leading-snug">{{ notif.titre }}</p>
-                      <p class="text-[12px] text-gray-500 mt-0.5 leading-relaxed">{{ notif.message }}</p>
-                      <p class="text-[11px] text-gray-400 mt-1 font-medium">{{ formatNotifTime(notif.createdAt) }}</p>
+                    <div class="flex-1 min-w-0 cursor-pointer" @click="handleMarkRead(notif.id)">
+                      <p class="text-[13px] leading-snug" :class="!notif.lu ? 'font-bold text-gray-900' : 'font-semibold text-gray-800'">{{ notif.titre }}</p>
+                      <p class="text-[12px] text-gray-500 mt-0.5 leading-relaxed line-clamp-2">{{ notif.message }}</p>
+                      <p class="text-[11px] mt-1 font-medium" :class="!notif.lu ? 'text-[#1e40af]' : 'text-gray-400'">{{ formatNotifTime(notif.createdAt) }}</p>
                     </div>
-                    <div v-if="!notif.lu" class="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <div class="flex flex-col items-center gap-1 flex-shrink-0">
+                      <div v-if="!notif.lu" class="w-2 h-2 bg-[#1e40af] rounded-full"></div>
+                      <button @click.stop="deleteOne(notif.id)" class="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -209,16 +214,24 @@
 
             <!-- Avatar section -->
             <div class="profile-modal-body">
-              <div class="flex items-center gap-4 mb-6">
-                <img :src="editAvatar || 'https://via.placeholder.com/150'" class="w-16 h-16 rounded-2xl border-2 border-gray-100 object-cover" />
-                <div>
-                  <p class="text-sm font-semibold text-gray-900">Photo de profil</p>
-                  <p class="text-xs text-gray-500 mt-0.5 mb-2">PNG, JPG · Max 2 MB</p>
-                  <input type="file" ref="fileInputRef" class="hidden" accept="image/*" @change="handleAvatarUpload" />
-                  <button @click="triggerFileInput" class="px-3 py-1.5 bg-blue-50 text-blue-600 text-[11px] font-bold rounded-lg hover:bg-blue-100 transition">
-                    Choisir une photo
+              <!-- Photo de profil card -->
+              <div class="avatar-upload-card">
+                <div class="avatar-upload-preview">
+                  <img v-if="editAvatar" :src="editAvatar" class="avatar-upload-img" alt="Photo de profil" @error="editAvatar = ''" />
+                  <div v-else class="avatar-upload-initials">{{ (editFirstName || displayName).charAt(0).toUpperCase() }}</div>
+                  <button class="avatar-pencil-btn" @click="triggerFileInput" title="Modifier la photo">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                   </button>
                 </div>
+                <div class="avatar-upload-info">
+                  <p class="avatar-upload-name">{{ editFirstName }} {{ editLastName }}</p>
+                  <button @click="triggerFileInput" class="avatar-import-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Importer une photo
+                  </button>
+                  <p class="avatar-upload-hint">PNG, JPG · Max 2 MB</p>
+                </div>
+                <input type="file" ref="fileInputRef" class="hidden" accept="image/*" @change="handleAvatarUpload" />
               </div>
 
               <div class="grid grid-cols-2 gap-4">
@@ -299,7 +312,10 @@ import {
     markAsRead,
     markAllNotificationsRead,
     getNotifBgClass,
+    getNotifIcon,
     formatNotifTime,
+    deleteNotification,
+    deleteAllNotifications,
     type Notification,
 } from '../services/notificationService';
 import api from '../services/axios';
@@ -366,6 +382,20 @@ const loadNotifications = async () => {
 const markAllRead = async () => {
     await markAllNotificationsRead();
     notifications.value.forEach(n => { n.lu = true; });
+};
+
+const deleteOne = async (id: number) => {
+    try {
+        await deleteNotification(id);
+        notifications.value = notifications.value.filter(n => n.id !== id);
+    } catch (e) { console.error(e); }
+};
+
+const deleteAll = async () => {
+    try {
+        await deleteAllNotifications();
+        notifications.value = [];
+    } catch (e) { console.error(e); }
 };
 
 const handleMarkRead = async (id: number) => {
@@ -576,8 +606,89 @@ const handleLogout = () => {
 }
 .profile-modal-body {
     padding: 16px;
-    max-height: calc(85vh - 140px); /* laisse la place pour header + footer */
-    overflow-y: auto;               /* scroll interne si le contenu est trop long */
+    max-height: calc(85vh - 140px);
+    overflow-y: auto;
+}
+
+/* ── Avatar upload card ── */
+.avatar-upload-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+.avatar-upload-preview {
+    position: relative;
+    flex-shrink: 0;
+}
+.avatar-upload-img {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+}
+.avatar-upload-initials {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    background: #1e40af;
+    color: white;
+    font-size: 1.6rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+}
+.avatar-pencil-btn {
+    position: absolute;
+    bottom: 2px; right: 2px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #1e40af;
+    color: white;
+    border: 2px solid white;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.avatar-pencil-btn:hover { background: #1e3a8a; }
+.avatar-upload-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.avatar-upload-name {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+.avatar-import-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    border-radius: 9px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #1e40af;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.avatar-import-btn:hover { background: #eff6ff; border-color: #1e40af; }
+.avatar-upload-hint {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin: 0;
 }
 .profile-modal-footer {
     display: flex;

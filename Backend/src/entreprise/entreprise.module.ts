@@ -9,12 +9,14 @@ import { Candidature } from '../entities/candidature.entity';
 import { Question } from '../entities/question.entity';
 import { ReponseCandidat } from '../entities/reponse-candidat.entity';
 import { AiModule } from '../ai/ai.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([User, OffreEmploi, Candidature, Question, ReponseCandidat]),
         ConfigModule,
         AiModule,
+        NotificationsModule,
     ],
     controllers: [EntrepriseController],
     providers: [EntrepriseService],
