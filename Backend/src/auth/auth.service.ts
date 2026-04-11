@@ -152,6 +152,76 @@ export class AuthService {
         };
     }
 
+    // ── Forgot Password ──────────────────────────────────────────────────────────
+
+    async forgotPassword(email: string) {
+        const user = await this.userRepo.findOne({ where: { email } });
+        // Always return success to avoid email enumeration
+        if (!user) return { message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' };
+
+        // Sign a short-lived reset token (15 min)
+        const token = this.jwtService.sign(
+            { sub: user.id, email: user.email, purpose: 'reset' },
+            { expiresIn: '15m' },
+        );
+
+        const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+        const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+        const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 480px; margin: auto;">
+        <h2 style="color: #1e40af;">SkillVia</h2>
+        <p>Vous avez demandé la réinitialisation de votre mot de passe.</p>
+        <p>Cliquez sur le bouton ci-dessous pour choisir un nouveau mot de passe :</p>
+        <a href="${resetLink}" style="display:inline-block;margin:20px 0;padding:12px 28px;background:linear-gradient(135deg,#3b82f6,#8b5cf6);color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
+          Réinitialiser mon mot de passe
+        </a>
+        <p style="color:#888;font-size:12px;">Ce lien expire dans <strong>15 minutes</strong>.</p>
+        <p style="color:#888;font-size:12px;">Si vous n'avez pas fait cette demande, ignorez cet email.</p>
+      </div>
+    `;
+
+        try {
+            await this.transporter.sendMail({
+                from: `"SkillVia" <${this.configService.get('SMTP_FROM')}>`,
+                to: user.email,
+                subject: 'Réinitialisation de votre mot de passe',
+                html,
+            });
+        } catch (err) {
+            console.error('[AuthService] Failed to send reset email:', err);
+            console.log(`[DEV] Reset link for ${user.email}: ${resetLink}`);
+        }
+
+        return { message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' };
+    }
+
+    // ── Reset Password ───────────────────────────────────────────────────────────
+
+    async resetPassword(token: string, newPassword: string) {
+        let payload: any;
+        try {
+            payload = this.jwtService.verify(token);
+        } catch (e: any) {
+            if (e?.name === 'TokenExpiredError') {
+                throw new BadRequestException('Lien de réinitialisation expiré. Veuillez en demander un nouveau.');
+            }
+            throw new BadRequestException('Lien de réinitialisation invalide ou expiré.');
+        }
+
+        if (payload.purpose !== 'reset') {
+            throw new BadRequestException('Token invalide.');
+        }
+
+        const user = await this.userRepo.findOne({ where: { id: payload.sub } });
+        if (!user) throw new BadRequestException('Utilisateur introuvable.');
+
+        user.password = await bcrypt.hash(newPassword, 10);
+        await this.userRepo.save(user);
+
+        return { message: 'Mot de passe réinitialisé avec succès.' };
+    }
+
     // ── Resend OTP ───────────────────────────────────────────────────────────────
 
     async resendOtp(email: string) {

@@ -94,10 +94,14 @@ export class EntrepriseService {
     async getMonProfil(userId: number) {
         const user = await this.userRepo.findOne({
             where: { id: userId, role: 'Entreprise' },
-            select: ['id', 'nom', 'email', 'secteur'],
+            select: ['id', 'nom', 'email', 'secteur', 'avatar'],
         });
         if (!user) throw new NotFoundException('Profil entreprise introuvable.');
         return user;
+    }
+
+    async updateAvatarUrl(userId: number, avatarUrl: string): Promise<void> {
+        await this.userRepo.update({ id: userId }, { avatar: avatarUrl });
     }
 
     async updateProfil(userId: number, dto: any) {
@@ -773,7 +777,7 @@ Compétences: ${offre.competences || 'Non spécifié'}
     }
 
     /** POST contact-candidat — send interview invitation email + notification */
-    async contactCandidat(candidatEmail: string, subject: string, message: string, userId: number) {
+    async contactCandidat(candidatEmail: string, subject: string, message: string, userId: number, candidatureId?: number) {
         const entreprise = await this.userRepo.findOneBy({ id: userId });
         if (!entreprise) throw new NotFoundException('Entreprise introuvable.');
 
@@ -814,7 +818,7 @@ Compétences: ${offre.competences || 'Non spécifié'}
             `,
         });
 
-        // Create in-app notification for the candidat
+        // Create in-app notification + auto-update candidature status
         if (candidat) {
             await this.notificationsService.createForUser(
                 candidat.id,
@@ -823,13 +827,24 @@ Compétences: ${offre.competences || 'Non spécifié'}
                 'MESSAGE_ENTREPRISE',
             );
 
-            // Auto-update candidature status to 'Entretien'
-            const candidature = await this.candidatureRepo.findOne({
-                where: { candidat: { id: candidat.id }, offre: { entreprise: { id: userId } } },
-                relations: ['candidat', 'offre', 'offre.entreprise'],
-                order: { datePostulation: 'DESC' },
-            });
-            if (candidature) {
+            // Find the specific candidature by id if provided, otherwise fall back to latest
+            let candidature: Candidature | null = null;
+            if (candidatureId) {
+                candidature = await this.candidatureRepo.findOne({
+                    where: { id: candidatureId, candidat: { id: candidat.id } },
+                    relations: ['candidat', 'offre', 'offre.entreprise'],
+                });
+            }
+            if (!candidature) {
+                candidature = await this.candidatureRepo.findOne({
+                    where: { candidat: { id: candidat.id }, offre: { entreprise: { id: userId } } },
+                    relations: ['candidat', 'offre', 'offre.entreprise'],
+                    order: { datePostulation: 'DESC' },
+                });
+            }
+
+            // Only promote to 'Entretien' if current status is 'Accepté'
+            if (candidature && candidature.statut === 'Accepté') {
                 candidature.statut = 'Entretien';
                 await this.candidatureRepo.save(candidature);
             }

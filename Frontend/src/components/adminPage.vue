@@ -7,11 +7,19 @@
     >
       <div>
         <!-- Logo -->
-        <div class="h-16 flex items-center border-b border-gray-100 dark:border-gray-800 overflow-hidden whitespace-nowrap"
+        <div class="h-16 flex items-center border-b border-gray-100 dark:border-gray-800 overflow-hidden"
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
-          <div class="flex items-center gap-3 cursor-pointer" @click="router.push('/')">
+          <div class="flex items-center cursor-pointer" :class="isSidebarCollapsed ? 'gap-0' : 'gap-3'" @click="router.push('/')">
              <LogoIcon customClass="w-9 h-9 flex-shrink-0" />
-                <span class="font-black text-[#1e40af] text-[24px] tracking-tight">Skillvia</span>
+             <span 
+               class="font-black text-[#1e40af] text-[24px] tracking-tight whitespace-nowrap transition-all duration-300 overflow-hidden inline-block"
+               :style="{ 
+                 maxWidth: isSidebarCollapsed ? '0px' : '200px',
+                 opacity: isSidebarCollapsed ? 0 : 1,
+                 marginLeft: isSidebarCollapsed ? '0px' : '12px'
+               }">
+               Skillvia
+             </span>
           </div>
         </div>
 

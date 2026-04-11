@@ -58,6 +58,13 @@ export class CandidaturesService {
         return {
             candidatureId: candidature.id,
             offreTitle: candidature.offre.TitreDePost,
+            // Total duration = sum of all question timers (each in seconds)
+            // If a question timer looks like minutes (≤ 60), convert to seconds
+            totalDurationSeconds: questions.reduce((sum, q) => {
+                const t = q.chronometre || 30;
+                // heuristic: values ≤ 60 were stored as minutes, convert to seconds
+                return sum + (t <= 60 ? t * 60 : t);
+            }, 0),
             questions: questions.map(q => ({
                 id: q.id,
                 text: q.contenu?.question ?? '',
@@ -191,16 +198,13 @@ export class CandidaturesService {
             where: { offre: { id: candidature.offre.id } },
         });
 
+        const seuil = candidature.offre.seuilMinimal ?? 0;
         const evaluatedCandidates = allCandidatesForOffer.filter(c => c.score !== null);
-        // Sort descending by score
-        evaluatedCandidates.sort((a, b) => (b.score || 0) - (a.score || 0));
 
         const candidaturesToSave: Candidature[] = [];
 
-        for (let i = 0; i < evaluatedCandidates.length; i++) {
-            const c = evaluatedCandidates[i];
-            // Rank based logic: Top 5 = Entretien, out of top 5 = Non retenu
-            let expectedStatut = i < 5 ? 'Entretien' : 'Non retenu';
+        for (const c of evaluatedCandidates) {
+            const expectedStatut = (c.score ?? 0) >= seuil ? 'Accepté' : 'Refusé';
 
             if (c.statut !== expectedStatut) {
                 c.statut = expectedStatut;
@@ -240,6 +244,9 @@ export class CandidaturesService {
         if (reponsesToSave.length > 0) {
             await this.reponseCandidatRepo.save(reponsesToSave);
         }
+
+        // Recompute ranks excluding any forfeited candidates
+        await this._recomputeRanks(candidature.offre.id);
 
         return { message: 'Évaluation soumise avec succès.', score: scorePercent };
     }
@@ -356,7 +363,8 @@ export class CandidaturesService {
         const stats = {
             total: activeCands.length,
             enAttente: activeCands.filter(c => c.statut === 'En attente' || c.statut === 'Évalué' || c.statut === 'En cours').length,
-            acceptées: activeCands.filter(c => c.statut === 'Entretien' || c.statut === 'Acceptée').length,
+            entretiens: activeCands.filter(c => c.statut === 'Entretien').length,
+            acceptées: activeCands.filter(c => c.statut === 'Accepté' || c.statut === 'Acceptée').length,
             refusées: activeCands.filter(c => c.statut === 'Refusé' || c.statut === 'Non retenu').length,
             expirees: activeCands.filter(c => c.statut === 'Expirée').length,
             reussis: activeCands.filter(c => (c.score || 0) >= 70).length,
@@ -402,9 +410,47 @@ export class CandidaturesService {
         await this.candidatureRepo.remove(candidature);
     }
 
-    // ─── Resync all statuses based on Top 5 ranking ───────────────────────────
+    // ─── POST /api/candidatures/:id/forfeit ──────────────────────────────────
+    async forfeitEvaluation(candidatureId: number, userId: number, reason: string) {
+        const candidature = await this.candidatureRepo.findOne({
+            where: { id: candidatureId },
+            relations: ['candidat', 'offre'],
+        });
+        if (!candidature) throw new NotFoundException(`Candidature introuvable.`);
+        if (Number(candidature.candidat.id) !== Number(userId)) throw new ConflictException('Accès refusé.');
+
+        // If already scored, do nothing (idempotent)
+        if (candidature.score !== null) {
+            return { message: 'Évaluation déjà soumise.', score: candidature.score };
+        }
+
+        // Force score = 0, statut = Refusé, rank = NULL, isForfeit = true
+        candidature.score = 0;
+        candidature.nbReponsesCorrectes = 0;
+        candidature.totalQuestions = candidature.totalQuestions || 0;
+        candidature.statut = 'Refusé';
+        candidature.rank = null as any;
+        candidature.isForfeit = true;
+        candidature.evaluationDetails = JSON.stringify({
+            TotalQuestions: candidature.totalQuestions || 0,
+            CorrectAnswers: 0,
+            Temps: '0:00',
+            TopPercent: null,
+            ScoreParCompetence: {},
+            forfeit: true,
+            forfeitReason: reason || 'Comportement frauduleux détecté',
+            aiRecommendation: { text: 'Évaluation annulée pour fraude.', error: false },
+            answers: [],
+        });
+
+        await this.candidatureRepo.save(candidature);
+
+        // Re-compute ranks for remaining honest candidates on this offer
+        await this._recomputeRanks(candidature.offre.id);
+
+        return { message: 'Évaluation annulée pour fraude. Score: 0.', score: 0 };
+    }
     async resyncAllStatuses(): Promise<{ updated: number }> {
-        // Get all unique offreIds that have evaluated candidates
         const evaluated = await this.candidatureRepo
             .createQueryBuilder('c')
             .select('DISTINCT c."offreId"', 'offreId')
@@ -416,25 +462,64 @@ export class CandidaturesService {
             const offreId = row.offreId;
             const cands = await this.candidatureRepo.find({
                 where: { offre: { id: offreId } },
+                relations: ['offre'],
             });
-            const withScore = cands
-                .filter(c => c.score !== null && c.score !== undefined)
-                .sort((a, b) => (b.score || 0) - (a.score || 0));
+
+            const seuil = cands[0]?.offre?.seuilMinimal ?? 0;
+            const withScore = cands.filter(c => c.score !== null && c.score !== undefined);
 
             const toSave: Candidature[] = [];
-            for (let i = 0; i < withScore.length; i++) {
-                const expected = i < 5 ? 'Entretien' : 'Non retenu';
-                if (withScore[i].statut !== expected) {
-                    withScore[i].statut = expected;
-                    toSave.push(withScore[i]);
+            for (const c of withScore) {
+                const expected = (c.score ?? 0) >= seuil ? 'Accepté' : 'Refusé';
+                if (c.statut !== expected) {
+                    c.statut = expected;
+                    toSave.push(c);
                 }
             }
             if (toSave.length > 0) {
                 await this.candidatureRepo.save(toSave);
                 updatedTotal += toSave.length;
             }
+
+            // Recompute ranks excluding forfeits
+            await this._recomputeRanks(offreId);
         }
         this.logger.log(`[resyncAllStatuses] Updated ${updatedTotal} candidature(s).`);
         return { updated: updatedTotal };
+    }
+
+    /** Recompute rank for all honest (non-forfeit) evaluated candidates on an offer.
+     *  Forfeited candidates get rank = NULL and are excluded from the ranking pool. */
+    private async _recomputeRanks(offreId: string): Promise<void> {
+        const all = await this.candidatureRepo.find({
+            where: { offre: { id: offreId } },
+        });
+
+        // Only honest candidates with a score participate in ranking
+        const eligible = all
+            .filter(c => c.score !== null && !c.isForfeit)
+            .sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+
+        const toSave: Candidature[] = [];
+
+        for (const c of all) {
+            if (c.isForfeit || c.score === null) {
+                // Forfeited or unevaluated → rank stays NULL
+                if (c.rank !== null) {
+                    c.rank = null as any;
+                    toSave.push(c);
+                }
+                continue;
+            }
+            const newRank = eligible.findIndex(e => e.id === c.id) + 1; // 1-based
+            if (c.rank !== newRank) {
+                c.rank = newRank;
+                toSave.push(c);
+            }
+        }
+
+        if (toSave.length > 0) {
+            await this.candidatureRepo.save(toSave);
+        }
     }
 }

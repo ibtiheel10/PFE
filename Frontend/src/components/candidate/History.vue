@@ -92,11 +92,13 @@
                             </div>
                             <span v-else class="text-xs text-gray-400 italic max-w-[200px] text-right">
                                 {{
-                                  app.status === 'Entretien'
-                                    ? 'Candidat parmi les Top 5, sélectionné pour avancer.'
-                                    : app.status === 'Non retenu'
-                                      ? 'Candidat filtré automatiquement.'
-                                      : ''
+                                  app.status === 'Accepté'
+                                    ? 'Score au-dessus du seuil requis.'
+                                    : app.status === 'Entretien'
+                                      ? 'Sélectionné pour un entretien.'
+                                      : app.status === 'Refusé'
+                                        ? 'Score en dessous du seuil requis.'
+                                        : ''
                                 }}
                             </span>
                         </div>
@@ -167,8 +169,10 @@ const fetchApplications = async () => {
             status: (() => {
                 const s = (app.statut || '').toLowerCase();
                 if (s === 'expirée' || s.includes('expir')) return 'Expirée';
-                if (s.includes('refus') || s.includes('non retenu')) return 'Non retenu';
-                if (s.includes('entretien') || s.includes('accept')) return 'Entretien';
+                if (s === 'refusé' || s.includes('refus')) return 'Refusé';
+                if (s.includes('non retenu')) return 'Refusé';
+                if (s === 'accepté' || s === 'acceptée' || s.includes('accept')) return 'Accepté';
+                if (s.includes('entretien')) return 'Entretien';
                 return 'En attente';
             })(),
             date: app.datePostulation,
@@ -186,8 +190,9 @@ onMounted(() => {
 const tabs = [
     { id: 'all', label: 'Tout' },
     { id: 'En attente', label: 'En attente' },
+    { id: 'Accepté', label: 'Acceptées' },
     { id: 'Entretien', label: 'Entretiens' },
-    { id: 'Non retenu', label: 'Non retenues' },
+    { id: 'Refusé', label: 'Refusées' },
 ];
 
 // --- Computed (live from Backend) ---
@@ -220,28 +225,31 @@ const getJobIconColor = (app: any) => getVisualMeta(app.category).iconColor;
 
 const getStatusLineColor = (status: string) => {
     switch (status) {
-        case 'Entretien': return 'bg-green-500';
-        case 'Non retenu': return 'bg-red-500';
+        case 'Accepté':    return 'bg-green-500';
+        case 'Entretien':  return 'bg-purple-500';
+        case 'Refusé':     return 'bg-red-500';
         case 'En attente': return 'bg-orange-400';
-        default: return 'bg-blue-400';
+        default:           return 'bg-blue-400';
     }
 };
 
 const getStatusBadgeClass = (status: string) => {
     switch (status) {
-        case 'Entretien': return 'status-accepted'; // vert
-        case 'Non retenu': return 'status-rejected'; // rouge
-        case 'En attente': return 'status-pending'; // orange
-        default: return 'status-review';
+        case 'Accepté':    return 'status-accepted';
+        case 'Entretien':  return 'status-review';
+        case 'Refusé':     return 'status-rejected';
+        case 'En attente': return 'status-pending';
+        default:           return 'status-review';
     }
 };
 
 const getStatusIcon = (status: string) => {
     switch (status) {
-        case 'Entretien': return 'fa-solid fa-circle-check';
-        case 'Non retenu': return 'fa-solid fa-circle-xmark';
+        case 'Accepté':    return 'fa-solid fa-circle-check';
+        case 'Entretien':  return 'fa-solid fa-handshake';
+        case 'Refusé':     return 'fa-solid fa-circle-xmark';
         case 'En attente': return 'fa-solid fa-hourglass-half';
-        default: return 'fa-solid fa-clock';
+        default:           return 'fa-solid fa-clock';
     }
 };
 

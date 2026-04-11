@@ -104,6 +104,18 @@ export class EntrepriseController {
         return this.entrepriseService.updateProfil(req.user.userId, body);
     }
 
+    /**
+     * POST /api/Entreprise/upload-avatar
+     * Saves base64 avatar string directly to DB.
+     */
+    @Post('upload-avatar')
+    @ApiOperation({ summary: 'Save entreprise avatar (base64)' })
+    async uploadAvatar(@Request() req: any, @Body() body: { avatar: string }) {
+        if (!body?.avatar) throw new HttpException('Aucune image reçue.', 400);
+        await this.entrepriseService.updateAvatarUrl(req.user.userId, body.avatar);
+        return { avatarUrl: body.avatar };
+    }
+
     // ─── Dashboard ────────────────────────────────────────────────────────────
 
     /**
@@ -447,9 +459,9 @@ export class EntrepriseController {
     @ApiOperation({ summary: 'Send interview invitation email to a candidate' })
     @ApiResponse({ status: 201, description: 'Email sent.' })
     async contactCandidat(
-        @Body() body: { candidatEmail: string; subject: string; message: string },
+        @Body() body: { candidatEmail: string; subject: string; message: string; candidatureId?: number },
         @Request() req: any,
     ) {
-        return this.entrepriseService.contactCandidat(body.candidatEmail, body.subject, body.message, req.user.userId);
+        return this.entrepriseService.contactCandidat(body.candidatEmail, body.subject, body.message, req.user.userId, body.candidatureId);
     }
 }

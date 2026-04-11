@@ -7,11 +7,15 @@
     >
       <div>
         <!-- Logo -->
-        <div class="h-16 flex items-center border-b border-gray-100 overflow-hidden whitespace-nowrap"
+        <div class="h-16 flex items-center border-b border-gray-100 overflow-hidden"
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
           <div class="flex items-center gap-3">
              <LogoIcon customClass="w-9 h-9 flex-shrink-0" />
-                <span class="font-black text-[#1e40af] text-[24px] tracking-tight">Skillvia</span>
+             <span 
+               v-show="!isSidebarCollapsed"
+               class="font-black text-[#1e40af] text-[24px] tracking-tight whitespace-nowrap">
+               Skillvia
+             </span>
           </div>
         </div>
 
@@ -419,6 +423,7 @@ const recentNonExpired = computed(() =>
 
 const toggleSidebar = () => {
     isSidebarCollapsed.value = !isSidebarCollapsed.value;
+    console.log('Sidebar collapsed:', isSidebarCollapsed.value);
 };
 
 const navItems = [

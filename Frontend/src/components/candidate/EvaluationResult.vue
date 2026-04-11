@@ -262,8 +262,8 @@ const evalStats = ref({ tempsEcoule: 'N/A', bonnesReponses: 'N/A', topPercent: '
 const skills = ref<{ name: string; score: number; description?: string }[]>([]);
 const candidature = ref<any>(null);
 const isSuccess = computed(() => {
-    if (candidature.value?.statut === 'Entretien' || candidature.value?.statut === 'Acceptée') return true;
-    if (candidature.value?.statut === 'Non retenu' || candidature.value?.statut === 'Refusé') return false;
+    if (candidature.value?.statut === 'Accepté' || candidature.value?.statut === 'Acceptée' || candidature.value?.statut === 'Entretien') return true;
+    if (candidature.value?.statut === 'Refusé' || candidature.value?.statut === 'Non retenu') return false;
     return scoreDisplay.value >= 70;
 });
 const aiRecommendation = ref<any>(null);
@@ -304,7 +304,17 @@ onMounted(async () => {
           const details = JSON.parse(data.evaluationDetails);
           evalStats.value.tempsEcoule = details.Temps || 'N/A';
           evalStats.value.bonnesReponses = details.CorrectAnswers != null ? `${details.CorrectAnswers}/${details.TotalQuestions}` : 'N/A';
-          evalStats.value.topPercent = details.TopPercent ? `Top ${details.TopPercent}%` : 'N/A';
+
+          // Rang : exclu si forfait, sinon utiliser rank de la candidature ou TopPercent
+          if (details.forfeit || data?.isForfeit) {
+            evalStats.value.topPercent = '⛔ Exclu (fraude)';
+          } else if (data?.rank != null) {
+            evalStats.value.topPercent = `Rang #${data.rank}`;
+          } else if (details.TopPercent != null) {
+            evalStats.value.topPercent = `Top ${details.TopPercent}%`;
+          } else {
+            evalStats.value.topPercent = 'N/A';
+          }
 
           if (details.ScoreParCompetence) {
             skills.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({

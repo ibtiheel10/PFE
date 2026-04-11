@@ -72,6 +72,26 @@ export class AuthController {
         return this.authService.resendOtp(email);
     }
 
+    /**
+     * POST /api/auth/forgot-password
+     * Sends a password reset email.
+     */
+    @Post('forgot-password')
+    @HttpCode(HttpStatus.OK)
+    async forgotPassword(@Body('email') email: string) {
+        return this.authService.forgotPassword(email);
+    }
+
+    /**
+     * POST /api/auth/reset-password
+     * Resets the password using the token from the email.
+     */
+    @Post('reset-password')
+    @HttpCode(HttpStatus.OK)
+    async resetPassword(@Body() body: { token: string; newPassword: string }) {
+        return this.authService.resetPassword(body.token, body.newPassword);
+    }
+
     // ── Social Login Routes ──────────────────────────────────────────────────────
 
     @Get('google')

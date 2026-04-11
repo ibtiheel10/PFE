@@ -45,18 +45,11 @@ export class CandidatService {
         // Take the 3 most recent non-expired applications for the widget
         const recentApplications = activeApplications.slice(0, 3);
 
-        // ── Dynamically compute rank-based status for each application ──────────
+        // ── Dynamically compute status based on seuil ──────────────────────────
         for (const app of recentApplications) {
             if (app.score !== null && app.score !== undefined) {
-                const allForOffer = await this.candidatureRepo.find({
-                    where: { offre: { id: app.offre.id } },
-                    select: ['id', 'score'],
-                });
-                const ranked = allForOffer
-                    .filter(c => c.score !== null && c.score !== undefined)
-                    .sort((a, b) => (b.score || 0) - (a.score || 0));
-                const rank = ranked.findIndex(c => c.id === app.id);
-                app.statut = rank !== -1 && rank < 5 ? 'Entretien' : 'Non retenu';
+                const seuil = app.offre?.seuilMinimal ?? 0;
+                app.statut = app.score >= seuil ? 'Accepté' : 'Refusé';
             }
         }
 
@@ -65,30 +58,76 @@ export class CandidatService {
             .filter(c => c.score !== null && c.score !== undefined)
             .slice(0, 3);
 
-        // 3. Suggestions d'offres (simulées basées sur les catégories déjà postulées)
+        // 3. Suggestions d'offres basées sur les compétences réelles du candidat
         const userApps = allApplications;
-        const categories = [...new Set(userApps.map(a => a.offre.Categorie))];
+        const excludedIds = userApps.map(a => a.offre.id);
 
-        let suggestions: OffreEmploi[] = [];
-        if (categories.length > 0) {
-            suggestions = await this.offreRepo.createQueryBuilder('offre')
-                .where('offre.Categorie IN (:...categories)', { categories })
-                .andWhere('offre.id NOT IN (:...excludedIds)', {
-                    excludedIds: userApps.map(a => a.offre.id).length > 0 ? userApps.map(a => a.offre.id) : ['']
-                })
-                .take(3)
+        // Extract competency scores from evaluationDetails across all evaluated candidatures
+        const competenceMap: Record<string, { total: number; count: number }> = {};
+        for (const app of userApps) {
+            if (!app.evaluationDetails) continue;
+            try {
+                const details = JSON.parse(app.evaluationDetails);
+                if (details.ScoreParCompetence) {
+                    for (const [key, val] of Object.entries(details.ScoreParCompetence)) {
+                        if (!competenceMap[key]) competenceMap[key] = { total: 0, count: 0 };
+                        competenceMap[key].total += Number(val);
+                        competenceMap[key].count += 1;
+                    }
+                }
+            } catch { /* ignore malformed JSON */ }
+        }
+
+        // Build ranked skill list: [{ name, avg }] sorted by avg desc
+        const rankedSkills = Object.entries(competenceMap)
+            .map(([name, { total, count }]) => ({ name: name.toLowerCase(), avg: total / count }))
+            .sort((a, b) => b.avg - a.avg);
+
+        // No QCM evaluations → no suggestions
+        let suggestions: (OffreEmploi & { matchScore: number })[] = [];
+
+        if (rankedSkills.length > 0) {
+            // Fetch all non-expired offers not already applied to
+            const allOffres = await this.offreRepo.createQueryBuilder('offre')
+                .leftJoinAndSelect('offre.entreprise', 'entreprise')
+                .where(excludedIds.length > 0 ? 'offre.id NOT IN (:...excludedIds)' : '1=1', { excludedIds })
+                .andWhere('(offre.DateLimite IS NULL OR offre.DateLimite >= :now)', { now })
                 .getMany();
-        } else {
-            suggestions = await this.offreRepo.find({ take: 3 });
+
+            // Score each offer by weighted skill keyword matching
+            const scoredOffres = allOffres.map(offre => {
+                const searchText = [
+                    offre.TitreDePost,
+                    offre.Categorie,
+                    offre.competences || '',
+                    offre.Description || '',
+                ].join(' ').toLowerCase();
+
+                let weightedSum = 0;
+                let weightTotal = 0;
+                rankedSkills.forEach((skill, idx) => {
+                    const weight = Math.max(1, rankedSkills.length - idx);
+                    const skillWords = skill.name.split(/[\s,\-\/]+/).filter(w => w.length > 2);
+                    const hits = skillWords.filter(w => searchText.includes(w)).length;
+                    const skillMatch = skillWords.length > 0 ? (hits / skillWords.length) * skill.avg : 0;
+                    weightedSum += skillMatch * weight;
+                    weightTotal += weight;
+                });
+                const matchScore = weightTotal > 0 ? Math.round(weightedSum / weightTotal) : 0;
+                return { offre, matchScore };
+            });
+
+            suggestions = scoredOffres
+                .sort((a, b) => b.matchScore - a.matchScore)
+                .slice(0, 6)
+                .map(({ offre, matchScore }) => ({ ...offre, matchScore }));
         }
 
         // 4. Analyse des compétences (Moyenne par catégorie, sur candidatures évaluées)
-        const skillsAnalysis = categories.map(cat => {
-            const appsInCat = userApps.filter(a => a.offre.Categorie === cat && a.score !== null);
-            if (appsInCat.length === 0) return { category: cat, score: 0 };
-            const avgScore = appsInCat.reduce((acc, curr) => acc + (curr.score || 0), 0) / appsInCat.length;
-            return { category: cat, score: Math.round(avgScore) };
-        });
+        const skillsAnalysis = Object.entries(competenceMap).map(([category, { total, count }]) => ({
+            category,
+            score: Math.round(total / count),
+        }));
 
         return {
             recentApplications,

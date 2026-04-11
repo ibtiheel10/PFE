@@ -424,6 +424,7 @@ const sendContact = async () => {
             candidatEmail: contactTarget.value.email,
             subject: contactSubject.value,
             message: contactMessage.value,
+            candidatureId: contactTarget.value.id,
         });
         showContactModal.value = false;
         Swal.fire({ title: 'Message envoyé', text: `Votre message a été envoyé à ${contactTarget.value.name}.`, icon: 'success' });

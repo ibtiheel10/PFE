@@ -158,10 +158,10 @@
             <p class="text-slate-600 text-sm leading-relaxed mb-4">
               Le mode anti-triche est activé afin d'assurer une évaluation équitable. Le système surveille automatiquement les actions suspectes.
             </p>
-            <div class="space-y-2.5 mb-5">
-              <div v-for="rule in antiCheatRules" :key="rule.text" class="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100">
-                <div class="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" :class="rule.color">
-                  <span class="text-sm">{{ rule.icon }}</span>
+            <div class="space-y-2 mb-5">
+              <div v-for="rule in antiCheatRules" :key="rule.text" class="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-slate-50 border border-slate-100">
+                <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" :class="rule.bg">
+                  <svg class="w-4 h-4" :class="rule.iconColor" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" v-html="rule.svgPath"></svg>
                 </div>
                 <p class="text-[13px] text-slate-700 font-medium leading-snug">{{ rule.text }}</p>
               </div>
@@ -205,11 +205,14 @@ const progressPercentage = computed(() =>
 );
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
-const TOTAL_DURATION_SECONDS = 300; // 5 minutes fixe pour tout le QCM
+// Duration is set dynamically from the backend (sum of question timers)
+const FALLBACK_DURATION_SECONDS = 300; // fallback if backend doesn't return duration
+const sessionDurationSeconds = ref(FALLBACK_DURATION_SECONDS);
 const totalTimeSeconds = ref(0);
 let timerInterval = 0;
 
 const getSessionStartTimeKey = (id: string | string[]) => `qcm_start_time_${id}`;
+const getSessionDurationKey  = (id: string | string[]) => `qcm_duration_${id}`;
 
 const formattedTimeLeft = computed(() => {
   const m = Math.floor(totalTimeSeconds.value / 60);
@@ -225,19 +228,18 @@ const startTimer = () => {
     if (totalTimeSeconds.value > 0) {
       totalTimeSeconds.value--;
       totalTimeInSeconds.value++;
-      
-      // Update elapsed time display based on current actual time for accurate background tracking
+
+      // Sync with wall-clock to stay accurate even if tab was backgrounded
       const candId = route.params.id;
       const startTimeStr = localStorage.getItem(getSessionStartTimeKey(candId));
       if (startTimeStr) {
           const actualElapsed = Math.floor((Date.now() - parseInt(startTimeStr)) / 1000);
           totalTimeInSeconds.value = actualElapsed;
-          totalTimeSeconds.value = Math.max(0, TOTAL_DURATION_SECONDS - actualElapsed);
+          totalTimeSeconds.value = Math.max(0, sessionDurationSeconds.value - actualElapsed);
       }
-      
     } else {
       clearInterval(timerInterval);
-      handleNext(true); // Soumettre automatiquement quand le temps est écoulé
+      handleNext(true); // Auto-submit when time runs out
     }
   }, 1000);
 };
@@ -265,26 +267,39 @@ onMounted(async () => {
       timer: q.timer || 30,
     }));
 
+    // Use duration from backend; persist it so page refreshes stay consistent
+    const startTimeKey    = getSessionStartTimeKey(candId);
+    const durationKey     = getSessionDurationKey(candId);
+
+    // Resolve the authoritative duration for this session
+    const backendDuration: number = res.data.totalDurationSeconds || FALLBACK_DURATION_SECONDS;
+    const storedDuration  = localStorage.getItem(durationKey);
+    if (!storedDuration) {
+      // First load — save the backend value
+      localStorage.setItem(durationKey, String(backendDuration));
+      sessionDurationSeconds.value = backendDuration;
+    } else {
+      // Resuming — use the already-stored value so it doesn't change on refresh
+      sessionDurationSeconds.value = parseInt(storedDuration);
+    }
+
     if (questions.value.length > 0) {
-      const startTimeKey = getSessionStartTimeKey(candId);
       let startTime = localStorage.getItem(startTimeKey);
-      
       if (!startTime) {
         startTime = Date.now().toString();
         localStorage.setItem(startTimeKey, startTime);
       }
-      
-      const elapsedSeconds = Math.floor((Date.now() - parseInt(startTime)) / 1000);
-      const remainingSeconds = TOTAL_DURATION_SECONDS - elapsedSeconds;
-      
+
+      const elapsedSeconds   = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+      const remainingSeconds = sessionDurationSeconds.value - elapsedSeconds;
+
       if (remainingSeconds <= 0) {
-        totalTimeSeconds.value = 0;
-        totalTimeInSeconds.value = TOTAL_DURATION_SECONDS;
+        totalTimeSeconds.value    = 0;
+        totalTimeInSeconds.value  = sessionDurationSeconds.value;
         handleNext(true);
       } else {
-        totalTimeSeconds.value = remainingSeconds;
+        totalTimeSeconds.value   = remainingSeconds;
         totalTimeInSeconds.value = elapsedSeconds;
-        // Marquer la session comme en cours dans le sessionStorage
         sessionStorage.setItem(getSessionKey(candId), '1');
         startTimer();
       }
@@ -335,43 +350,103 @@ const isCancelled = ref(false);
 const showAntiCheatModal = ref(true); // Show on mount
 
 const antiCheatRules = [
-    { icon: '🚫', text: 'Changement d\'onglet ou de fenêtre interdit', color: 'bg-red-100' },
-    { icon: '📋', text: 'Copier/coller et sélection de texte désactivés', color: 'bg-orange-100' },
-    { icon: '🔧', text: 'Outils de développement bloqués (F12, Ctrl+Shift+I)', color: 'bg-yellow-100' },
-    { icon: '📸', text: 'Capture d\'écran détectée et signalée', color: 'bg-purple-100' },
-    { icon: '⛶', text: 'Restez en plein écran pendant toute la durée du test', color: 'bg-blue-100' },
+    {
+        text: "Changement d'onglet ou de fenêtre interdit",
+        bg: 'bg-red-50',
+        iconColor: 'text-red-500',
+        svgPath: '<path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>',
+    },
+    {
+        text: 'Copier/coller et sélection de texte désactivés',
+        bg: 'bg-orange-50',
+        iconColor: 'text-orange-500',
+        svgPath: '<path stroke-linecap="round" stroke-linejoin="round" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>',
+    },
+    {
+        text: 'Outils de développement bloqués (F12, Ctrl+Shift+I)',
+        bg: 'bg-yellow-50',
+        iconColor: 'text-yellow-600',
+        svgPath: '<path stroke-linecap="round" stroke-linejoin="round" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/>',
+    },
+    {
+        text: "Capture d'écran détectée et signalée",
+        bg: 'bg-purple-50',
+        iconColor: 'text-purple-500',
+        svgPath: '<path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>',
+    },
+    {
+        text: 'Restez en plein écran pendant toute la durée du test',
+        bg: 'bg-blue-50',
+        iconColor: 'text-blue-500',
+        svgPath: '<path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>',
+    },
 ];
 
+// Infractions graves → forfait immédiat
+const IMMEDIATE_FORFEIT_TYPES = [
+    "Capture d'écran détectée",
+    "Changement d'onglet ou fenêtre masquée",
+    "Perte de focus (Ouverture d'une autre application)",
+];
+
+const triggerForfeit = async (reason: string) => {
+    if (isCancelled.value) return;
+    isCancelled.value = true;
+    clearInterval(timerInterval);
+
+    const candId = route.params.id as string;
+
+    // Appel backend forfeit — score 0, statut Refusé
+    try {
+        await api.post(`/candidatures/${candId}/forfeit`, { reason });
+    } catch {
+        // Même en cas d'erreur réseau, on redirige
+    }
+
+    sessionStorage.removeItem(getSessionKey(candId));
+    localStorage.removeItem(getSessionStartTimeKey(candId));
+    localStorage.removeItem(getSessionDurationKey(candId));
+
+    await Swal.fire({
+        title: '⛔ Évaluation annulée',
+        html: `<p style="color:#475569;font-size:14px;line-height:1.6">
+            <strong>Comportement frauduleux détecté :</strong><br>${reason}<br><br>
+            Votre évaluation a été <strong>automatiquement terminée</strong> avec un score de <strong>0%</strong>.<br>
+            Le statut de votre candidature est défini comme <strong style="color:#dc2626">Refusé</strong>.
+        </p>`,
+        icon: 'error',
+        confirmButtonText: 'Fermer',
+        allowOutsideClick: false,
+        confirmButtonColor: '#dc2626',
+    });
+
+    router.push({ name: 'EvaluationResult', params: { id: candId } });
+};
+
 const handleInfraction = (type: string) => {
-    if (isCancelled.value) return; // Prevent infinite loop of alerts
-    
-    // Increase infractions count by 1
+    if (isCancelled.value) return;
+
+    // Infractions graves → forfait immédiat
+    if (IMMEDIATE_FORFEIT_TYPES.some(t => type.startsWith(t.split(' ')[0]))) {
+        triggerForfeit(type);
+        return;
+    }
+
     infractionsCount.value++;
     console.warn(`[Anti-Cheat] Infraction détectée: ${type}`);
-    
-    // If it exceeds or matches the maximum, forcefully submit the exam
+
     if (infractionsCount.value >= MAX_INFRACTIONS) {
-        isCancelled.value = true;
-        Swal.fire({
-            title: 'Évaluation Annulée',
-            text: `Plusieurs tentatives de triche détectées (${type}). L'évaluation est soumise automatiquement.`,
-            icon: 'error',
-            confirmButtonText: 'Compris',
-            allowOutsideClick: false
-        }).then(() => {
-            handleNext(true); // Auto-submit
-        });
+        triggerForfeit(`${type} — ${MAX_INFRACTIONS} avertissements atteints`);
     } else {
-        // Show warning toast for minor strikes
         Swal.fire({
             title: 'Avertissement Sécurité',
-            text: `Action non autorisée (${type}). Au bout de ${MAX_INFRACTIONS} avertissements, l'évaluation sera annulée. (Avertissements: ${infractionsCount.value}/${MAX_INFRACTIONS})`,
+            text: `Action non autorisée (${type}). Au bout de ${MAX_INFRACTIONS} avertissements, l'évaluation sera annulée. (${infractionsCount.value}/${MAX_INFRACTIONS})`,
             icon: 'warning',
             toast: true,
             position: 'top-end',
             showConfirmButton: false,
             timer: 5000,
-            timerProgressBar: true
+            timerProgressBar: true,
         });
     }
 };
@@ -471,12 +546,14 @@ const handleNext = async (forced = false) => {
       // Libérer le verrou de session après soumission réussie
       sessionStorage.removeItem(getSessionKey(candId));
       localStorage.removeItem(getSessionStartTimeKey(candId));
+      localStorage.removeItem(getSessionDurationKey(candId));
       router.push({ name: 'EvaluationResult', params: { id: candId } });
     } catch (e: any) {
-      // In case of conflict (already submitted from another trigger), gracefully bypass instead of showing a blocking alert
+      // In case of conflict (already submitted from another trigger), gracefully bypass
       const candId = route.params.id as string;
       sessionStorage.removeItem(getSessionKey(candId));
       localStorage.removeItem(getSessionStartTimeKey(candId));
+      localStorage.removeItem(getSessionDurationKey(candId));
       router.push({ name: 'EvaluationResult', params: { id: candId } });
     }
   } else {

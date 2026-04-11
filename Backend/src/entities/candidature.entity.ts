@@ -37,6 +37,12 @@ export class Candidature {
     @Column({ type: 'text', nullable: true })
     evaluationDetails: string;
 
+    @Column({ type: 'int', nullable: true })
+    rank: number | null;
+
+    @Column({ type: 'boolean', default: false })
+    isForfeit: boolean;
+
     @ManyToOne(() => User, (user) => user.id, { onDelete: 'CASCADE' })
     candidat: User;
 

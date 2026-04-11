@@ -15,10 +15,28 @@ export interface SkillItem {
     score: number;
 }
 
+export interface OffreEmploi {
+    id: string;
+    TitreDePost: string;
+    Description: string;
+    Categorie: string;
+    DatePublication: string;
+    DateLimite: string | null;
+    TypeDeContrat: string | null;
+    ModeDeTravail: string | null;
+    Salaire: number | null;
+    Localisation: string;
+    ExperienceRequise: string | null;
+    NbPost: number;
+    competences?: string;
+    matchScore?: number;
+    entreprise?: { id: number; nom: string };
+}
+
 export interface DashboardData {
     recentApplications: any[];
     recentResults: any[];
-    suggestions: any[];
+    suggestions: OffreEmploi[];
     skillsAnalysis: SkillItem[];
 }
 

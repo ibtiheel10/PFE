@@ -94,6 +94,19 @@ export class CandidaturesController {
         return candidature;
     }
 
+    @Post(':id/forfeit')
+    @Roles('Candidat')
+    @ApiOperation({ summary: 'Annuler une évaluation pour fraude (score 0, statut Refusé)' })
+    @ApiParam({ name: 'id', description: 'ID de la candidature' })
+    @ApiResponse({ status: 200, description: 'Évaluation annulée.' })
+    async forfeitEvaluation(
+        @Param('id') id: string,
+        @Body() body: { reason?: string },
+        @Request() req: any,
+    ) {
+        return await this.candidaturesService.forfeitEvaluation(+id, req.user.userId, body?.reason || 'Comportement frauduleux détecté');
+    }
+
     @Delete(':id')
     @Roles('Candidat')
     @ApiOperation({ summary: 'Annuler une candidature en attente' })

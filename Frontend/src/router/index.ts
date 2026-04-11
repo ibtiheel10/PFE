@@ -7,6 +7,8 @@ import VerifyEmail from '@/components/VerifyEmail.vue'
 import SocialAuthSuccess from '@/components/SocialAuthSuccess.vue'
 import Home from '@/components/Home.vue'
 import Result from '@/components/Result.vue'
+import ResetPassword from '@/components/ResetPassword.vue'
+import ForgotPassword from '@/components/ForgotPassword.vue'
 
 import Evaluation from '@/components/Evaluation.vue'
 import JobBoard from '@/components/JobBoard.vue'
@@ -47,6 +49,16 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'Home',
     component: Home
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPassword,
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: ResetPassword,
   },
   {
     path: '/login',

@@ -7,11 +7,19 @@
     >
       <div>
         <!-- Logo -->
-        <div class="h-16 flex items-center border-b border-gray-100 overflow-hidden whitespace-nowrap"
+        <div class="h-16 flex items-center border-b border-gray-100 overflow-hidden"
              :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
-          <div class="flex items-center gap-3">
+          <div class="flex items-center" :class="isSidebarCollapsed ? 'gap-0' : 'gap-3'">
              <LogoIcon customClass="w-9 h-9 flex-shrink-0" />
-                <span class="font-black text-[#1e40af] text-[24px] tracking-tight">Skillvia</span>
+             <span 
+               class="font-black text-[#1e40af] text-[24px] tracking-tight whitespace-nowrap transition-all duration-300 overflow-hidden inline-block"
+               :style="{ 
+                 maxWidth: isSidebarCollapsed ? '0px' : '200px',
+                 opacity: isSidebarCollapsed ? 0 : 1,
+                 marginLeft: isSidebarCollapsed ? '0px' : '12px'
+               }">
+               Skillvia
+             </span>
           </div>
         </div>
 
@@ -227,7 +235,7 @@
                             <div class="card-header-modern">
                                 <div>
                                     <h3>Candidatures</h3>
-                                    <p class="chart-subtitle-modern">Évolution des candidatures par mois</p>
+                                    <p class="chart-subtitle-modern">{{ chartSubtitle }}</p>
                                 </div>
                                 <div class="time-period-tabs">
                                     <button 
@@ -235,16 +243,23 @@
                                         :key="period"
                                         class="period-tab" 
                                         :class="{ active: activePeriod === period }"
-                                        @click="activePeriod = period"
+                                        @click="changePeriod(period)"
+                                        :disabled="isChartLoading"
                                     >
                                         {{ period }}
                                     </button>
                                 </div>
                             </div>
                             
-                            <div class="chart-area-modern">
+                            <div class="chart-area-modern" :class="{ 'chart-loading': isChartLoading }">
+                                <!-- Loading State -->
+                                <div v-if="isChartLoading" class="chart-loader">
+                                    <i class="fa-solid fa-spinner fa-spin text-3xl text-[#1e40af]"></i>
+                                    <p class="text-sm text-gray-500 mt-2">Chargement des données...</p>
+                                </div>
+                                
                                 <!-- Smooth Wave Chart -->
-                                <svg viewBox="0 0 700 200" preserveAspectRatio="none" class="wave-chart">
+                                <svg v-else viewBox="0 0 700 200" preserveAspectRatio="none" class="wave-chart">
                                     <defs>
                                         <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
                                             <stop offset="0%" style="stop-color:#1e40af;stop-opacity:0.3" />
@@ -275,7 +290,7 @@
                                 </svg>
                                 
                                 <!-- X-axis labels -->
-                                <div class="chart-labels">
+                                <div v-if="!isChartLoading" class="chart-labels">
                                     <span v-for="label in chartPaths.labels" :key="label">{{ label }}</span>
                                 </div>
                             </div>
@@ -566,6 +581,7 @@ const userEmail = ref(userInfo.email || 'entreprise@example.com');
 // State
 const activeNav = ref('Tableau de bord');
 const activePeriod = ref('30 derniers jours');
+const isChartLoading = ref(false);
 const searchQuery = ref('');
 const hasNotifications = ref(true);
 const showProfileMenu = ref(false);
@@ -593,15 +609,30 @@ const avatarInputRef = ref<HTMLInputElement | null>(null);
 
 const triggerAvatarInput = () => avatarInputRef.value?.click();
 
-const handleAvatarChange = (e: Event) => {
+const handleAvatarChange = async (e: Event) => {
     const file = (e.target as HTMLInputElement).files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-        profileErrorMessage.value = 'Image trop volumineuse (max 2 MB).';
+    if (file.size > 3 * 1024 * 1024) {
+        profileErrorMessage.value = 'Image trop volumineuse (max 3 MB).';
         return;
     }
+
     const reader = new FileReader();
-    reader.onload = (ev) => { editAvatar.value = ev.target?.result as string; };
+    reader.onload = async (ev) => {
+        const base64 = ev.target?.result as string;
+        // Preview immédiat
+        editAvatar.value = base64;
+        // Envoyer au backend
+        try {
+            const res = await api.post('/Entreprise/upload-avatar', { avatar: base64 });
+            editAvatar.value = res.data.avatarUrl;
+            localStorage.setItem('entreprise_avatar', res.data.avatarUrl);
+            profileSuccessMessage.value = 'Photo mise à jour.';
+            setTimeout(() => { profileSuccessMessage.value = ''; }, 2000);
+        } catch (err: any) {
+            profileErrorMessage.value = err?.response?.data?.message || 'Erreur lors de l\'upload.';
+        }
+    };
     reader.readAsDataURL(file);
 };
 const newPassword = ref('');
@@ -627,12 +658,27 @@ const fetchNotifs = async () => {
 onMounted(async () => {
     try {
         isLoadingData.value = true;
-        const [dashRes, jobsRes] = await Promise.all([
+        const [dashRes, jobsRes, profilRes] = await Promise.all([
             getEntrepriseDashboard(),
-            getMesOffres()
+            getMesOffres(),
+            api.get('/Entreprise/mon-profil'),
         ]);
         dashboardData.value = dashRes;
         employerJobs.value = jobsRes;
+
+        // Sync avatar from DB — single source of truth
+        const dbAvatar = profilRes.data?.avatar ?? null;
+        if (dbAvatar) {
+            // base64 data URI or full http URL → use as-is; relative path → prepend backend URL
+            const fullUrl = (dbAvatar.startsWith('data:') || dbAvatar.startsWith('http'))
+                ? dbAvatar
+                : `http://localhost:5000${dbAvatar}`;
+            editAvatar.value = fullUrl;
+            localStorage.setItem('entreprise_avatar', fullUrl);
+        } else {
+            editAvatar.value = '';
+            localStorage.removeItem('entreprise_avatar');
+        }
     } catch (e) {
         console.error("Erreur de chargement du dashboard :", e);
     } finally {
@@ -684,9 +730,9 @@ const saveProfile = async () => {
         
         const payload: any = {
             nom: editName.value,
-            email: editEmail.value
+            email: editEmail.value,
         };
-        
+
         if (newPassword.value) {
             payload.currentPassword = currentPassword.value;
             payload.newPassword = newPassword.value;
@@ -699,13 +745,6 @@ const saveProfile = async () => {
         // Update local state and storage
         userName.value = res.data.user.nom;
         userEmail.value = res.data.user.email;
-        
-        // Save avatar locally
-        if (editAvatar.value) {
-            localStorage.setItem('entreprise_avatar', editAvatar.value);
-        }
-
-        // Also sync local edit refs
         editName.value = res.data.user.nom;
         editEmail.value = res.data.user.email;
         
@@ -877,6 +916,27 @@ const growthRate = computed(() => {
         ? { value: `+${total}`, description: 'Candidatures totales reçues' }
         : { value: '0%', description: 'Aucune candidature enregistrée' };
 });
+
+const chartSubtitle = computed(() => {
+    if (activePeriod.value === '3 derniers mois') {
+        return 'Évolution des candidatures sur les 3 derniers mois';
+    } else if (activePeriod.value === '7 derniers jours') {
+        return 'Évolution des candidatures sur les 7 derniers jours';
+    } else {
+        return 'Évolution des candidatures sur les 30 derniers jours';
+    }
+});
+
+const changePeriod = async (period: string) => {
+    if (activePeriod.value === period || isChartLoading.value) return;
+    
+    isChartLoading.value = true;
+    activePeriod.value = period;
+    
+    // Simulate API delay for smooth transition (données déjà chargées)
+    await new Promise(resolve => setTimeout(resolve, 300));
+    isChartLoading.value = false;
+};
 
 const chartPaths = computed(() => {
     let points = [0, 0, 0, 0, 0, 0, 0];
@@ -1253,6 +1313,23 @@ const displayJobs = computed(() => {
     height: 220px;
     position: relative;
     padding: 1rem 0;
+    transition: opacity 0.3s ease;
+}
+
+.chart-area-modern.chart-loading {
+    opacity: 0.6;
+}
+
+.chart-loader {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
 }
 
 .wave-chart {
@@ -1279,6 +1356,12 @@ const displayJobs = computed(() => {
     color: #9CA3AF;
     font-size: 0.75rem;
     font-weight: 600;
+    transition: opacity 0.3s ease;
+}
+
+.period-tab:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* Custom Modal Styles */

@@ -2,6 +2,15 @@
   <div v-if="show" class="otp-overlay" @click.self="$emit('close')">
     <div class="otp-modal animate-in">
       <div class="otp-content">
+        <!-- Alert Banner -->
+        <AlertBanner
+          :show="!!errorMessage"
+          type="error"
+          title="Code incorrect"
+          :message="errorMessage"
+          @close="errorMessage = ''"
+        />
+
         <div class="icon-container">
           <div class="icon-circle">
             <i class="fa-solid fa-envelope-circle-check"></i>
@@ -55,10 +64,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue';
 import Swal from '../services/swal';
+import AlertBanner from './AlertBanner.vue';
 
 const props = defineProps({
   show: Boolean,
-  email: String
+  email: String,
+  error: String,
 });
 
 const emit = defineEmits(['close', 'verify']);
@@ -66,6 +77,14 @@ const emit = defineEmits(['close', 'verify']);
 const otp = ref(['', '', '', '', '', '']);
 const otpFields = ref<HTMLInputElement[]>([]);
 const resendCooldown = ref(0);
+const errorMessage = ref('');
+
+// Watch for external error prop
+watch(() => props.error, (newError) => {
+  if (newError) {
+    errorMessage.value = newError;
+  }
+});
 
 const isComplete = computed(() => otp.value.every(digit => digit !== ''));
 

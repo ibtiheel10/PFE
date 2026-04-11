@@ -12,6 +12,11 @@ async function bootstrap() {
   app.use(require('express').json({ limit: '10mb' }));
   app.use(require('express').urlencoded({ limit: '10mb', extended: true }));
 
+  // Serve uploaded files BEFORE global prefix so /uploads/... works directly
+  const express = require('express');
+  const path = require('path');
+  app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
   // Global API prefix — all routes are under /api
   app.setGlobalPrefix('api');
 

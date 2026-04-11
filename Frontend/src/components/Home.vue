@@ -270,12 +270,36 @@ import Navbar from './Navbar.vue';
 import LogoIcon from './LogoIcon.vue';
 
 const featureCards = [
-  { icon: 'fa-solid fa-brain', title: 'Évaluations scientifiques', desc: 'QCM validés par des experts pour mesurer objectivement les compétences techniques et comportementales.' },
-  { icon: 'fa-solid fa-shield-halved', title: 'Réduction des biais', desc: "Éliminez jusqu'à 70% des biais cognitifs grâce à notre méthodologie d'évaluation standardisée." },
-  { icon: 'fa-solid fa-bolt', title: 'Gain de temps', desc: 'Automatisez vos évaluations et divisez par 2 le temps de votre processus de recrutement.' },
-  { icon: 'fa-solid fa-chart-simple', title: 'Analytics avancés', desc: 'Tableaux de bord détaillés pour suivre vos KPIs et optimiser votre stratégie de recrutement.' },
-  { icon: 'fa-solid fa-users', title: "Collaboration d'équipe", desc: 'Travaillez en équipe avec des workflows personnalisables et des permissions granulaires.' },
-  { icon: 'fa-solid fa-lock', title: 'Sécurité & conformité', desc: 'Données chiffrées, conformité RGPD et hébergement sécurisé pour protéger vos informations.' },
+  { 
+    icon: 'fa-solid fa-clipboard-check', 
+    title: 'Évaluations scientifiques', 
+    desc: 'QCM validés par des experts pour mesurer objectivement les compétences techniques et comportementales.' 
+  },
+  { 
+    icon: 'fa-solid fa-shield-halved', 
+    title: 'Réduction des biais', 
+    desc: "Éliminez jusqu'à 70% des biais cognitifs grâce à notre méthodologie d'évaluation standardisée." 
+  },
+  { 
+    icon: 'fa-solid fa-bolt', 
+    title: 'Gain de temps', 
+    desc: 'Automatisez vos évaluations et divisez par 2 le temps de votre processus de recrutement.' 
+  },
+  { 
+    icon: 'fa-solid fa-chart-line', 
+    title: 'Analytics avancés', 
+    desc: 'Tableaux de bord détaillés pour suivre vos KPIs et optimiser votre stratégie de recrutement.' 
+  },
+  { 
+    icon: 'fa-solid fa-users', 
+    title: "Collaboration d'équipe", 
+    desc: 'Travaillez en équipe avec des workflows personnalisables et des permissions granulaires.' 
+  },
+  { 
+    icon: 'fa-solid fa-lock', 
+    title: 'Sécurité & conformité', 
+    desc: 'Données chiffrées, conformité RGPD et hébergement sécurisé pour protéger vos informations.' 
+  },
 ];
 
 const steps = [

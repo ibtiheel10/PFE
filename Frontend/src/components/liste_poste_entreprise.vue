@@ -109,28 +109,19 @@
               <div class="form-row">
                 <div class="form-group">
                   <label for="category">Catégorie <span class="required">*</span></label>
-                  <select id="category" v-model="formData.category" required>
-                    <option value="">Sélectionner une catégorie</option>
-                    <option value="tech">Technologie</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="design">Design</option>
-                    <option value="finance">Finance</option>
-                    <option value="rh">Ressources Humaines</option>
-                    <option value="ventes">Ventes</option>
-                  </select>
+                  <CategoryDropdown v-model="formData.category" placeholder="Sélectionner une catégorie" />
                 </div>
 
                 <div class="form-group">
                   <label for="contractType">Type de Contrat <span class="required">*</span></label>
-                  <select id="contractType" v-model="formData.contractType" required>
-                    <option value="">Sélectionner un type</option>
-                    <option value="CDI">CDI (Contrat à durée indéterminée)</option>
-                    <option value="CDD">CDD (Contrat à durée déterminée)</option>
-                    <option value="Stage">Stage</option>
-                    <option value="Alternance">Alternance</option>
-                    <option value="Freelance / Indépendant">Freelance / Indépendant</option>
-                    <option value="Intérim">Intérim</option>
-                  </select>
+                  <CustomDropdown v-model="formData.contractType" placeholder="Sélectionner un type" direction="down" :options="[
+                    { value: 'CDI', label: 'CDI (Contrat à durée indéterminée)' },
+                    { value: 'CDD', label: 'CDD (Contrat à durée déterminée)' },
+                    { value: 'Stage', label: 'Stage' },
+                    { value: 'Alternance', label: 'Alternance' },
+                    { value: 'Freelance / Indépendant', label: 'Freelance / Indépendant' },
+                    { value: 'Intérim', label: 'Intérim' },
+                  ]" />
                 </div>
               </div>
 
@@ -148,25 +139,24 @@
 
                 <div class="form-group">
                   <label for="remote">Mode de Travail</label>
-                  <select id="remote" v-model="formData.remote">
-                    <option value="Présentiel">Présentiel</option>
-                    <option value="Télétravail (Remote)">Télétravail (Remote)</option>
-                    <option value="Hybride">Hybride</option>
-                    <option value="Sur site client">Sur site client</option>
-                    <option value="Travail en déplacement">Travail en déplacement</option>
-                  </select>
+                  <CustomDropdown v-model="formData.remote" placeholder="Sélectionner" :options="[
+                    { value: 'Présentiel', label: 'Présentiel' },
+                    { value: 'Télétravail (Remote)', label: 'Télétravail (Remote)' },
+                    { value: 'Hybride', label: 'Hybride' },
+                    { value: 'Sur site client', label: 'Sur site client' },
+                    { value: 'Travail en déplacement', label: 'Travail en déplacement' },
+                  ]" />
                 </div>
               </div>
 
               <div class="form-row">
                 <div class="form-group">
                   <label for="experience">Expérience Requise <span class="required">*</span></label>
-                  <select id="experience" v-model="formData.experience" required>
-                    <option value="">Sélectionner un niveau</option>
-                    <option value="junior">Junior (0-2 ans)</option>
-                    <option value="intermediate">Intermédiaire (2-5 ans)</option>
-                    <option value="senior">Senior (5+ ans)</option>
-                  </select>
+                  <CustomDropdown v-model="formData.experience" placeholder="Sélectionner un niveau" :options="[
+                    { value: 'junior', label: 'Junior (0-2 ans)' },
+                    { value: 'intermediate', label: 'Intermédiaire (2-5 ans)' },
+                    { value: 'senior', label: 'Senior (5+ ans)' },
+                  ]" />
                 </div>
 
                 <div class="form-group">
@@ -457,6 +447,8 @@ import { useRouter } from 'vue-router';
 import { TrashIcon } from '@heroicons/vue/24/outline';
 import api from '../services/axios';
 import { generateQuestionsForOffre, regenerateQuestionsForOffre, saveQuestionsForOffre } from '../services/entrepriseService';
+import CategoryDropdown from './CategoryDropdown.vue';
+import CustomDropdown from './CustomDropdown.vue';
 
 const router = useRouter();
 

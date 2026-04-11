@@ -181,28 +181,9 @@
                     <div class="sidebar-card-header">
                         <div>
                             <h3 class="font-bold text-gray-900">Suggestions pour vous</h3>
-                            <p v-if="dominantSkill" class="text-[10px] text-[#1e40af] font-semibold mt-0.5">
-                                Basé sur votre compétence en <span class="underline">{{ dominantSkill }}</span>
-                            </p>
                         </div>
                         <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
                             <BoltIcon class="w-4 h-4 text-[#1e40af]" />
-                        </div>
-                    </div>
-
-                    <!-- Skill badge -->
-                    <div v-if="dominantSkill && dominantSkillScore !== null" class="mx-4 mt-3 mb-1 flex items-center gap-2 bg-gradient-to-r from-[#eff6ff] to-[#f0fdf4] border border-[#1e40af]/10 rounded-xl px-3 py-2">
-                        <div class="w-7 h-7 rounded-lg bg-[#1e40af] flex items-center justify-center flex-shrink-0">
-                            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.346A3.001 3.001 0 0112 15a3 3 0 01-2.121-.879l-.346-.346z"/></svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-[11px] font-bold text-gray-700 truncate">{{ dominantSkill }}</p>
-                            <div class="flex items-center gap-1.5 mt-0.5">
-                                <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-[#1e40af] rounded-full transition-all duration-700" :style="{ width: dominantSkillScore + '%' }"></div>
-                                </div>
-                                <span class="text-[10px] font-bold text-[#1e40af]">{{ dominantSkillScore }}%</span>
-                            </div>
                         </div>
                     </div>
 
@@ -216,8 +197,12 @@
                     </div>
 
                     <!-- No suggestions -->
-                    <div v-else-if="smartSuggestions.length === 0" class="p-8 text-center text-gray-400 text-sm">
-                        Aucune offre disponible pour le moment.
+                    <div v-else-if="smartSuggestions.length === 0" class="p-8 text-center">
+                        <div class="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                            <svg class="w-6 h-6 text-blue-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.346A3.001 3.001 0 0112 15a3 3 0 01-2.121-.879l-.346-.346z"/></svg>
+                        </div>
+                        <p class="text-sm font-semibold text-gray-600 mb-1">Aucune suggestion disponible</p>
+                        <p class="text-xs text-gray-400">Passez une évaluation pour recevoir des offres adaptées à vos compétences.</p>
                     </div>
 
                     <!-- Suggestions list -->
@@ -297,7 +282,7 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { BoltIcon } from '@heroicons/vue/24/outline';
 import { getMesCandidatures, type CandidatureResponse } from '../../services/candidatureService';
-import { getOffres, type OffreEmploi } from '../../services/offreService';
+import { getDashboardData, type OffreEmploi } from '../../services/candidatService';
 
 const router = useRouter();
 
@@ -417,12 +402,27 @@ const dominantSkillScore = computed<number | null>(() => {
     return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
 });
 
-// -- Smart suggestions � filter & rank by dominant skill ----------------------
+// -- Smart suggestions: prefer backend matchScore, fallback to client-side skill matching ----
 const smartSuggestions = computed(() => {
     if (!suggestions.value.length) return [];
-    const skill = dominantSkill.value?.toLowerCase() ?? '';
     const alreadyApplied = new Set(allCandidatures.value.map(c => c.offre?.id));
     const pool = suggestions.value.filter(o => !alreadyApplied.has(o.id));
+
+    // If backend already scored the offers, use those scores directly
+    const hasBackendScores = pool.some(o => (o as any).matchScore !== undefined);
+    if (hasBackendScores) {
+        return pool
+            .map(o => {
+                const matchScore: number = (o as any).matchScore ?? 0;
+                const color = matchScore >= 70 ? '#10b981' : matchScore >= 30 ? '#1e40af' : '#94a3b8';
+                return { ...o, _matchScore: matchScore || null, _isMatch: matchScore >= 30, _matchColor: color };
+            })
+            .sort((a: any, b: any) => (b._matchScore ?? 0) - (a._matchScore ?? 0))
+            .slice(0, 4);
+    }
+
+    // Fallback: client-side skill keyword matching
+    const skill = dominantSkill.value?.toLowerCase() ?? '';
     if (!skill) return pool.slice(0, 4).map(o => ({ ...o, _matchScore: null, _isMatch: false, _matchColor: '#1e40af' }));
     const skillWords = skill.split(/[\s,\-\/]+/).filter((w: string) => w.length > 2);
     return pool
@@ -440,17 +440,17 @@ const smartSuggestions = computed(() => {
 // ���� Fetch all data ������������������������������������������������������������������������������������������������
 onMounted(async () => {
     try {
-        const [candidaturesData, offresData] = await Promise.allSettled([
+        const [candidaturesData, dashboardData] = await Promise.allSettled([
             getMesCandidatures(),
-            getOffres()
+            getDashboardData()
         ]);
 
         if (candidaturesData.status === 'fulfilled') {
             allCandidatures.value = candidaturesData.value || [];
         }
-        if (offresData.status === 'fulfilled') {
-            // Charger plus d'offres pour le moteur de suggestions intelligent
-            suggestions.value = (offresData.value || []).slice(0, 20);
+        if (dashboardData.status === 'fulfilled') {
+            // Use backend-scored suggestions (already ranked by competence match)
+            suggestions.value = (dashboardData.value?.suggestions || []);
         }
     } catch (e) {
         console.error('Dashboard load error:', e);
@@ -462,25 +462,28 @@ onMounted(async () => {
 // ���� Utility functions ������������������������������������������������������������������������������������������
 const getDisplayStatus = (statut: string | undefined) => {
     if (!statut) return '';
-    if (statut.toLowerCase().includes('refus')) return 'Non retenu';
     return statut;
 };
 
 const getStatusBadgeClass = (statut: string) => {
     switch (statut) {
-        case 'Acceptée':  return 'bg-green-50 text-green-700 border-green-100';
-        case 'Non retenu':   return 'bg-red-50 text-red-700 border-red-100';
-        case '�0valué':    return 'bg-purple-50 text-purple-700 border-purple-100';
+        case 'Accepté':
+        case 'Acceptée':   return 'bg-green-50 text-green-700 border-green-100';
+        case 'Refusé':
+        case 'Non retenu': return 'bg-red-50 text-red-700 border-red-100';
+        case 'Entretien':  return 'bg-purple-50 text-purple-700 border-purple-100';
         case 'En attente': return 'bg-blue-50 text-blue-700 border-blue-100';
-        default:          return 'bg-gray-100 text-gray-600 border-gray-200';
+        default:           return 'bg-gray-100 text-gray-600 border-gray-200';
     }
 };
 
 const getStatusAccent = (statut: string) => {
     switch (statut) {
+        case 'Accepté':
         case 'Acceptée':   return 'bg-green-400';
-        case 'Non retenu':    return 'bg-red-400';
-        case '�0valué':     return 'bg-purple-400';
+        case 'Refusé':
+        case 'Non retenu': return 'bg-red-400';
+        case 'Entretien':  return 'bg-purple-400';
         case 'En attente': return 'bg-blue-400';
         default:           return 'bg-gray-300';
     }

@@ -92,7 +92,7 @@
 
               <div class="password-row">
               <label>Mot de passe</label>
-              <a href="#" class="forgot" @click.prevent="toggleForgotPassword">Mot de passe oublié ?</a>
+              <router-link to="/forgot-password" class="forgot">Mot de passe oublié ?</router-link>
               </div>
 
             <div class="password-wrapper">
@@ -151,33 +151,6 @@
               </button>
             </form>
 
-            <!-- FORGOT PASSWORD FORM -->
-            <form v-else @submit.prevent="handleResetPassword">
-              <h3>Récupération de mot de passe</h3>
-              <p class="subtitle" style="margin-bottom: 20px;">
-                Entrez votre adresse e-mail pour recevoir un lien de réinitialisation.
-              </p>
-              
-              <label>Adresse e-mail</label>
-              <input
-                type="email"
-                v-model="email"
-                class="form-control"
-                placeholder="nom@exemple.com"
-                required
-              />
-              
-              <button class="login-btn" type="submit" :disabled="!isEmailValid">
-                Envoyer le lien
-              </button>
-              
-              <div style="text-align: center; margin-top: 15px;">
-                <a href="#" class="forgot" @click.prevent="toggleForgotPassword">
-                  <i class="fa-solid fa-arrow-left"></i> Retour à la connexion
-                </a>
-              </div>
-            </form>
-
             <div class="divider">
             <span>OU CONTINUER AVEC</span>
             </div>
@@ -203,8 +176,9 @@
     </div>
     <OtpModal 
       :show="showOtpModal" 
-      :email="email" 
-      @close="showOtpModal = false" 
+      :email="email"
+      :error="otpError"
+      @close="showOtpModal = false; otpError = ''" 
       @verify="completeLogin" 
     />
   </div>
@@ -219,6 +193,7 @@ import { EyeIcon, EyeSlashIcon } from "@heroicons/vue/24/solid";
 import Navbar from './Navbar.vue';
 import OtpModal from './OtpModal.vue';
 import { login, verifyOtp } from '../services/authService';
+import api from '../services/axios';
 
 const router = useRouter();
 
@@ -227,7 +202,7 @@ const email = ref<string>("");
 const password = ref<string>("");
 const showPassword = ref<boolean>(false);
 const showOtpModal = ref(false);
-const showForgotPassword = ref(false);
+const otpError = ref('');
 
 // ─── États de l'UI ────────────────────────────────────────────────────────────
 const isLoading = ref(false);
@@ -267,9 +242,27 @@ const onPasswordInput = (): void => { errorMessage.value = null; };
 const togglePassword = (): void => { showPassword.value = !showPassword.value; };
 const toggleForgotPassword = () => { showForgotPassword.value = !showForgotPassword.value; };
 
-const handleResetPassword = () => {
-  Swal.fire({ title: 'Succès', text: `Un lien de réinitialisation a été envoyé à ${email.value}`, icon: 'success' });
-  showForgotPassword.value = false;
+const handleResetPassword = async () => {
+  if (!isEmailValid.value) return;
+  isResetLoading.value = true;
+  try {
+    await api.post('/auth/forgot-password', { email: email.value });
+    await Swal.fire({ 
+      title: 'Email envoyé', 
+      text: `Un lien de réinitialisation a été envoyé à ${email.value}. Vérifiez votre boîte de réception.`, 
+      icon: 'success',
+      confirmButtonText: 'OK'
+    });
+    showForgotPassword.value = false;
+  } catch {
+    Swal.fire({ 
+      title: 'Erreur', 
+      text: 'Impossible d\'envoyer l\'email. Veuillez réessayer.', 
+      icon: 'error' 
+    });
+  } finally {
+    isResetLoading.value = false;
+  }
 };
 
 // ─── Login Étape 1 : Envoyer les credentials → déclenche l'OTP ───────────────
@@ -329,6 +322,7 @@ const handleLogin = async () => {
 // ─── Login Étape 2 : Vérifier le code OTP → récupérer le JWT ─────────────────
 const completeLogin = async (otpCode: string) => {
   errorMessage.value = null;
+  otpError.value = '';
   isLoading.value = true;
   try {
     const authData = await verifyOtp({ email: email.value, otpCode });
@@ -344,7 +338,7 @@ const completeLogin = async (otpCode: string) => {
       router.push('/dashboard');
     }
   } catch (err: any) {
-    errorMessage.value = err.response?.data?.message ?? "Code OTP invalide ou expiré.";
+    otpError.value = err.response?.data?.message ?? "Le code OTP saisi est incorrect. Veuillez vérifier et réessayer.";
   } finally {
     isLoading.value = false;
   }

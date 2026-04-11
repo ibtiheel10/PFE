@@ -157,10 +157,10 @@
               <apexchart type="donut" height="200" :options="donutChartOptions" :series="donutChartSeries"></apexchart>
             </div>
             <div class="donut-legend flex flex-wrap gap-3 mt-2 justify-center">
-              <div class="legend-item"><span class="dot blue-dot"></span> En cours</div>
+              <div class="legend-item"><span class="dot blue-dot"></span> Entretien</div>
               <div class="legend-item"><span class="dot green-dot"></span> Accepté</div>
               <div class="legend-item"><span class="dot red-dot"></span> Refusé</div>
-              <div class="legend-item"><span class="dot" style="background: #64748b;"></span> Expiré</div>
+              <div class="legend-item"><span class="dot" style="background: #f97316;"></span> En attente</div>
             </div>
           </div>
 
@@ -260,8 +260,13 @@ onMounted(async () => {
       }
 
       const resStats = await getMesStats();
-      // Added resStats.stats.expirees
-      donutChartSeries.value = [resStats.stats.enAttente, resStats.stats.acceptées, resStats.stats.refusées, resStats.stats.expirees || 0];
+      // Bleu = Entretien, Vert = Accepté, Rouge = Refusé, Orange = En attente
+      donutChartSeries.value = [
+        resStats.stats.entretiens  || 0,
+        resStats.stats.acceptées   || 0,
+        resStats.stats.refusées    || 0,
+        resStats.stats.enAttente   || 0,
+      ];
       
       if (resStats.progression && resStats.progression.length > 0) {
           const dates = resStats.progression.map(p => new Date(p.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }));
@@ -338,8 +343,8 @@ const radialChartOptions = ref({
 const donutChartSeries = ref([0, 0, 0, 0]);
 const donutChartOptions = ref({
     chart: { type: 'donut', background: 'transparent', fontFamily: 'Inter, sans-serif' },
-    labels: ['En cours', 'Accepté', 'Refusé', 'Expiré'],
-    colors: ['#3b82f6', '#10b981', '#f43f5e', '#64748b'],
+    labels: ['Entretien', 'Accepté', 'Refusé', 'En attente'],
+    colors: ['#3b82f6', '#10b981', '#f43f5e', '#f97316'],
     plotOptions: {
         pie: {
             donut: {
