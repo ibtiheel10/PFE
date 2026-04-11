@@ -295,57 +295,51 @@ onMounted(async () => {
       if (data?.evaluationDetails) {
         try {
           const details = JSON.parse(data.evaluationDetails);
-          evalStats.value.tempsEcoule = details.Temps || 'N/A';
-          evalStats.value.bonnesReponses = details.CorrectAnswers != null ? `${details.CorrectAnswers}/${details.TotalQuestions}` : 'N/A';
+          
+          // 1. Temps Écoulé
+          evalStats.value.tempsEcoule = details.Temps || data.tempsEcoule || 'N/A';
 
-          // Rang : exclu si forfait, sinon utiliser rank de la candidature ou TopPercent
+          // 2. Réponses Correctes
+          const corrects = details.CorrectAnswers ?? data.nbReponsesCorrectes;
+          const total = details.TotalQuestions ?? data.totalQuestions;
+          if (total != null && corrects != null) {
+            evalStats.value.bonnesReponses = `${corrects}/${total}`;
+          } else {
+            evalStats.value.bonnesReponses = 'N/A';
+          }
+
+          // 3. Classement / Top % - Rang : exclu si forfait, sinon utiliser rank de la candidature ou TopPercent
           if (details.forfeit || data?.isForfeit) {
             evalStats.value.topPercent = '⛔ Exclu (fraude)';
           } else if (data?.rank != null) {
             evalStats.value.topPercent = `Rang #${data.rank}`;
           } else if (details.TopPercent != null) {
             evalStats.value.topPercent = `Top ${details.TopPercent}%`;
+          } else if (data.score != null) {
+            evalStats.value.topPercent = `Top ${Math.max(1, 100 - data.score)}%`;
           } else {
             evalStats.value.topPercent = 'N/A';
           }
 
-        // 1. Temps Écoulé
-        evalStats.value.tempsEcoule = details.Temps || data.tempsEcoule || 'N/A';
+          // 4. Skills
+          if (details.ScoreParCompetence) {
+            skills.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
+              name: key,
+              score: Number(val),
+            }));
+          }
 
-        // 2. Réponses Correctes
-        const corrects = details.CorrectAnswers ?? data.nbReponsesCorrectes;
-        const total = details.TotalQuestions ?? data.totalQuestions;
-        if (total != null && corrects != null) {
-          evalStats.value.bonnesReponses = `${corrects}/${total}`;
-        } else {
-          evalStats.value.bonnesReponses = 'N/A';
-        }
+          // 5. AI Recommendation
+          if (details.aiRecommendation) {
+            aiRecommendation.value = details.aiRecommendation;
+          }
 
-        // 3. Classement / Top %
-        if (details.TopPercent) {
-          evalStats.value.topPercent = `Top ${details.TopPercent}%`;
-        } else if (data.score != null) {
-          evalStats.value.topPercent = `Top ${Math.max(1, 100 - data.score)}%`;
-        } else {
-          evalStats.value.topPercent = 'N/A';
-        }
-
-        // 4. Skills
-        if (details.ScoreParCompetence) {
-          skills.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
-            name: key,
-            score: Number(val),
-          }));
-        }
-
-        // 5. AI Recommendation
-        if (details.aiRecommendation) {
-          aiRecommendation.value = details.aiRecommendation;
-        }
-
-        // 6. Detailed Answers
-        if (details.answers && Array.isArray(details.answers)) {
-          testAnswers.value = details.answers;
+          // 6. Detailed Answers
+          if (details.answers && Array.isArray(details.answers)) {
+            testAnswers.value = details.answers;
+          }
+        } catch (err) {
+          console.error('Error parsing evaluation details:', err);
         }
       }
     }

@@ -122,7 +122,12 @@
                             <td>
                                 <div class="candidate-profile">
                                     <div class="avatar-wrapper">
-                                        <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&color=fff&rounded=true&bold=true&size=80`" class="c-avatar-lg" :alt="candidate.name">
+                                        <img 
+                                            :src="candidate.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&color=fff&rounded=true&bold=true&size=80`" 
+                                            class="c-avatar-lg" 
+                                            :alt="candidate.name"
+                                            @error="handleImageError($event, candidate.name)"
+                                        >
                                         <div class="status-indicator" :class="getScoreColor(candidate)"></div>
                                     </div>
                                     <div class="candidate-details">
@@ -210,7 +215,11 @@
                 <!-- Header -->
                 <div class="contact-modal-header">
                     <div class="contact-modal-avatar">
-                        <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(contactTarget?.name || '')}&background=random&color=fff&rounded=true&bold=true`" :alt="contactTarget?.name" />
+                        <img 
+                            :src="contactTarget?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(contactTarget?.name || '')}&background=random&color=fff&rounded=true&bold=true`" 
+                            :alt="contactTarget?.name"
+                            @error="handleImageError($event, contactTarget?.name || '')"
+                        />
                     </div>
                     <div>
                         <h3>{{ contactTarget?.name }}</h3>
@@ -476,6 +485,12 @@ const deleteSelected = async () => {
     } catch (e: any) {
         Swal.fire({ title: 'Erreur', text: e?.response?.data?.message ?? 'Erreur lors de la suppression.', icon: 'error' });
     }
+};
+
+// ─── Image Error Handler ─────────────────────────────────────────────────────
+const handleImageError = (event: Event, name: string) => {
+    const img = event.target as HTMLImageElement;
+    img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&rounded=true&bold=true&size=80`;
 };
 </script>
 

@@ -284,6 +284,7 @@ export class EntrepriseService {
                 role: c.offre?.TitreDePost ?? 'Poste inconnu',
                 statut,
                 email: c.candidat?.email,
+                avatar: c.candidat?.avatar || null, // Add avatar
             };
         });
 
@@ -747,7 +748,7 @@ Compétences: ${offre.competences || 'Non spécifié'}
                 statut: displayStatut,
                 decision: c.decision,
                 datePostulation: c.datePostulation,
-                avatar: `https://i.pravatar.cc/150?u=${c.candidat?.id ?? 0}`,
+                avatar: c.candidat?.avatar || null, // Use real avatar if exists, otherwise null
             };
         });
     }

@@ -258,41 +258,15 @@
                                     <p class="text-sm text-gray-500 mt-2">Chargement des données...</p>
                                 </div>
                                 
-                                <!-- Smooth Wave Chart -->
-                                <svg v-else viewBox="0 0 700 200" preserveAspectRatio="none" class="wave-chart">
-                                    <defs>
-                                        <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                                            <stop offset="0%" style="stop-color:#1e40af;stop-opacity:0.3" />
-                                            <stop offset="100%" style="stop-color:#1e40af;stop-opacity:0" />
-                                        </linearGradient>
-                                        <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                            <stop offset="0%" style="stop-color:#1e40af" />
-                                            <stop offset="100%" style="stop-color:#1e40af" />
-                                        </linearGradient>
-                                    </defs>
-                                    
-                                    <!-- Area fill -->
-                                    <path :d="chartPaths.area" 
-                                          fill="url(#areaGradient)" 
-                                          class="chart-area-path transition-all duration-700"/>
-                                    
-                                    <!-- Line stroke -->
-                                    <path :d="chartPaths.line" 
-                                          fill="none" 
-                                          stroke="url(#lineGradient)" 
-                                          stroke-width="3" 
-                                          stroke-linecap="round"
-                                          class="chart-line-path transition-all duration-700"/>
-                                    
-                                    <!-- Dot indicators -->
-                                    <circle :cx="chartPaths.lastX" :cy="chartPaths.lastY" r="5" fill="#1e40af" class="chart-dot pulse-dot"/>
-                                    <circle :cx="chartPaths.lastX" :cy="chartPaths.lastY" r="3" fill="#FFFFFF"/>
-                                </svg>
-                                
-                                <!-- X-axis labels -->
-                                <div v-if="!isChartLoading" class="chart-labels">
-                                    <span v-for="label in chartPaths.labels" :key="label">{{ label }}</span>
-                                </div>
+                                <!-- ApexCharts Modern Interactive Chart -->
+                                <apexchart
+                                    v-else
+                                    type="area"
+                                    height="280"
+                                    :options="chartOptions"
+                                    :series="chartSeries"
+                                    class="modern-apex-chart"
+                                ></apexchart>
                             </div>
                         </div>
                     </div>
@@ -554,6 +528,7 @@ import LogoIcon from './LogoIcon.vue';
 import Top5Candidates from './top_5_condidat.vue';
 import ListeCondidat from './liste_condidat.vue';
 import ListePosteEntreprise from './liste_poste_entreprise.vue';
+import VueApexCharts from 'vue3-apexcharts';
 import { getEntrepriseDashboard } from '../services/dashboardService';
 import type { EntrepriseDashboardDto } from '../services/dashboardService';
 import { getMesOffres, type OffreEmploiResponse, getRecommandationsForOffre } from '../services/entrepriseService';
@@ -927,6 +902,231 @@ const chartSubtitle = computed(() => {
     }
 });
 
+// ─── ApexCharts Configuration ────────────────────────────────────────────────
+const chartSeries = computed(() => {
+    let periodData = [];
+    if (dashboardData.value) {
+        if (activePeriod.value === '3 derniers mois') {
+            periodData = dashboardData.value.candidaturesLast3Months || [];
+        } else if (activePeriod.value === '7 derniers jours') {
+            periodData = dashboardData.value.candidaturesLast7Days || [];
+        } else {
+            periodData = dashboardData.value.candidaturesLast30Days || [];
+        }
+    }
+    
+    return [{
+        name: 'Candidatures',
+        data: periodData.map(m => m.count)
+    }];
+});
+
+const chartOptions = computed(() => {
+    let periodData = [];
+    if (dashboardData.value) {
+        if (activePeriod.value === '3 derniers mois') {
+            periodData = dashboardData.value.candidaturesLast3Months || [];
+        } else if (activePeriod.value === '7 derniers jours') {
+            periodData = dashboardData.value.candidaturesLast7Days || [];
+        } else {
+            periodData = dashboardData.value.candidaturesLast30Days || [];
+        }
+    }
+    
+    return {
+        chart: {
+            type: 'area',
+            height: 280,
+            toolbar: {
+                show: false
+            },
+            zoom: {
+                enabled: false
+            },
+            animations: {
+                enabled: true,
+                easing: 'easeinout',
+                speed: 800,
+                animateGradually: {
+                    enabled: true,
+                    delay: 150
+                },
+                dynamicAnimation: {
+                    enabled: true,
+                    speed: 350
+                }
+            },
+            fontFamily: 'Inter, sans-serif',
+        },
+        dataLabels: {
+            enabled: false
+        },
+        stroke: {
+            curve: 'smooth',
+            width: 3,
+            colors: ['#1e40af']
+        },
+        fill: {
+            type: 'gradient',
+            gradient: {
+                shadeIntensity: 1,
+                opacityFrom: 0.45,
+                opacityTo: 0.05,
+                stops: [0, 90, 100],
+                colorStops: [
+                    {
+                        offset: 0,
+                        color: '#1e40af',
+                        opacity: 0.4
+                    },
+                    {
+                        offset: 100,
+                        color: '#1e40af',
+                        opacity: 0
+                    }
+                ]
+            }
+        },
+        colors: ['#1e40af'],
+        xaxis: {
+            categories: periodData.map(m => m.period),
+            labels: {
+                style: {
+                    colors: '#94a3b8',
+                    fontSize: '11px',
+                    fontWeight: 500
+                },
+                rotate: -45,
+                rotateAlways: false,
+                hideOverlappingLabels: true,
+                trim: true
+            },
+            axisBorder: {
+                show: false
+            },
+            axisTicks: {
+                show: false
+            },
+            tooltip: {
+                enabled: false
+            }
+        },
+        yaxis: {
+            labels: {
+                style: {
+                    colors: '#94a3b8',
+                    fontSize: '11px',
+                    fontWeight: 500
+                },
+                formatter: (value: number) => Math.floor(value).toString()
+            },
+            min: 0
+        },
+        grid: {
+            borderColor: '#f1f5f9',
+            strokeDashArray: 4,
+            xaxis: {
+                lines: {
+                    show: false
+                }
+            },
+            yaxis: {
+                lines: {
+                    show: true
+                }
+            },
+            padding: {
+                top: 0,
+                right: 10,
+                bottom: 0,
+                left: 10
+            }
+        },
+        tooltip: {
+            enabled: true,
+            theme: 'light',
+            x: {
+                show: true,
+                format: 'dd MMM'
+            },
+            y: {
+                formatter: (value: number) => `${value} candidature${value > 1 ? 's' : ''}`,
+                title: {
+                    formatter: () => ''
+                }
+            },
+            marker: {
+                show: true
+            },
+            style: {
+                fontSize: '12px',
+                fontFamily: 'Inter, sans-serif'
+            },
+            custom: function({ series, seriesIndex, dataPointIndex, w }: any) {
+                const value = series[seriesIndex][dataPointIndex];
+                const category = w.globals.labels[dataPointIndex];
+                return `
+                    <div style="
+                        background: white;
+                        padding: 12px 16px;
+                        border-radius: 10px;
+                        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+                        border: 1px solid #e5e7eb;
+                    ">
+                        <div style="
+                            font-size: 11px;
+                            color: #6b7280;
+                            font-weight: 600;
+                            margin-bottom: 4px;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                        ">${category}</div>
+                        <div style="
+                            font-size: 20px;
+                            color: #1e40af;
+                            font-weight: 700;
+                        ">${value}</div>
+                        <div style="
+                            font-size: 11px;
+                            color: #9ca3af;
+                            margin-top: 2px;
+                        ">candidature${value > 1 ? 's' : ''}</div>
+                    </div>
+                `;
+            }
+        },
+        markers: {
+            size: 0,
+            colors: ['#1e40af'],
+            strokeColors: '#fff',
+            strokeWidth: 2,
+            hover: {
+                size: 7,
+                sizeOffset: 3
+            }
+        },
+        legend: {
+            show: false
+        },
+        responsive: [{
+            breakpoint: 768,
+            options: {
+                chart: {
+                    height: 250
+                },
+                xaxis: {
+                    labels: {
+                        rotate: -45,
+                        style: {
+                            fontSize: '10px'
+                        }
+                    }
+                }
+            }
+        }]
+    };
+});
+
 const changePeriod = async (period: string) => {
     if (activePeriod.value === period || isChartLoading.value) return;
     
@@ -1006,6 +1206,7 @@ const candidatesSource = computed(() => {
         score: c.score ?? null,   // keep null — don't default to 0
         statut: c.statut || 'En attente',
         email: c.email || '',
+        avatar: c.avatar || null, // Add avatar from backend
     }));
 });
 
@@ -1335,6 +1536,29 @@ const displayJobs = computed(() => {
 .wave-chart {
     width: 100%;
     height: 100%;
+}
+
+/* Modern ApexChart Styles */
+.modern-apex-chart {
+    width: 100%;
+    height: 100%;
+}
+
+.modern-apex-chart :deep(.apexcharts-tooltip) {
+    border-radius: 10px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
+}
+
+.modern-apex-chart :deep(.apexcharts-xaxistooltip) {
+    display: none !important;
+}
+
+.modern-apex-chart :deep(.apexcharts-grid-borders) {
+    stroke: #f1f5f9 !important;
+}
+
+.modern-apex-chart :deep(.apexcharts-marker) {
+    transition: all 0.3s ease !important;
 }
 
 .chart-area-path {

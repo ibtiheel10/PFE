@@ -19,7 +19,12 @@
                         <td>
                             <div class="candidate-profile">
                                 <div class="avatar-wrapper" style="width: 36px; height: 36px;">
-                                    <img :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&color=fff&rounded=true&bold=true`" class="c-avatar-lg" :alt="candidate.name">
+                                    <img 
+                                        :src="candidate.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(candidate.name)}&background=random&color=fff&rounded=true&bold=true`" 
+                                        class="c-avatar-lg" 
+                                        :alt="candidate.name"
+                                        @error="handleImageError($event, candidate.name)"
+                                    >
                                     <div class="status-indicator" :class="getScoreColor(candidate)"></div>
                                 </div>
                                 <div class="candidate-details">
@@ -106,6 +111,12 @@ const getStatusClass = (statutText: string): string => {
     if (s === 'entretien') return 'entretien';
     if (s === 'refusé')    return 'refused';
     return 'pending';
+};
+
+// ─── Image Error Handler ─────────────────────────────────────────────────────
+const handleImageError = (event: Event, name: string) => {
+    const img = event.target as HTMLImageElement;
+    img.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random&color=fff&rounded=true&bold=true`;
 };
 
 </script>
