@@ -58,13 +58,10 @@ export class CandidatService {
             .filter(c => c.score !== null && c.score !== undefined)
             .slice(0, 3);
 
-        // 3. Suggestions d'offres basées sur les compétences réelles du candidat
-        const userApps = allApplications;
-        const excludedIds = userApps.map(a => a.offre.id);
-
+        // 3. Analyse des compétences (Moyenne par catégorie, sur candidatures évaluées)
         // Extract competency scores from evaluationDetails across all evaluated candidatures
         const competenceMap: Record<string, { total: number; count: number }> = {};
-        for (const app of userApps) {
+        for (const app of allApplications) {
             if (!app.evaluationDetails) continue;
             try {
                 const details = JSON.parse(app.evaluationDetails);
@@ -78,61 +75,19 @@ export class CandidatService {
             } catch { /* ignore malformed JSON */ }
         }
 
-        // Build ranked skill list: [{ name, avg }] sorted by avg desc
-        const rankedSkills = Object.entries(competenceMap)
-            .map(([name, { total, count }]) => ({ name: name.toLowerCase(), avg: total / count }))
-            .sort((a, b) => b.avg - a.avg);
-
-        // No QCM evaluations → no suggestions
-        let suggestions: (OffreEmploi & { matchScore: number })[] = [];
-
-        if (rankedSkills.length > 0) {
-            // Fetch all non-expired offers not already applied to
-            const allOffres = await this.offreRepo.createQueryBuilder('offre')
-                .leftJoinAndSelect('offre.entreprise', 'entreprise')
-                .where(excludedIds.length > 0 ? 'offre.id NOT IN (:...excludedIds)' : '1=1', { excludedIds })
-                .andWhere('(offre.DateLimite IS NULL OR offre.DateLimite >= :now)', { now })
-                .getMany();
-
-            // Score each offer by weighted skill keyword matching
-            const scoredOffres = allOffres.map(offre => {
-                const searchText = [
-                    offre.TitreDePost,
-                    offre.Categorie,
-                    offre.competences || '',
-                    offre.Description || '',
-                ].join(' ').toLowerCase();
-
-                let weightedSum = 0;
-                let weightTotal = 0;
-                rankedSkills.forEach((skill, idx) => {
-                    const weight = Math.max(1, rankedSkills.length - idx);
-                    const skillWords = skill.name.split(/[\s,\-\/]+/).filter(w => w.length > 2);
-                    const hits = skillWords.filter(w => searchText.includes(w)).length;
-                    const skillMatch = skillWords.length > 0 ? (hits / skillWords.length) * skill.avg : 0;
-                    weightedSum += skillMatch * weight;
-                    weightTotal += weight;
-                });
-                const matchScore = weightTotal > 0 ? Math.round(weightedSum / weightTotal) : 0;
-                return { offre, matchScore };
-            });
-
-            suggestions = scoredOffres
-                .sort((a, b) => b.matchScore - a.matchScore)
-                .slice(0, 6)
-                .map(({ offre, matchScore }) => ({ ...offre, matchScore }));
-        }
-
-        // 4. Analyse des compétences (Moyenne par catégorie, sur candidatures évaluées)
         const skillsAnalysis = Object.entries(competenceMap).map(([category, { total, count }]) => ({
             category,
             score: Math.round(total / count),
         }));
 
+        // 4. Obtenir les suggestions en appelant la méthode getSuggestions
+        const suggestionsResult = await this.getSuggestions(userId);
+
         return {
             recentApplications,
             recentResults,
-            suggestions,
+            suggestions: suggestionsResult.suggestions,
+            strongSkills: suggestionsResult.strongSkills,
             skillsAnalysis
         };
     }
@@ -165,5 +120,146 @@ export class CandidatService {
 
         Object.assign(user, updateData);
         return await this.userRepo.save(user);
+    }
+
+    // ─── GET /api/Candidat/suggestions ───────────────────────────────────────
+    /**
+     * Returns job offer suggestions based on the candidate's competency scores obtained during QCMs.
+     * Skills with a score > SKILL_THRESHOLD (default 50%) are considered "strong" and used to
+     * match against the `competences` field of open job offers.
+     *
+     * Algorithm:
+     * 1. Fetch all the candidate's evaluated candidatures (those with evaluationDetails).
+     * 2. Parse ScoreParCompetence from each evaluationDetails JSON blob.
+     * 3. Collect all skill names where the score exceeds SKILL_THRESHOLD.
+     * 4. Query OffreEmploi whose `competences` text contains at least one of those skill names.
+     * 5. Exclude offers the candidate already applied to.
+     * 6. Return up to MAX_SUGGESTIONS offers along with the matched skills.
+     */
+    async getSuggestions(userId: number, threshold = 50, maxResults = 6) {
+        const SKILL_THRESHOLD = threshold;
+        const MAX_SUGGESTIONS = maxResults;
+
+        // 1. Fetch all evaluated candidatures for this user
+        const candidatures = await this.candidatureRepo.find({
+            where: { candidat: { id: userId } },
+            relations: ['offre'],
+            order: { datePostulation: 'DESC' },
+        });
+
+        // IDs of offers the candidate has already applied to (to exclude from suggestions)
+        const appliedOfferIds = candidatures.map(c => c.offre?.id).filter(Boolean);
+
+        // 2. Extract competency scores from all evaluationDetails
+        const skillScores: Record<string, number[]> = {};
+
+        for (const c of candidatures) {
+            if (!c.evaluationDetails) continue;
+            try {
+                const details = JSON.parse(c.evaluationDetails);
+                const scoreMap: Record<string, number> = details.ScoreParCompetence || {};
+                for (const [skill, score] of Object.entries(scoreMap)) {
+                    const normalizedSkill = skill.trim();
+                    if (!skillScores[normalizedSkill]) skillScores[normalizedSkill] = [];
+                    skillScores[normalizedSkill].push(Number(score));
+                }
+            } catch {
+                // Skip malformed evaluationDetails
+            }
+        }
+
+        // 3. Build list of "strong" skills (average score > threshold)
+        const strongSkills: Array<{ name: string; avgScore: number }> = [];
+        for (const [skill, scores] of Object.entries(skillScores)) {
+            const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+            if (avg >= SKILL_THRESHOLD) {
+                strongSkills.push({ name: skill, avgScore: Math.round(avg) });
+            }
+        }
+
+        // 4. If no strong skills, fall back to category-based suggestions
+        if (strongSkills.length === 0) {
+            const categories = [...new Set(candidatures.map(c => c.offre?.Categorie).filter(Boolean))];
+            let fallbackOffers: OffreEmploi[] = [];
+
+            if (categories.length > 0) {
+                fallbackOffers = await this.offreRepo
+                    .createQueryBuilder('offre')
+                    .where('offre.Categorie IN (:...categories)', { categories })
+                    .andWhere(appliedOfferIds.length > 0 ? 'offre.id NOT IN (:...excluded)' : '1=1', {
+                        excluded: appliedOfferIds.length > 0 ? appliedOfferIds : undefined,
+                    })
+                    .take(MAX_SUGGESTIONS)
+                    .getMany();
+            } else {
+                fallbackOffers = await this.offreRepo.find({ take: MAX_SUGGESTIONS });
+            }
+
+            return {
+                strongSkills: [],
+                suggestions: fallbackOffers.map(o => ({
+                    id: o.id,
+                    titre: o.TitreDePost,
+                    categorie: o.Categorie,
+                    competences: o.competences,
+                    localisation: o.Localisation,
+                    typeDeContrat: o.TypeDeContrat,
+                    dateLimite: o.DateLimite,
+                    matchedSkills: [],
+                    matchScore: 0,
+                })),
+                threshold: SKILL_THRESHOLD,
+            };
+        }
+
+        // 5. Find offers matching at least one strong skill
+        const strongSkillNames = strongSkills.map(s => s.name);
+
+        // Build a query that checks if the offer's competences field contains any strong skill
+        let query = this.offreRepo.createQueryBuilder('offre');
+
+        if (appliedOfferIds.length > 0) {
+            query = query.where('offre.id NOT IN (:...excluded)', { excluded: appliedOfferIds });
+        }
+
+        // ILIKE match: at least one strong skill must appear in competences or title
+        const skillConditions = strongSkillNames.map((_, i) => `(LOWER(offre.competences) LIKE LOWER(:skill${i}) OR LOWER(offre."TitreDePost") LIKE LOWER(:skill${i}))`);
+        const skillParams: Record<string, string> = {};
+        strongSkillNames.forEach((skill, i) => {
+            skillParams[`skill${i}`] = `%${skill}%`;
+        });
+
+        query = query.andWhere(`(${skillConditions.join(' OR ')})`, skillParams);
+        query = query.take(MAX_SUGGESTIONS * 2); // fetch more to allow ranking
+
+        const matchingOffers = await query.getMany();
+
+        // 6. Rank offers by number of matched strong skills
+        const rankedOffers = matchingOffers.map(o => {
+            const competencesText = ((o.competences || '') + ' ' + (o.TitreDePost || '')).toLowerCase();
+            const matched = strongSkills.filter(s => competencesText.includes(s.name.toLowerCase()));
+            const matchScore = matched.length > 0
+                ? Math.round(matched.reduce((acc, s) => acc + s.avgScore, 0) / matched.length)
+                : 0;
+            return {
+                id: o.id,
+                titre: o.TitreDePost,
+                categorie: o.Categorie,
+                competences: o.competences,
+                localisation: o.Localisation,
+                typeDeContrat: o.TypeDeContrat,
+                dateLimite: o.DateLimite,
+                matchedSkills: matched.map(s => ({ name: s.name, score: s.avgScore })),
+                matchScore,
+            };
+        });
+
+        rankedOffers.sort((a, b) => b.matchScore - a.matchScore || b.matchedSkills.length - a.matchedSkills.length);
+
+        return {
+            strongSkills,
+            suggestions: rankedOffers.slice(0, MAX_SUGGESTIONS),
+            threshold: SKILL_THRESHOLD,
+        };
     }
 }

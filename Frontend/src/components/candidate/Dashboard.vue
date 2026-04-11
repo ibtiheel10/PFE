@@ -364,8 +364,8 @@ const currentChartData = computed(() =>
 // ���� Suggestions pour vous ����������������������������������������������������������������������������������
 const suggestions = ref<OffreEmploi[]>([]);
 
-// -- Dominant skill analysis ---------------------------------------------------
-const dominantSkill = computed<string | null>(() => {
+// -- Strong skills analysis (all skills with avg score >= 50) -------------------
+const strongSkills = computed<string[]>(() => {
     const map: Record<string, { total: number; count: number }> = {};
     for (const c of allCandidatures.value) {
         if (!c.evaluationDetails) continue;
@@ -380,10 +380,10 @@ const dominantSkill = computed<string | null>(() => {
             }
         } catch {}
     }
-    if (Object.keys(map).length === 0) return null;
     return Object.entries(map)
         .map(([k, v]) => ({ name: k, avg: v.total / v.count }))
-        .sort((a, b) => b.avg - a.avg)[0]?.name ?? null;
+        .filter(s => s.avg >= 50)
+        .map(s => s.name.toLowerCase());
 });
 
 const dominantSkillScore = computed<number | null>(() => {
@@ -404,6 +404,7 @@ const dominantSkillScore = computed<number | null>(() => {
 
 // -- Smart suggestions: prefer backend matchScore, fallback to client-side skill matching ----
 const smartSuggestions = computed(() => {
+    // 3. Récupération des offres d’emploi (chargées dans suggestions)
     if (!suggestions.value.length) return [];
     const alreadyApplied = new Set(allCandidatures.value.map(c => c.offre?.id));
     const pool = suggestions.value.filter(o => !alreadyApplied.has(o.id));
@@ -427,14 +428,34 @@ const smartSuggestions = computed(() => {
     const skillWords = skill.split(/[\s,\-\/]+/).filter((w: string) => w.length > 2);
     return pool
         .map(o => {
-            const text = `${(o.TitreDePost || '').toLowerCase()} ${(o.Categorie || '').toLowerCase()} ${((o as any).competences || '').toLowerCase()}`;
-            const matchCount = skillWords.filter((w: string) => text.includes(w)).length;
-            const matchScore = skillWords.length > 0 ? Math.round((matchCount / skillWords.length) * 100) : 0;
-            const color = matchScore >= 70 ? '#10b981' : matchScore >= 30 ? '#1e40af' : '#94a3b8';
-            return { ...o, _matchScore: matchScore || null, _isMatch: matchScore >= 30, _matchColor: color };
+            // Chaque offre contient une liste de compétences requises
+            const offreCompetencesStr = (o as any).competences || o.ExperienceRequise || o.Categorie || '';
+            const offreCompetences = offreCompetencesStr.split(/[,\-]/).map((c: string) => normalizeText(c)).filter((c: string) => c.length > 2);
+            
+            let isMatch = false;
+            let matchCount = 0;
+
+            // 4. Matching des compétences : Pour chaque offre, comparer ses compétences avec celles validées
+            for (const offerComp of offreCompetences) {
+                for (const candComp of candidateSkillsNormalized) {
+                    // Condition : si au moins 1 compétence correspond → poste retenu
+                    if (offerComp.includes(candComp) || candComp.includes(offerComp)) {
+                        isMatch = true;
+                        matchCount++;
+                        break; 
+                    }
+                }
+            }
+
+            const matchScore = offreCompetences.length > 0 ? Math.round((matchCount / offreCompetences.length) * 100) : 0;
+            const color = matchScore >= 70 ? '#10b981' : matchScore > 0 ? '#1e40af' : '#64748b';
+            
+            return { ...o, _matchScore: matchScore || null, _isMatch: isMatch, _matchColor: color };
         })
+        // 5. Exclure les postes sans correspondance
+        .filter(o => o._isMatch)
         .sort((a: any, b: any) => (b._matchScore ?? 0) - (a._matchScore ?? 0))
-        .slice(0, 4);
+        .slice(0, 5); // Génération des suggestions finales prêtes pour affichage
 });
 
 // ���� Fetch all data ������������������������������������������������������������������������������������������������

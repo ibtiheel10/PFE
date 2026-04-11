@@ -188,7 +188,7 @@ const handleAiError = (error: any): AiResponse<any> => {
         if (status === 422 || status === 400)
             return { success: false, error: 'Les données fournies sont invalides ou incomplètes.' };
         if (status === 503)
-            return { success: false, error: "Le moteur d'IA (Ollama) est temporairement indisponible." };
+            return { success: false, error: "Le moteur d'IA (Groq) est temporairement indisponible." };
         return { success: false, error: error.response.data?.message || `Erreur IA (Code ${status}).` };
     }
     if (error instanceof Error) return { success: false, error: error.message };

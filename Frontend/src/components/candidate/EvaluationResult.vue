@@ -271,13 +271,6 @@ const testAnswers = ref<any[]>([]);
 
 onMounted(async () => {
   document.documentElement.classList.remove('dark', 'dark-mode');
-  
-  // Try to maintain fullscreen if coming from the evaluation session
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {
-        // Silent fail (expected if user didn't interact or browser blocked)
-    });
-  }
 
   try {
     const candidatureIdParam = route.query.candidatureId;
@@ -316,20 +309,43 @@ onMounted(async () => {
             evalStats.value.topPercent = 'N/A';
           }
 
-          if (details.ScoreParCompetence) {
-            skills.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
-              name: key,
-              score: Number(val),
-            }));
-          }
-          if (details.aiRecommendation) {
-              aiRecommendation.value = details.aiRecommendation;
-          }
-          if (details.answers && Array.isArray(details.answers)) {
-              testAnswers.value = details.answers;
-          }
-        } catch {
-          // fallback to score only
+        // 1. Temps Écoulé
+        evalStats.value.tempsEcoule = details.Temps || data.tempsEcoule || 'N/A';
+
+        // 2. Réponses Correctes
+        const corrects = details.CorrectAnswers ?? data.nbReponsesCorrectes;
+        const total = details.TotalQuestions ?? data.totalQuestions;
+        if (total != null && corrects != null) {
+          evalStats.value.bonnesReponses = `${corrects}/${total}`;
+        } else {
+          evalStats.value.bonnesReponses = 'N/A';
+        }
+
+        // 3. Classement / Top %
+        if (details.TopPercent) {
+          evalStats.value.topPercent = `Top ${details.TopPercent}%`;
+        } else if (data.score != null) {
+          evalStats.value.topPercent = `Top ${Math.max(1, 100 - data.score)}%`;
+        } else {
+          evalStats.value.topPercent = 'N/A';
+        }
+
+        // 4. Skills
+        if (details.ScoreParCompetence) {
+          skills.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
+            name: key,
+            score: Number(val),
+          }));
+        }
+
+        // 5. AI Recommendation
+        if (details.aiRecommendation) {
+          aiRecommendation.value = details.aiRecommendation;
+        }
+
+        // 6. Detailed Answers
+        if (details.answers && Array.isArray(details.answers)) {
+          testAnswers.value = details.answers;
         }
       }
     }
@@ -489,7 +505,6 @@ const goToJobs = () => router.push('/candidat/jobs');
 
 .skills-list { display: flex; flex-direction: column; gap: 22px; }
 
-.skill-item { }
 .skill-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .skill-name { font-size: 14px; font-weight: 700; color: #334155; }
 .skill-score { font-size: 14px; font-weight: 800; }
