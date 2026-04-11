@@ -36,7 +36,7 @@ export class EntrepriseCreateOffreDto {
     @IsString()
     modeDeTravail?: string;
 
-    @ApiProperty({ example: 5000, required: false })
+    @ApiProperty({ example: 3000, required: false })
     @IsOptional()
     @IsNumber()
     @Min(0, { message: 'Le salaire ne peut pas être négatif.' })

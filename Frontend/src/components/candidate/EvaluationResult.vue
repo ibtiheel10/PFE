@@ -271,13 +271,6 @@ const testAnswers = ref<any[]>([]);
 
 onMounted(async () => {
   document.documentElement.classList.remove('dark', 'dark-mode');
-  
-  // Try to maintain fullscreen if coming from the evaluation session
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen().catch(() => {
-        // Silent fail (expected if user didn't interact or browser blocked)
-    });
-  }
 
   try {
     const candidatureIdParam = route.query.candidatureId;
@@ -479,7 +472,6 @@ const goToJobs = () => router.push('/candidat/jobs');
 
 .skills-list { display: flex; flex-direction: column; gap: 22px; }
 
-.skill-item { }
 .skill-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .skill-name { font-size: 14px; font-weight: 700; color: #334155; }
 .skill-score { font-size: 14px; font-weight: 800; }

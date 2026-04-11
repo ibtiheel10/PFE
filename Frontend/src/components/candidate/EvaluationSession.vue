@@ -324,8 +324,7 @@ onUnmounted(() => {
   document.removeEventListener('cut', preventDefaultAction);
   document.removeEventListener('selectstart', preventDefaultAction);
   document.removeEventListener('dragstart', preventDefaultAction);
-  window.removeEventListener('resize', handleResize);
-  if (fullscreenInterval) clearInterval(fullscreenInterval);
+
 });
 
 // ── Anti-Cheat System ─────────────────────────────────────────────────────────
@@ -339,7 +338,6 @@ const antiCheatRules = [
     { icon: '📋', text: 'Copier/coller et sélection de texte désactivés', color: 'bg-orange-100' },
     { icon: '🔧', text: 'Outils de développement bloqués (F12, Ctrl+Shift+I)', color: 'bg-yellow-100' },
     { icon: '📸', text: 'Capture d\'écran détectée et signalée', color: 'bg-purple-100' },
-    { icon: '⛶', text: 'Restez en plein écran pendant toute la durée du test', color: 'bg-blue-100' },
 ];
 
 const handleInfraction = (type: string) => {
@@ -414,18 +412,7 @@ const handleVisibilityChange = () => {
     }
 };
 
-const handleResize = () => {
-    if (window.innerWidth < 800 || window.innerHeight < 600) {
-        handleInfraction("Fenêtre réduite détectée (Veuillez garder le mode plein écran)");
-    }
-};
 
-let fullscreenInterval: number;
-const checkFullscreen = () => {
-    if (!document.fullscreenElement) {
-        handleInfraction("Mode plein écran quitté (Veuillez rester en plein écran)");
-    }
-};
 
 onMounted(() => {
   document.addEventListener('contextmenu', preventContextMenu);
@@ -436,15 +423,6 @@ onMounted(() => {
   document.addEventListener('cut', preventDefaultAction);
   document.addEventListener('selectstart', preventDefaultAction);
   document.addEventListener('dragstart', preventDefaultAction);
-  window.addEventListener('resize', handleResize);
-  
-  fullscreenInterval = window.setInterval(checkFullscreen, 2000);
-  
-  // Forcer le plein écran au début
-  document.documentElement.requestFullscreen().catch(err => {
-      console.warn("Fullscreen request failed (attente d'une interaction utilisateur):", err);
-  });
-  
   // Custom console message for inspection warning
   console.log("%c⚠️ ATTENTION: Toute tentative de triche sera signalée ! ⚠️", "color: red; font-size: 20px; font-weight: bold;");
 });

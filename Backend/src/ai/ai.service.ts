@@ -84,7 +84,7 @@ export class AiService {
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // PRIVATE: Extract the first valid JSON array or object from raw LLM text
+  // PRIVATE: Extract the first valid JSON array from raw LLM text
   // ══════════════════════════════════════════════════════════════════════════════
 
   private extractJsonArray(raw: string): any[] | null {
@@ -109,7 +109,7 @@ export class AiService {
         const parsed = JSON.parse(candidate);
         if (Array.isArray(parsed)) return parsed;
       } catch {
-        // Strategy 3: attempt to repair truncated JSON by closing open brackets
+        // Strategy 3: repair truncated JSON
         try {
           const repaired = candidate
             .replace(/,\s*$/, '')      // trailing comma
@@ -138,141 +138,109 @@ export class AiService {
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // PRIVATE: Parse a single raw AI question object into our QuizQuestion format
-  // The AI is asked to use correctIndex (0-3) so we can reliably mark isCorrect
+  // PRIVATE: Parse a single raw AI question object into our QuizQuestion format.
+  // Accepts any of these correct-answer conventions from the model:
+  //   • correctIndex (integer 0-3)
+  //   • correctAnswer / correct_answer / answer / reponse_correcte (string)
+  //   • isCorrect / correct field on each option object
+  //   • correctLetter / correct_letter (A/B/C/D)
   // ══════════════════════════════════════════════════════════════════════════════
 
-  private parseQuestion(raw: any, idx: number): QuizQuestion | null {
-    if (!raw || typeof raw.question !== 'string' || !raw.question.trim()) return null;
+  private parseQuestion(raw: any, index: number): QuizQuestion | null {
+    if (!raw || typeof raw !== 'object') return null;
 
-    let options: string[] = [];
-    if (Array.isArray(raw.options) && raw.options.length >= 2) {
-      options = raw.options
-        .map((o: any) => (typeof o === 'string' ? o : String(o?.text ?? '')))
-        .map((o: string) => o.replace(/^[A-Da-d][).:\- ]+/, '').trim())
-        .filter((o: string) => o.length > 0);
+    // 1. Question text
+    const questionText: string =
+      raw.question || raw.Question || raw.texte || raw.text || raw.q || '';
+    if (!questionText.trim()) return null;
+
+    // 2. Options — accept multiple naming conventions
+    let rawOptions: any[] = [];
+    if (Array.isArray(raw.options))       rawOptions = raw.options;
+    else if (Array.isArray(raw.choices))  rawOptions = raw.choices;
+    else if (Array.isArray(raw.answers))  rawOptions = raw.answers;
+    else if (Array.isArray(raw.reponses)) rawOptions = raw.reponses;
+    else if (Array.isArray(raw.responses)) rawOptions = raw.responses;
+    else {
+      // Reconstruct from lettered keys: A, B, C, D
+      const lettered = ['A', 'B', 'C', 'D']
+        .map(l => raw[l] || raw[l.toLowerCase()])
+        .filter(Boolean);
+      if (lettered.length >= 2) rawOptions = lettered;
     }
 
-    if (options.length < 2) return null;
+    if (rawOptions.length < 2) return null;
 
-    // Determine which option is correct
-    let correctIdx = 0;
-    if (typeof raw.correctIndex === 'number' && raw.correctIndex >= 0 && raw.correctIndex < options.length) {
-      correctIdx = raw.correctIndex;
-    } else if (typeof raw.answer === 'number' && raw.answer >= 0 && raw.answer < options.length) {
-      correctIdx = raw.answer;
-    } else if (typeof raw.answer === 'string') {
-      const ansLower = raw.answer.toLowerCase().trim();
-      // Try: letter "a", "b", "c", "d"
-      const letterIdx = ['a', 'b', 'c', 'd'].indexOf(ansLower.charAt(0));
-      if (letterIdx >= 0 && letterIdx < options.length) {
-        correctIdx = letterIdx;
-      } else {
-        // Try: text match
-        const found = options.findIndex(o => o.toLowerCase().includes(ansLower.substring(0, 20)));
-        if (found >= 0) correctIdx = found;
+    // 3. Resolve correct answer index
+    let correctIndex = -1;
+
+    // A: explicit integer
+    const ciRaw = raw.correctIndex ?? raw.correct_index ?? raw.answerIndex ?? raw.answer_index;
+    if (typeof ciRaw === 'number' && ciRaw >= 0 && ciRaw < rawOptions.length) {
+      correctIndex = ciRaw;
+    }
+
+    // B: correctAnswer string → match option text
+    if (correctIndex === -1) {
+      const ca: string =
+        raw.correctAnswer ?? raw.correct_answer ?? raw.answer ?? raw.reponse_correcte ?? '';
+      if (ca) {
+        const idx = rawOptions.findIndex((o: any) => {
+          const oText = typeof o === 'string' ? o : o.text ?? o.value ?? '';
+          return oText.trim().toLowerCase() === ca.trim().toLowerCase();
+        });
+        if (idx !== -1) correctIndex = idx;
       }
     }
 
-    const mappedOptions: QuizOption[] = options.slice(0, 4).map((text, i) => ({
-      text,
-      isCorrect: i === correctIdx,
-    }));
-
-    // Safety: if somehow nothing is marked correct, force index 0
-    if (!mappedOptions.some(o => o.isCorrect)) {
-      mappedOptions[0].isCorrect = true;
+    // C: isCorrect/correct field on option objects
+    if (correctIndex === -1) {
+      const idx = rawOptions.findIndex(
+        (o: any) => typeof o === 'object' && (o.isCorrect === true || o.correct === true),
+      );
+      if (idx !== -1) correctIndex = idx;
     }
 
+    // D: letter answer A/B/C/D
+    if (correctIndex === -1) {
+      const letterAnswer: string = raw.correctLetter ?? raw.correct_letter ?? raw.letter ?? '';
+      if (letterAnswer) {
+        const idx = ['a', 'b', 'c', 'd'].indexOf(letterAnswer.trim().toLowerCase());
+        if (idx !== -1 && idx < rawOptions.length) correctIndex = idx;
+      }
+    }
+
+    // Fallback to index 0 if nothing resolved
+    if (correctIndex === -1) {
+      this.logger.warn(
+        `[parseQuestion] Could not determine correctIndex for: "${questionText.substring(0, 60)}" — defaulting to 0`,
+      );
+      correctIndex = 0;
+    }
+
+    // 4. Build normalised options
+    const options: QuizOption[] = rawOptions.map((o: any, i: number) => {
+      const text = typeof o === 'string' ? o : (o.text ?? o.value ?? o.label ?? String(o));
+      const cleanText = text.replace(/^[A-Da-d1-4][).:\-]\s*/, '').trim();
+      return { text: cleanText, isCorrect: i === correctIndex };
+    });
+
     return {
-      id: idx + 1,
-      question: raw.question.trim(),
-      options: mappedOptions,
+      id: index + 1,
+      question: questionText.trim(),
+      options,
       isCorrectVerified: true,
       chronometre: 30,
+      createdAt: new Date().toISOString(),
     };
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // PRIVATE: Fallback questions when Ollama fails completely
-  // Uses the job title/competences to generate generic but relevant questions
-  // so the frontend NEVER gets an error
+  // PRIVATE: Core generation — up to 3 attempts, always from competences/description
+  // No hardcoded fallback: if the model fails every attempt, an error is thrown.
   // ══════════════════════════════════════════════════════════════════════════════
 
-  private buildFallbackQuestions(jobTitle: string, competences: string): QuizQuestion[] {
-    const topic = jobTitle || 'ce poste';
-    const compList = competences
-      ? competences.split(/[,;\n]+/).map(c => c.trim()).filter(c => c.length > 2).slice(0, 5)
-      : [];
-
-    while (compList.length < 5) {
-      compList.push(['expertise technique', 'gestion du temps', 'communication', 'adaptabilité', 'résolution de problèmes'][compList.length]);
-    }
-
-    return [
-      {
-        id: 1,
-        question: `Dans le cadre du poste "${topic}", quelle est l'importance primordiale de la compétence "${compList[0]}" ?`,
-        options: [
-          { text: `Elle est indispensable pour mener à bien les missions du poste.`, isCorrect: true },
-          { text: `Elle n'a aucune importance pour ce rôle.`, isCorrect: false },
-          { text: `Elle sert uniquement pour des tâches administratives.`, isCorrect: false },
-          { text: `C'est une compétence complètement obsolète.`, isCorrect: false },
-        ],
-        isCorrectVerified: true,
-      },
-      {
-        id: 2,
-        question: `Parmi les choix suivants, quelle attitude est la plus adaptée pour réussir en tant que "${topic}" ?`,
-        options: [
-          { text: `Appliquer systématiquement la compétence "${compList[1]}" avec rigueur.`, isCorrect: true },
-          { text: `Refuser d'utiliser ses compétences et déléguer systématiquement.`, isCorrect: false },
-          { text: `Ignorer les directives et travailler sans méthode.`, isCorrect: false },
-          { text: `Ne compter que sur la chance pour réussir.`, isCorrect: false },
-        ],
-        isCorrectVerified: true,
-      },
-      {
-        id: 3,
-        question: `Lors de la mise en pratique de "${compList[2]}", quel est le risque principal à éviter ?`,
-        options: [
-          { text: `Le manque de précision et la négligence des détails cruciaux.`, isCorrect: true },
-          { text: `L'application correcte et réfléchie des bonnes pratiques mondiales.`, isCorrect: false },
-          { text: `C'est impossible d'échouer avec cette compétence.`, isCorrect: false },
-          { text: `La réussite trop rapide du projet global.`, isCorrect: false },
-        ],
-        isCorrectVerified: true,
-      },
-      {
-        id: 4,
-        question: `Comment la maîtrise de "${compList[3]}" contribue-t-elle à l'objectif global pour ce poste ?`,
-        options: [
-          { text: `Elle ralentit purement le processus de prise de décision.`, isCorrect: false },
-          { text: `Elle garantit une efficacité et une qualité optimale du travail livré.`, isCorrect: true },
-          { text: `Elle augmente fortement les risques d'erreurs graves.`, isCorrect: false },
-          { text: `Elle n'a aucun impact concret sur les résultats produits.`, isCorrect: false },
-        ],
-        isCorrectVerified: true,
-      },
-      {
-        id: 5,
-        question: `Pour un profil expert en "${topic}", la compétence "${compList[4]}" est souvent rattachée à :`,
-        options: [
-          { text: `Une incapacité à s'adapter techniquement aux nouveautés.`, isCorrect: false },
-          { text: `Une forte capacité d'analyse et d'exécution dans le métier.`, isCorrect: true },
-          { text: `Un refus total de collaborer avec ses collègues externes.`, isCorrect: false },
-          { text: `Une perte de temps systématique sur chaque projet de long terme.`, isCorrect: false },
-        ],
-        isCorrectVerified: true,
-      },
-    ];
-  }
-
-  // ══════════════════════════════════════════════════════════════════════════════
-  // PRIVATE: Core generation with max 2 attempts + guaranteed fallback
-  // ══════════════════════════════════════════════════════════════════════════════
-
-  private async generateWithFallback(
+  private async generateWithRetry(
     jobTitle: string,
     competences: string,
     previousQuestions: string[] = [],
@@ -292,7 +260,7 @@ Contexte :
 - Compétences requises : ${compShort || 'non spécifié'}${avoidSection}
 
 IMPORTANT :
-Tu dois ABSOLUMENT te baser sur "Description du poste" et "Compétences requises" pour formuler tes questions et les options de réponses. 
+Tu dois ABSOLUMENT te baser sur "Description du poste" et "Compétences requises" pour formuler tes questions et les options de réponses.
 Ces questions DOIVENT VRAIMENT DÉPENDRE du profil recherché (ne sois pas trop générique).
 
 Tu dois générer EXACTEMENT 5 questions QCM.
@@ -300,7 +268,7 @@ Tu dois générer EXACTEMENT 5 questions QCM.
 Contraintes CRITIQUES :
 - Le niveau des questions doit être adapté aux compétences demandées dans la description.
 - Les options de réponses (A, B, C, D) doivent être très EXTRÊMEMENT PERTINENTES et réalistes.
-- Chaque question doit comporter EXACTEMENT UNE SEULE bonne réponse PARMI LES 4 OPTIONS DISPONIBLES. 
+- Chaque question doit comporter EXACTEMENT UNE SEULE bonne réponse PARMI LES 4 OPTIONS DISPONIBLES.
 - Les 3 autres options doivent être logiques, plausibles, mais TOTALEMENT INCORRECTES dans la réalité.
 - Les "options" ne doivent pas comporter de lettres comme "A)", ni "Réponse C", écrivez directement le texte de l'option.
 
@@ -314,8 +282,10 @@ Format JSON obligatoire (tableau contenant 5 objets) :
 ]
 Génère STRICTEMENT le tableau JSON. Aucun texte ni explication avant ou après le tableau. Le correctIndex doit obligatoirement être un entier entre 0 et 3.`;
 
-    for (let attempt = 1; attempt <= 2; attempt++) {
-      this.logger.log(`[AI] Question generation attempt ${attempt}/2`);
+    const MAX_ATTEMPTS = 3;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      this.logger.log(`[AI] Question generation attempt ${attempt}/${MAX_ATTEMPTS}`);
       try {
         const raw = await this.callOllama(prompt, 900);
         const jsonArray = this.extractJsonArray(raw);
@@ -334,20 +304,26 @@ Génère STRICTEMENT le tableau JSON. Aucun texte ni explication avant ou après
             }
           }
 
-          this.logger.log(`[AI] Generated ${parsed.length} valid questions on attempt ${attempt}`);
-          return parsed.slice(0, 5);
+          if (parsed.length > 0) {
+            this.logger.log(`[AI] Generated ${parsed.length} valid questions on attempt ${attempt}`);
+            return parsed.slice(0, 5);
+          }
+          this.logger.warn(`[AI] Attempt ${attempt}: questions were all invalid or duplicates`);
         } else {
           this.logger.warn(`[AI] Attempt ${attempt}: no JSON array found in response`);
         }
       } catch (err: any) {
         this.logger.error(`[AI] Attempt ${attempt} error: ${err.message}`);
-        if (attempt === 2) break; // Don't retry after last attempt
+        // Re-throw immediately on last attempt so the caller gets the real error
+        if (attempt === MAX_ATTEMPTS) throw err;
       }
     }
 
-    // ━━━ ABSOLUTE FALLBACK — Never return an error to the frontend ━━━
-    this.logger.warn('[AI] All attempts failed or filtered — returning fallback questions');
-    return this.buildFallbackQuestions(jobTitle, competences);
+    // All attempts produced no usable questions (no exception was thrown)
+    throw new HttpException(
+      `Le modèle IA n'a pas réussi à générer des questions valides après ${MAX_ATTEMPTS} tentatives. Veuillez réessayer.`,
+      HttpStatus.SERVICE_UNAVAILABLE,
+    );
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
@@ -361,13 +337,11 @@ Génère STRICTEMENT le tableau JSON. Aucun texte ni explication avant ou après
   ): Promise<any[]> {
     this.logger.log('[AI] generateQuestions called');
 
-    // Extract job title from jobDescription (first line or full description)
     const firstLine = (jobDescription || '').split('\n')[0].replace(/^Titre du poste:\s*/i, '').trim();
     const jobTitle = firstLine || 'Commercial';
 
-    const questions = await this.generateWithFallback(jobTitle, competences, [], jobDescription);
+    const questions = await this.generateWithRetry(jobTitle, competences, [], jobDescription);
 
-    // If an offre entity was passed, persist to DB
     if (offre && questions.length > 0) {
       const entities: Question[] = questions.map((q) => {
         const e = new Question();
@@ -397,7 +371,7 @@ Génère STRICTEMENT le tableau JSON. Aucun texte ni explication avant ou après
     const firstLine = (jobDescription || '').split('\n')[0].replace(/^Titre du poste:\s*/i, '').trim();
     const jobTitle = firstLine || 'Commercial';
 
-    const questions = await this.generateWithFallback(jobTitle, competences, previousQuestions, jobDescription);
+    const questions = await this.generateWithRetry(jobTitle, competences, previousQuestions, jobDescription);
 
     return questions.map(q => ({
       ...q,
@@ -423,23 +397,20 @@ Génère STRICTEMENT le tableau JSON. Aucun texte ni explication avant ou après
     const correctItems = results.filter(r => r.isCorrect);
     const wrongItems = results.filter(r => !r.isCorrect);
 
-    // ─── Step 1: Build deterministic baseline from actual answers ────────────────
-    // Each correct question → a strength  
+    // ─── Baseline deterministic values (used if AI enrichment fails) ──────────
     const baseStrengths: string[] = correctItems.length > 0
       ? correctItems.map(r => `Bonne maîtrise de la notion : "${r.question.substring(0, 120)}"`)
       : ['Continuez à vous exercer pour développer de nouvelles compétences.'];
 
-    // Each wrong question → a weakness
     const baseWeaknesses: string[] = wrongItems.length > 0
       ? wrongItems.map(r => `Notion à approfondir : "${r.question.substring(0, 120)}" (répondu : "${r.selectedAnswer}", correct : "${r.correctAnswer}")`)
       : ['Aucune lacune détectée — score parfait !'];
 
-    // Recommendations only about errors, referencing wrong answers specifically
     const baseRecommendations: string[] = wrongItems.length > 0
       ? wrongItems.map(r => `Révisez la notion : "${r.question.substring(0, 100)}" — la bonne réponse était : "${r.correctAnswer}"`)
       : ['Maintenez ce niveau d\'excellence et continuez votre veille technique.'];
 
-    // ─── Step 2: Attempt Ollama to enrich each section with natural language ─────
+    // ─── Attempt Ollama enrichment ────────────────────────────────────────────
     try {
       const correctList = correctItems.map(r => `- Q: "${r.question.substring(0, 150)}" → Réponse correcte choisie: "${r.selectedAnswer}"`).join('\n');
       const wrongList = wrongItems.map(r => `- Q: "${r.question.substring(0, 150)}" → Répondu: "${r.selectedAnswer}", Attendu: "${r.correctAnswer}"`).join('\n');
@@ -507,7 +478,7 @@ Format JSON strict :
       this.logger.warn(`[AI] Recommendation generation outer error: ${err.message}`);
     }
 
-    // ─── Step 3: Guaranteed deterministic fallback (always correct and personalized) ─
+    // ─── Fallback: deterministic answers built from actual candidate results ──
     this.logger.warn('[AI] All AI attempts failed — returning deterministic personalized fallback.');
     return {
       score,
@@ -524,7 +495,7 @@ Format JSON strict :
   // ══════════════════════════════════════════════════════════════════════════════
 
   async generateQCM(topic: string): Promise<any[]> {
-    const questions = await this.generateWithFallback(topic, topic, [], topic);
+    const questions = await this.generateWithRetry(topic, topic, [], topic);
     return questions;
   }
 }
