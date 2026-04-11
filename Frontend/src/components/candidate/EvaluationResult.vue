@@ -292,27 +292,56 @@ onMounted(async () => {
       candidature.value = data;
       scoreDisplay.value = data?.score ?? 0;
 
-      if (data?.evaluationDetails) {
-        try {
-          const details = JSON.parse(data.evaluationDetails);
-          evalStats.value.tempsEcoule = details.Temps || 'N/A';
-          evalStats.value.bonnesReponses = details.CorrectAnswers != null ? `${details.CorrectAnswers}/${details.TotalQuestions}` : 'N/A';
-          evalStats.value.topPercent = details.TopPercent ? `Top ${details.TopPercent}%` : 'N/A';
+      if (data) {
+        // Try parsing evaluationDetails (can be string or already parsed object)
+        let details: any = {};
+        if (typeof data.evaluationDetails === 'string') {
+          try {
+            details = JSON.parse(data.evaluationDetails);
+          } catch (e) {
+            console.warn('Failed to parse evaluationDetails string', e);
+          }
+        } else if (data.evaluationDetails && typeof data.evaluationDetails === 'object') {
+          details = data.evaluationDetails;
+        }
 
-          if (details.ScoreParCompetence) {
-            skills.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
-              name: key,
-              score: Number(val),
-            }));
-          }
-          if (details.aiRecommendation) {
-              aiRecommendation.value = details.aiRecommendation;
-          }
-          if (details.answers && Array.isArray(details.answers)) {
-              testAnswers.value = details.answers;
-          }
-        } catch {
-          // fallback to score only
+        // 1. Temps Écoulé
+        evalStats.value.tempsEcoule = details.Temps || data.tempsEcoule || 'N/A';
+
+        // 2. Réponses Correctes
+        const corrects = details.CorrectAnswers ?? data.nbReponsesCorrectes;
+        const total = details.TotalQuestions ?? data.totalQuestions;
+        if (total != null && corrects != null) {
+          evalStats.value.bonnesReponses = `${corrects}/${total}`;
+        } else {
+          evalStats.value.bonnesReponses = 'N/A';
+        }
+
+        // 3. Classement / Top %
+        if (details.TopPercent) {
+          evalStats.value.topPercent = `Top ${details.TopPercent}%`;
+        } else if (data.score != null) {
+          evalStats.value.topPercent = `Top ${Math.max(1, 100 - data.score)}%`;
+        } else {
+          evalStats.value.topPercent = 'N/A';
+        }
+
+        // 4. Skills
+        if (details.ScoreParCompetence) {
+          skills.value = Object.entries(details.ScoreParCompetence).map(([key, val]) => ({
+            name: key,
+            score: Number(val),
+          }));
+        }
+
+        // 5. AI Recommendation
+        if (details.aiRecommendation) {
+          aiRecommendation.value = details.aiRecommendation;
+        }
+
+        // 6. Detailed Answers
+        if (details.answers && Array.isArray(details.answers)) {
+          testAnswers.value = details.answers;
         }
       }
     }

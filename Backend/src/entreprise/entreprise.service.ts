@@ -461,7 +461,7 @@ export class EntrepriseService {
             offre.ExperienceRequise ? `Experience: ${offre.ExperienceRequise}` : '',
         ].filter(Boolean).join('\n');
 
-        // 3. Generate questions — always returns 5 (with fallback if Ollama fails)
+        // 3. Generate questions — always returns 5 (with fallback if AI fails)
         const aiQuestions = await this.aiService.generateQuestions(
             jobDescription,
             null, // do not persist yet — recruiter must validate first

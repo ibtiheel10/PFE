@@ -11,6 +11,7 @@ export interface OffreEmploi {
     ModeDeTravail: string | null;
     Salaire: number | null;
     Localisation: string;
+    competences: string | null;
     ExperienceRequise: string | null;
     NbPost: number;
     entreprise?: { id: number; nom: string };

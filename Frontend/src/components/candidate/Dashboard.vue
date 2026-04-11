@@ -181,30 +181,13 @@
                     <div class="sidebar-card-header">
                         <div>
                             <h3 class="font-bold text-gray-900">Suggestions pour vous</h3>
-                            <p v-if="dominantSkill" class="text-[10px] text-[#1e40af] font-semibold mt-0.5">
-                                Basé sur votre compétence en <span class="underline">{{ dominantSkill }}</span>
-                            </p>
                         </div>
                         <div class="w-8 h-8 bg-blue-50 rounded-xl flex items-center justify-center">
                             <BoltIcon class="w-4 h-4 text-[#1e40af]" />
                         </div>
                     </div>
 
-                    <!-- Skill badge -->
-                    <div v-if="dominantSkill && dominantSkillScore !== null" class="mx-4 mt-3 mb-1 flex items-center gap-2 bg-gradient-to-r from-[#eff6ff] to-[#f0fdf4] border border-[#1e40af]/10 rounded-xl px-3 py-2">
-                        <div class="w-7 h-7 rounded-lg bg-[#1e40af] flex items-center justify-center flex-shrink-0">
-                            <svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.347.346A3.001 3.001 0 0112 15a3 3 0 01-2.121-.879l-.346-.346z"/></svg>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-[11px] font-bold text-gray-700 truncate">{{ dominantSkill }}</p>
-                            <div class="flex items-center gap-1.5 mt-0.5">
-                                <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                    <div class="h-full bg-[#1e40af] rounded-full transition-all duration-700" :style="{ width: dominantSkillScore + '%' }"></div>
-                                </div>
-                                <span class="text-[10px] font-bold text-[#1e40af]">{{ dominantSkillScore }}%</span>
-                            </div>
-                        </div>
-                    </div>
+
 
                     <!-- Loading suggestions -->
                     <div v-if="isLoading" class="divide-y divide-gray-50">
@@ -379,8 +362,8 @@ const currentChartData = computed(() =>
 // ���� Suggestions pour vous ����������������������������������������������������������������������������������
 const suggestions = ref<OffreEmploi[]>([]);
 
-// -- Dominant skill analysis ---------------------------------------------------
-const dominantSkill = computed<string | null>(() => {
+// -- Strong skills analysis (all skills with avg score >= 50) -------------------
+const strongSkills = computed<string[]>(() => {
     const map: Record<string, { total: number; count: number }> = {};
     for (const c of allCandidatures.value) {
         if (!c.evaluationDetails) continue;
@@ -395,46 +378,62 @@ const dominantSkill = computed<string | null>(() => {
             }
         } catch {}
     }
-    if (Object.keys(map).length === 0) return null;
     return Object.entries(map)
         .map(([k, v]) => ({ name: k, avg: v.total / v.count }))
-        .sort((a, b) => b.avg - a.avg)[0]?.name ?? null;
+        .filter(s => s.avg >= 50)
+        .map(s => s.name.toLowerCase());
 });
 
-const dominantSkillScore = computed<number | null>(() => {
-    if (!dominantSkill.value) return null;
-    const vals: number[] = [];
-    for (const c of allCandidatures.value) {
-        if (!c.evaluationDetails) continue;
-        try {
-            const d = JSON.parse(c.evaluationDetails);
-            if (d.ScoreParCompetence?.[dominantSkill.value] !== undefined) {
-                vals.push(Number(d.ScoreParCompetence[dominantSkill.value]));
-            }
-        } catch {}
-    }
-    if (vals.length === 0) return null;
-    return Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
-});
-
-// -- Smart suggestions � filter & rank by dominant skill ----------------------
+// -- Smart suggestions – filter & rank by all strong skills ----------------------
 const smartSuggestions = computed(() => {
+    // 3. Récupération des offres d’emploi (chargées dans suggestions)
     if (!suggestions.value.length) return [];
-    const skill = dominantSkill.value?.toLowerCase() ?? '';
+    
+    // 1. & 2. Charger les scores des compétences du candidat (garder uniquement seuil >= 50%)
+    const skills = strongSkills.value;
+    
+    // 6. Retourner vide si le candidat n'a pas validé de compétences, forçant l'utilisation de "Voir tout"
+    if (skills.length === 0) return [];
+
     const alreadyApplied = new Set(allCandidatures.value.map(c => c.offre?.id));
     const pool = suggestions.value.filter(o => !alreadyApplied.has(o.id));
-    if (!skill) return pool.slice(0, 4).map(o => ({ ...o, _matchScore: null, _isMatch: false, _matchColor: '#1e40af' }));
-    const skillWords = skill.split(/[\s,\-\/]+/).filter((w: string) => w.length > 2);
+    
+    const normalizeText = (text: string) => {
+        return (text || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    };
+
+    const candidateSkillsNormalized = skills.map(s => normalizeText(s));
+    
     return pool
         .map(o => {
-            const text = `${(o.TitreDePost || '').toLowerCase()} ${(o.Categorie || '').toLowerCase()} ${((o as any).competences || '').toLowerCase()}`;
-            const matchCount = skillWords.filter((w: string) => text.includes(w)).length;
-            const matchScore = skillWords.length > 0 ? Math.round((matchCount / skillWords.length) * 100) : 0;
-            const color = matchScore >= 70 ? '#10b981' : matchScore >= 30 ? '#1e40af' : '#94a3b8';
-            return { ...o, _matchScore: matchScore || null, _isMatch: matchScore >= 30, _matchColor: color };
+            // Chaque offre contient une liste de compétences requises
+            const offreCompetencesStr = (o as any).competences || o.ExperienceRequise || o.Categorie || '';
+            const offreCompetences = offreCompetencesStr.split(/[,\-]/).map((c: string) => normalizeText(c)).filter((c: string) => c.length > 2);
+            
+            let isMatch = false;
+            let matchCount = 0;
+
+            // 4. Matching des compétences : Pour chaque offre, comparer ses compétences avec celles validées
+            for (const offerComp of offreCompetences) {
+                for (const candComp of candidateSkillsNormalized) {
+                    // Condition : si au moins 1 compétence correspond → poste retenu
+                    if (offerComp.includes(candComp) || candComp.includes(offerComp)) {
+                        isMatch = true;
+                        matchCount++;
+                        break; 
+                    }
+                }
+            }
+
+            const matchScore = offreCompetences.length > 0 ? Math.round((matchCount / offreCompetences.length) * 100) : 0;
+            const color = matchScore >= 70 ? '#10b981' : matchScore > 0 ? '#1e40af' : '#64748b';
+            
+            return { ...o, _matchScore: matchScore || null, _isMatch: isMatch, _matchColor: color };
         })
+        // 5. Exclure les postes sans correspondance
+        .filter(o => o._isMatch)
         .sort((a: any, b: any) => (b._matchScore ?? 0) - (a._matchScore ?? 0))
-        .slice(0, 4);
+        .slice(0, 5); // Génération des suggestions finales prêtes pour affichage
 });
 
 // ���� Fetch all data ������������������������������������������������������������������������������������������������

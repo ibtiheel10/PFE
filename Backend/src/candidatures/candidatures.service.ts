@@ -100,24 +100,21 @@ export class CandidaturesService {
         console.log('[DEBUG] normalized answers:', JSON.stringify(answers));
         console.log('[DEBUG] question IDs:', questions.map(q => q.id));
 
-        // Competency buckets derived from offer's competences field
-        let competenceNames = ['Bases & Concepts', 'Logique métier', 'Pratique'];
-        if (candidature.offre?.competences) {
-            const parts = candidature.offre.competences.split(/[,\n-]/).map(s => s.trim()).filter(s => s.length > 2);
-            if (parts.length >= 3) competenceNames = parts.slice(0, 3);
-            else if (parts.length > 0) competenceNames = [parts[0], 'Pratique et Implémentation', 'Concepts Clés'];
-        } else if (candidature.offre?.TitreDePost) {
-            competenceNames = [`${candidature.offre.TitreDePost} (Bases)`, 'Architecture & Design', 'Performance & Qualité'];
-        }
-        const compBuckets = competenceNames.map(name => ({ name, total: 0, correct: 0 }));
+        // Track stats per competency dynamically based on question tags
+        const statsPerComp: Record<string, { total: number; correct: number }> = {};
 
         let correctCount = 0;
         const reponsesToSave: ReponseCandidat[] = [];
         const testResults: any[] = [];
         for (let i = 0; i < questions.length; i++) {
             const q = questions[i];
-            const bucketIdx = i % compBuckets.length;
-            compBuckets[bucketIdx].total++;
+            
+            // Extract competency tag added during generation
+            let compName = q.contenu?.category || 'Basique';
+            if (!statsPerComp[compName]) {
+                statsPerComp[compName] = { total: 0, correct: 0 };
+            }
+            statsPerComp[compName].total++;
 
             let isCorrect = false;
             let reponseText = 'Non répondu';
@@ -147,7 +144,7 @@ export class CandidaturesService {
                     }
                     if (isCorrect) {
                         correctCount++;
-                        compBuckets[bucketIdx].correct++;
+                        statsPerComp[compName].correct++;
                     }
                 }
             }
@@ -175,8 +172,15 @@ export class CandidaturesService {
         const scorePercent = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
         const ScoreParCompetence: Record<string, number> = {};
-        for (const b of compBuckets) {
-            ScoreParCompetence[b.name] = b.total > 0 ? Math.round((b.correct / b.total) * 100) : scorePercent;
+        const validDiscreteScores = [0, 20, 40, 50, 80, 100];
+        
+        for (const [compName, stats] of Object.entries(statsPerComp)) {
+            const rawScore = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
+            // Snap to the closest required discrete score: 0%, 20%, 40%, 50%, 80%, 100%
+            const closestScore = validDiscreteScores.reduce((prev, curr) => 
+                Math.abs(curr - rawScore) < Math.abs(prev - rawScore) ? curr : prev
+            );
+            ScoreParCompetence[compName] = closestScore;
         }
 
         candidature.score = scorePercent;
@@ -226,22 +230,31 @@ export class CandidaturesService {
             aiRecommendation = { text: 'Recommandation IA indisponible.', error: true };
         }
 
+        candidature.nbReponsesCorrectes = correctCount;
+        candidature.totalQuestions = totalQuestions;
+        candidature.score = scorePercent;
+        candidature.tempsEcoule = tempsEcoule || candidature.tempsEcoule || '0:00';
+        
         candidature.evaluationDetails = JSON.stringify({
             TotalQuestions: totalQuestions,
             CorrectAnswers: correctCount,
-            Temps: tempsEcoule || candidature.tempsEcoule || '15:00',
+            Temps: candidature.tempsEcoule,
             TopPercent: Math.max(1, 100 - scorePercent),
             ScoreParCompetence,
             aiRecommendation,
             answers: testResults
         });
 
-        await this.candidatureRepo.save(candidature);
+        const savedCandidature = await this.candidatureRepo.save(candidature);
         if (reponsesToSave.length > 0) {
             await this.reponseCandidatRepo.save(reponsesToSave);
         }
 
-        return { message: 'Évaluation soumise avec succès.', score: scorePercent };
+        return { 
+            message: 'Évaluation soumise avec succès.', 
+            score: scorePercent,
+            candidature: savedCandidature 
+        };
     }
 
     async apply(userId: number, offreId: string): Promise<Candidature> {

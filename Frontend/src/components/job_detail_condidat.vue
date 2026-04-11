@@ -192,10 +192,10 @@
               <div class="jp-skills">
                 <span
                   class="jp-skill"
-                  v-for="skill in (job.ExperienceRequise ? job.ExperienceRequise.split(',') : [])"
+                  v-for="skill in ((job as any).competences ? (job as any).competences.split(',') : [])"
                   :key="skill"
                 >{{ skill.trim() }}</span>
-                <span v-if="!job.ExperienceRequise" class="jp-no-skill">Non spécifiées</span>
+                <span v-if="!(job as any).competences" class="jp-no-skill">Non spécifiées</span>
               </div>
             </div>
           </div>

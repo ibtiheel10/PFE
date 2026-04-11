@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Body, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Request, Query } from '@nestjs/common';
 import { CandidatService } from './candidat.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -31,6 +31,25 @@ export class CandidatController {
     @ApiResponse({ status: 200, description: 'Dashboard data retrieved successfully.' })
     async getDashboard(@Request() req: any) {
         return this.candidatService.getDashboard(req.user.userId);
+    }
+
+    /**
+     * GET /api/Candidat/suggestions?threshold=50&limit=6
+     * Returns job offer suggestions based on the candidate's competency scores
+     * obtained from completed QCMs. Skills scoring above `threshold` (default 50%)
+     * are used to find matching offers via the `competences` field.
+     */
+    @Get('suggestions')
+    @ApiOperation({ summary: 'Get skill-based job offer suggestions from QCM scores' })
+    @ApiResponse({ status: 200, description: 'Suggestions returned.' })
+    async getSuggestions(
+        @Request() req: any,
+        @Query('threshold') threshold?: string,
+        @Query('limit') limit?: string,
+    ) {
+        const th = threshold ? parseInt(threshold, 10) : 50;
+        const lim = limit ? parseInt(limit, 10) : 6;
+        return this.candidatService.getSuggestions(req.user.userId, th, lim);
     }
 
     @Put('mon-profil')

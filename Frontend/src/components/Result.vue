@@ -224,39 +224,66 @@ onMounted(async () => {
           candidature.value = data;
           score.value = data?.score ?? 0;
           
-          if (data?.evaluationDetails) {
-              try {
-                  const details = JSON.parse(data.evaluationDetails);
-                  evalStats.value.tempsEcoule = details.Temps || 'N/A';
-                  evalStats.value.bonnesReponses = `${details.CorrectAnswers}/${details.TotalQuestions}`;
-                  evalStats.value.topPercent = details.TopPercent ? `Top ${details.TopPercent}%` : 'N/A';
-                  
-                  aiRecommendation.value = details.aiRecommendation || null;
-                  testResults.value = details.answers || [];
+      if (data) {
+          // Handle both string and pre-parsed object
+          let details: any = {};
+          if (typeof data.evaluationDetails === 'string') {
+            try {
+              details = JSON.parse(data.evaluationDetails);
+            } catch (e) {
+              console.warn('Failed to parse evaluationDetails in Result.vue', e);
+            }
+          } else if (data.evaluationDetails && typeof data.evaluationDetails === 'object') {
+            details = data.evaluationDetails;
+          }
 
-                  const competenceMap: Record<string, { total: number; count: number }> = {};
-                  for (const c of evaluatedCandidatures) {
-                      if (c.evaluationDetails) {
-                          try {
-                              const d = JSON.parse(c.evaluationDetails);
-                              if (d.ScoreParCompetence) {
-                                  for (const [k, v] of Object.entries(d.ScoreParCompetence)) {
-                                      if (!competenceMap[k]) competenceMap[k] = { total: 0, count: 0 };
-                                      competenceMap[k].total += Number(v);
-                                      competenceMap[k].count += 1;
-                                  }
-                              }
-                          } catch (e) {}
+          // 1. Temps Écoulé
+          evalStats.value.tempsEcoule = details.Temps || data.tempsEcoule || 'N/A';
+
+          // 2. Réponses Correctes
+          const corrects = details.CorrectAnswers ?? data.nbReponsesCorrectes;
+          const total = details.TotalQuestions ?? data.totalQuestions;
+          if (total != null && corrects != null) {
+            evalStats.value.bonnesReponses = `${corrects}/${total}`;
+          } else {
+            evalStats.value.bonnesReponses = '0/0';
+          }
+
+          // 3. Classement / Top %
+          if (details.TopPercent) {
+            evalStats.value.topPercent = `Top ${details.TopPercent}%`;
+          } else if (data.score != null) {
+            evalStats.value.topPercent = `Top ${Math.max(1, 100 - data.score)}%`;
+          } else {
+            evalStats.value.topPercent = 'N/A';
+          }
+
+          aiRecommendation.value = details.aiRecommendation || null;
+          testResults.value = details.answers || [];
+
+          // Re-calculate competencies based on all evaluated candidatures
+          const competenceMap: Record<string, { total: number; count: number }> = {};
+          for (const c of evaluatedCandidatures) {
+              if (c.evaluationDetails) {
+                  try {
+                      const d = typeof c.evaluationDetails === 'string' 
+                        ? JSON.parse(c.evaluationDetails) 
+                        : c.evaluationDetails;
+                      if (d.ScoreParCompetence) {
+                          for (const [k, v] of Object.entries(d.ScoreParCompetence)) {
+                              if (!competenceMap[k]) competenceMap[k] = { total: 0, count: 0 };
+                              competenceMap[k].total += Number(v);
+                              competenceMap[k].count += 1;
+                          }
                       }
-                  }
-                  competencies.value = Object.entries(competenceMap).map(([name, { total, count }]) => ({
-                      name,
-                      score: Math.round(total / count)
-                  }));
-              } catch (e) {
-                  console.error('Error parsing evaluation details', e);
+                  } catch (e) {}
               }
           }
+          competencies.value = Object.entries(competenceMap).map(([name, { total, count }]) => ({
+              name,
+              score: Math.round(total / count)
+          }));
+      }
       }
 
       const resStats = await getMesStats();
