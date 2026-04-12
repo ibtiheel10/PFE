@@ -262,9 +262,12 @@ const evalStats = ref({ tempsEcoule: 'N/A', bonnesReponses: 'N/A', topPercent: '
 const skills = ref<{ name: string; score: number; description?: string }[]>([]);
 const candidature = ref<any>(null);
 const isSuccess = computed(() => {
-    if (candidature.value?.statut === 'Accepté' || candidature.value?.statut === 'Acceptée' || candidature.value?.statut === 'Entretien') return true;
-    if (candidature.value?.statut === 'Refusé' || candidature.value?.statut === 'Non retenu') return false;
-    return scoreDisplay.value >= 70;
+    // Priorité au statut de la candidature
+    const statut = candidature.value?.statut;
+    if (statut === 'Accepté' || statut === 'Acceptée' || statut === 'Entretien') return true;
+    if (statut === 'Refusé' || statut === 'Refusée' || statut === 'Non retenu') return false;
+    // Si pas de statut définitif, se baser sur le score
+    return scoreDisplay.value >= (candidature.value?.offre?.seuilMinimal || 80);
 });
 const aiRecommendation = ref<any>(null);
 const testAnswers = ref<any[]>([]);

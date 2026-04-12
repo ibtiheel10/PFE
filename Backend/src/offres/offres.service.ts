@@ -38,7 +38,7 @@ export class OffresService {
     async findOne(id: string): Promise<OffreEmploi> { // Original findOne for OffreEmploi
         const offre = await this.offreEmploiRepository.findOne({ 
             where: { id },
-            relations: ['entreprise']
+            relations: ['entreprise', 'candidatures', 'questions']
         });
         if (!offre) {
             throw new NotFoundException(`L'offre d'emploi avec l'ID ${id} n'a pas été trouvée.`);

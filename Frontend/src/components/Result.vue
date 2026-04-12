@@ -314,13 +314,15 @@ onMounted(async () => {
 });
 
 const isSuccess = computed(() => {
-    if (candidature.value?.statut === 'Entretien' || candidature.value?.statut === 'Acceptée') {
+    const statut = candidature.value?.statut;
+    // Priorité au statut de la candidature
+    if (statut === 'Accepté' || statut === 'Acceptée' || statut === 'Entretien') {
         return true;
-    } else if (candidature.value?.statut === 'Non retenu' || candidature.value?.statut === 'Refusé') {
+    } else if (statut === 'Refusé' || statut === 'Refusée' || statut === 'Non retenu') {
         return false;
     }
-    // Fallback while pending/waiting
-    return score.value >= 70;
+    // Fallback: se baser sur le score si pas de statut définitif
+    return score.value >= (candidature.value?.offre?.seuilMinimal || 80);
 });
 const competencies = ref<{name: string, score: number}[]>([]);
 

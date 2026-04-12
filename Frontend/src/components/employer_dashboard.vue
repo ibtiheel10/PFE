@@ -261,6 +261,7 @@
                                 <!-- ApexCharts Modern Interactive Chart -->
                                 <apexchart
                                     v-else
+                                    :key="activePeriod"
                                     type="area"
                                     height="280"
                                     :options="chartOptions"
@@ -451,66 +452,86 @@
 
       <!-- Edit Profile Dialog -->
       <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
-        <div v-if="showEditProfile" class="edit-profile-overlay" @click="showEditProfile = false">
+        <div v-if="showEditProfile" class="fixed inset-0 z-[100] flex items-center justify-center p-4" style="background:rgba(15,23,42,0.65);backdrop-filter:blur(6px);" @click.self="showEditProfile = false">
           <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
-            <div v-if="showEditProfile" class="edit-profile-dialog" @click.stop>
-              <div class="edit-profile-header">
-                <div>
-                  <h2 class="edit-profile-title">Edit profile</h2>
-                  <p class="edit-profile-desc">Make changes to your profile here. Click save when you're done. Your profile will be updated immediately.</p>
+            <div v-if="showEditProfile" class="profile-modal">
+              <!-- Modal Header -->
+              <div class="profile-modal-header">
+                <div class="flex items-center gap-3">
+                  <div class="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
+                    <UserCircleIcon class="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h2 class="text-lg font-bold text-gray-900">Modifier le profil</h2>
+                    <p class="text-xs text-gray-500">Enregistrez vos changements ci-dessous</p>
+                  </div>
                 </div>
-                <button @click="showEditProfile = false" class="edit-profile-close">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                <button @click="showEditProfile = false" class="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
               </div>
-              <div class="edit-profile-body">
-                <div v-if="profileSuccessMessage" class="mb-4 p-3 bg-green-50 text-green-700 rounded-lg text-sm">
-                  {{ profileSuccessMessage }}
-                </div>
-                <div v-if="profileErrorMessage" class="mb-4 p-3 bg-red-50 text-red-700 rounded-lg text-sm">
-                  {{ profileErrorMessage }}
-                </div>
 
-                <!-- Avatar section -->
-                <div class="avatar-upload-section">
-                  <div class="avatar-preview">
-                    <img v-if="editAvatar" :src="editAvatar" alt="Photo de profil" class="avatar-img" @error="editAvatar = ''" />
-                    <div v-else class="avatar-placeholder">{{ editName.charAt(0).toUpperCase() }}</div>
-                    <button class="avatar-edit-btn" @click="triggerAvatarInput" title="Changer la photo">
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              <!-- Avatar section -->
+              <div class="profile-modal-body">
+                <!-- Photo de profil card -->
+                <div class="avatar-upload-card">
+                  <div class="avatar-upload-preview">
+                    <img v-if="editAvatar" :src="editAvatar" class="avatar-upload-img" alt="Photo de profil" @error="editAvatar = ''" />
+                    <div v-else class="avatar-upload-initials">{{ editName.charAt(0).toUpperCase() }}</div>
+                    <button class="avatar-pencil-btn" @click="triggerAvatarInput" title="Modifier la photo">
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     </button>
                   </div>
-                  <div class="avatar-info">
-                    <p class="avatar-name">{{ editName || 'Entreprise' }}</p>
-                    <button class="avatar-upload-btn" @click="triggerAvatarInput">
-                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  <div class="avatar-upload-info">
+                    <p class="avatar-upload-name">{{ editName }}</p>
+                    <button @click="triggerAvatarInput" class="avatar-import-btn">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                       Importer une photo
                     </button>
-                    <p class="avatar-hint">PNG, JPG · Max 2 MB</p>
+                    <p class="avatar-upload-hint">PNG, JPG · Max 2 MB</p>
                   </div>
-                  <input ref="avatarInputRef" type="file" accept="image/*" class="hidden" @change="handleAvatarChange" />
+                  <input ref="avatarInputRef" type="file" class="hidden" accept="image/*" @change="handleAvatarChange" />
                 </div>
 
-                <div class="edit-profile-field">
-                  <label class="edit-profile-label">Nom de l'entreprise</label>
-                  <input type="text" v-model="editName" class="edit-profile-input" />
+                <div class="profile-field">
+                  <label class="profile-label">Nom de l'entreprise</label>
+                  <input type="text" v-model="editName" class="profile-input" placeholder="Nom de l'entreprise" />
                 </div>
-                <div class="edit-profile-field">
-                  <label class="edit-profile-label">Email</label>
-                  <input type="email" v-model="editEmail" class="edit-profile-input" />
+                <div class="profile-field">
+                  <label class="profile-label">Email</label>
+                  <input type="email" v-model="editEmail" class="profile-input" placeholder="Email" />
                 </div>
-                <div class="edit-profile-field">
-                  <label class="edit-profile-label">Mot de passe actuel</label>
-                  <input type="password" v-model="currentPassword" class="edit-profile-input" placeholder="Laisser vide pour ne pas modifier" />
-                </div>
-                <div class="edit-profile-field">
-                  <label class="edit-profile-label">Nouveau mot de passe</label>
-                  <input type="password" v-model="newPassword" class="edit-profile-input" placeholder="Laisser vide pour ne pas modifier" />
+
+                <!-- Password section -->
+                <div class="border-t border-gray-100 mt-4 pt-4">
+                  <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Changer le mot de passe</p>
+                  <div class="grid grid-cols-2 gap-4">
+                    <div class="profile-field">
+                      <label class="profile-label">Nouveau mot de passe</label>
+                      <input type="password" v-model="newPassword" class="profile-input" placeholder="••••••••" />
+                    </div>
+                    <div class="profile-field">
+                      <label class="profile-label">Mot de passe actuel</label>
+                      <input type="password" v-model="currentPassword" class="profile-input" placeholder="••••••••" />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div class="edit-profile-actions">
-                <button @click="showEditProfile = false" class="edit-profile-btn cancel">Cancel</button>
-                <button @click="saveProfile" class="edit-profile-btn save">Save changes</button>
+
+              <!-- Actions -->
+              <div class="profile-modal-footer">
+                <p v-if="profileSuccessMessage" class="text-xs text-green-600 font-semibold flex items-center gap-1">
+                  <span>✓</span> {{ profileSuccessMessage }}
+                </p>
+                <p v-if="profileErrorMessage" class="text-xs text-red-600 font-semibold">{{ profileErrorMessage }}</p>
+                <div class="flex gap-3 ml-auto">
+                  <button @click="showEditProfile = false" class="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow">
+                    Annuler
+                  </button>
+                  <button @click="saveProfile" class="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-900/30 hover:shadow-xl hover:shadow-blue-900/40 hover:-translate-y-0.5">
+                    Enregistrer
+                  </button>
+                </div>
               </div>
             </div>
           </transition>
@@ -555,7 +576,7 @@ const userEmail = ref(userInfo.email || 'entreprise@example.com');
 
 // State
 const activeNav = ref('Tableau de bord');
-const activePeriod = ref('30 derniers jours');
+const activePeriod = ref('3 derniers mois');  // Période par défaut: 3 derniers mois
 const isChartLoading = ref(false);
 const searchQuery = ref('');
 const hasNotifications = ref(true);
@@ -936,7 +957,7 @@ const chartOptions = computed(() => {
     return {
         chart: {
             type: 'area',
-            height: 280,
+            height: 300,
             toolbar: {
                 show: false
             },
@@ -946,60 +967,58 @@ const chartOptions = computed(() => {
             animations: {
                 enabled: true,
                 easing: 'easeinout',
-                speed: 800,
+                speed: 1500,
                 animateGradually: {
                     enabled: true,
-                    delay: 150
+                    delay: 250
                 },
                 dynamicAnimation: {
                     enabled: true,
-                    speed: 350
+                    speed: 600
                 }
             },
             fontFamily: 'Inter, sans-serif',
+            background: 'transparent',
+            sparkline: {
+                enabled: false
+            }
         },
         dataLabels: {
             enabled: false
         },
         stroke: {
             curve: 'smooth',
-            width: 3,
-            colors: ['#1e40af']
+            width: 2,
+            colors: ['#60A5FA'],
+            lineCap: 'round'
         },
         fill: {
             type: 'gradient',
             gradient: {
-                shadeIntensity: 1,
-                opacityFrom: 0.45,
+                shade: 'light',
+                type: 'vertical',
+                shadeIntensity: 0.5,
+                gradientToColors: ['#3B82F6', '#1E40AF'],
+                inverseColors: false,
+                opacityFrom: 0.65,
                 opacityTo: 0.05,
-                stops: [0, 90, 100],
-                colorStops: [
-                    {
-                        offset: 0,
-                        color: '#1e40af',
-                        opacity: 0.4
-                    },
-                    {
-                        offset: 100,
-                        color: '#1e40af',
-                        opacity: 0
-                    }
-                ]
+                stops: [0, 50, 100]
             }
         },
-        colors: ['#1e40af'],
+        colors: ['#60A5FA'],
         xaxis: {
             categories: periodData.map(m => m.period),
             labels: {
                 style: {
-                    colors: '#94a3b8',
+                    colors: '#9CA3AF',
                     fontSize: '11px',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    fontFamily: 'Inter, sans-serif'
                 },
-                rotate: -45,
-                rotateAlways: false,
+                rotate: 0,
                 hideOverlappingLabels: true,
-                trim: true
+                trim: true,
+                offsetY: 0
             },
             axisBorder: {
                 show: false
@@ -1007,24 +1026,36 @@ const chartOptions = computed(() => {
             axisTicks: {
                 show: false
             },
-            tooltip: {
-                enabled: false
+            crosshairs: {
+                show: true,
+                width: 1,
+                stroke: {
+                    color: '#E5E7EB',
+                    width: 1,
+                    dashArray: 3
+                }
             }
         },
         yaxis: {
+            show: true,
             labels: {
                 style: {
-                    colors: '#94a3b8',
+                    colors: '#9CA3AF',
                     fontSize: '11px',
-                    fontWeight: 500
+                    fontWeight: 500,
+                    fontFamily: 'Inter, sans-serif'
                 },
-                formatter: (value: number) => Math.floor(value).toString()
+                formatter: (value: number) => Math.floor(value).toString(),
+                offsetX: -5
             },
-            min: 0
+            min: 0,
+            forceNiceScale: true
         },
         grid: {
-            borderColor: '#f1f5f9',
-            strokeDashArray: 4,
+            show: true,
+            borderColor: '#F3F4F6',
+            strokeDashArray: 0,
+            position: 'back',
             xaxis: {
                 lines: {
                     show: false
@@ -1039,15 +1070,17 @@ const chartOptions = computed(() => {
                 top: 0,
                 right: 10,
                 bottom: 0,
-                left: 10
+                left: 5
             }
         },
         tooltip: {
             enabled: true,
+            shared: false,
+            followCursor: true,
+            intersect: false,
             theme: 'light',
             x: {
-                show: true,
-                format: 'dd MMM'
+                show: true
             },
             y: {
                 formatter: (value: number) => `${value} candidature${value > 1 ? 's' : ''}`,
@@ -1067,29 +1100,35 @@ const chartOptions = computed(() => {
                 const category = w.globals.labels[dataPointIndex];
                 return `
                     <div style="
-                        background: white;
-                        padding: 12px 16px;
+                        background: rgba(255, 255, 255, 0.98);
+                        backdrop-filter: blur(10px);
+                        padding: 10px 14px;
                         border-radius: 10px;
-                        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-                        border: 1px solid #e5e7eb;
+                        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.1);
+                        border: 1px solid rgba(96, 165, 250, 0.2);
                     ">
                         <div style="
-                            font-size: 11px;
-                            color: #6b7280;
+                            font-size: 10px;
+                            color: #6B7280;
                             font-weight: 600;
-                            margin-bottom: 4px;
+                            margin-bottom: 5px;
                             text-transform: uppercase;
-                            letter-spacing: 0.5px;
+                            letter-spacing: 0.8px;
                         ">${category}</div>
                         <div style="
-                            font-size: 20px;
-                            color: #1e40af;
-                            font-weight: 700;
+                            font-size: 22px;
+                            background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1E40AF 100%);
+                            -webkit-background-clip: text;
+                            -webkit-text-fill-color: transparent;
+                            background-clip: text;
+                            font-weight: 800;
+                            line-height: 1;
+                            margin-bottom: 3px;
                         ">${value}</div>
                         <div style="
-                            font-size: 11px;
-                            color: #9ca3af;
-                            margin-top: 2px;
+                            font-size: 10px;
+                            color: #9CA3AF;
+                            font-weight: 500;
                         ">candidature${value > 1 ? 's' : ''}</div>
                     </div>
                 `;
@@ -1097,16 +1136,30 @@ const chartOptions = computed(() => {
         },
         markers: {
             size: 0,
-            colors: ['#1e40af'],
-            strokeColors: '#fff',
+            colors: ['#FFFFFF'],
+            strokeColors: '#60A5FA',
             strokeWidth: 2,
             hover: {
-                size: 7,
-                sizeOffset: 3
-            }
+                size: 6,
+                sizeOffset: 2
+            },
+            discrete: []
         },
         legend: {
             show: false
+        },
+        states: {
+            hover: {
+                filter: {
+                    type: 'lighten',
+                    value: 0.1
+                }
+            },
+            active: {
+                filter: {
+                    type: 'none'
+                }
+            }
         },
         responsive: [{
             breakpoint: 768,
@@ -1199,15 +1252,22 @@ const navItems = [
 // --- Data Connection & Filtering ---
 const candidatesSource = computed(() => {
     if (!dashboardData.value || !dashboardData.value.meilleursCandidats) return [];
-    return dashboardData.value.meilleursCandidats.map(c => ({
-        id: c.candidatId,
-        name: [c.nom, c.prenom].filter(Boolean).join(' ') || c.name || 'Candidat inconnu',
-        role: c.role || 'Candidat Évalué',
-        score: c.score ?? null,   // keep null — don't default to 0
-        statut: c.statut || 'En attente',
-        email: c.email || '',
-        avatar: c.avatar || null, // Add avatar from backend
-    }));
+    
+    // Filtrer uniquement les candidats avec score >= 80% (Excellent)
+    return dashboardData.value.meilleursCandidats
+        .filter(c => {
+            const score = c.score ?? 0;
+            return score >= 80;  // Afficher uniquement les candidats avec score >= 80%
+        })
+        .map(c => ({
+            id: c.candidatId,
+            name: [c.nom, c.prenom].filter(Boolean).join(' ') || c.name || 'Candidat inconnu',
+            role: c.role || 'Candidat Évalué',
+            score: c.score ?? null,   // keep null — don't default to 0
+            statut: c.statut || 'En attente',
+            email: c.email || '',
+            avatar: c.avatar || null, // Add avatar from backend
+        }));
 });
 
 const displayJobs = computed(() => {
@@ -1565,6 +1625,8 @@ const displayJobs = computed(() => {
     transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+
+
 .chart-line-path {
     transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -1706,11 +1768,15 @@ const displayJobs = computed(() => {
 
 /* Cards Shared */
 .card {
-    background: white;
-    border-radius: 12px;
+    background: #FFFFFF;
+    border-radius: 16px;
     border: 1px solid #E5E7EB;
-    padding: 1.25rem;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    padding: 1.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.chart-card {
+    padding: 2rem;
 }
 
 .jobs-card {
@@ -1763,55 +1829,78 @@ const displayJobs = computed(() => {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0;
 }
 
 .card-header-modern h3 {
-    margin: 0 0 0.25rem 0;
-    font-size: 1.125rem;
+    margin: 0 0 0.5rem 0;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: #111827;
+    color: #1F2937;
+    letter-spacing: -0.02em;
 }
 
 .chart-subtitle-modern {
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     color: #9CA3AF;
     margin: 0;
+    font-weight: 500;
 }
 
 .time-period-tabs {
     display: flex;
     gap: 0.5rem;
     background: #F3F4F6;
-    padding: 0.25rem;
-    border-radius: 8px;
+    padding: 0.375rem;
+    border-radius: 10px;
 }
 
 .period-tab {
-    padding: 0.5rem 1rem;
-    font-size: 0.7rem;
+    padding: 0.5rem 1.25rem;
+    font-size: 0.875rem;
     font-weight: 600;
     border: none;
-    border-radius: 6px;
+    border-radius: 8px;
     background: transparent;
     color: #6B7280;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     white-space: nowrap;
 }
 
-.period-tab:hover {
+.period-tab:hover:not(:disabled) {
     color: #374151;
+    background: rgba(255, 255, 255, 0.5);
 }
 
 .period-tab.active {
     background: #FFFFFF;
-    color: #111827;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    color: #1F2937;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+
+.period-tab:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 .chart-area-modern {
     position: relative;
+    min-height: 300px;
+}
+
+.chart-area-modern.chart-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chart-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
 }
 
 .wave-chart {
@@ -2078,156 +2167,148 @@ const displayJobs = computed(() => {
 
 
 
-/* Edit Profile Dialog */
-/* ── Avatar upload ── */
-.avatar-upload-section {
-    display: flex; align-items: center; gap: 16px;
-    padding: 16px; background: #f8fafc;
-    border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 4px;
+/* ══════════════════════════════════════════════════════════════════
+   PROFILE MODAL STYLES (Matching Candidate Design)
+══════════════════════════════════════════════════════════════════ */
+.profile-modal {
+    background: white;
+    border-radius: 20px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 85vh;
+    box-shadow: 0 20px 50px rgba(15, 23, 42, 0.15);
+    border: 1px solid #e2e8f0;
+    overflow: hidden;
 }
-.avatar-preview { position: relative; flex-shrink: 0; }
-.avatar-img { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
-.avatar-placeholder { width: 64px; height: 64px; border-radius: 50%; background: #1e40af; color: white; font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
-.avatar-edit-btn { position: absolute; bottom: 0; right: 0; width: 22px; height: 22px; border-radius: 50%; background: #1e40af; color: white; border: 2px solid white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: background 0.2s; }
-.avatar-edit-btn:hover { background: #1e3a8a; }
-.avatar-info { display: flex; flex-direction: column; gap: 4px; }
-.avatar-name { font-size: 0.9rem; font-weight: 700; color: #0f172a; margin: 0; }
-.avatar-upload-btn { display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; background: white; border: 1px solid #e2e8f0; color: #1e40af; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-.avatar-upload-btn:hover { background: #eff6ff; border-color: #1e40af; }
-.avatar-hint { font-size: 0.7rem; color: #94a3b8; margin: 0; }
+.profile-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 18px;
+    border-bottom: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+.profile-modal-body {
+    padding: 16px;
+    max-height: calc(85vh - 140px);
+    overflow-y: auto;
+}
 
-.modal-overlay, .edit-profile-overlay {
-    position: fixed;
-    inset: 0;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, 0.75);
+/* ── Avatar upload card ── */
+.avatar-upload-card {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+}
+.avatar-upload-preview {
+    position: relative;
+    flex-shrink: 0;
+}
+.avatar-upload-img {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
+}
+.avatar-upload-initials {
+    width: 68px; height: 68px;
+    border-radius: 50%;
+    background: #1e40af;
+    color: white;
+    font-size: 1.6rem;
+    font-weight: 800;
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999;
-    backdrop-filter: blur(4px);
+    border: 3px solid white;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.12);
 }
-
-.edit-profile-dialog {
-    background: #ffffff;
-    border-radius: 16px;
-    padding: 28px 32px;
-    width: 100%;
-    max-width: 440px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    border: 1px solid #E5E7EB;
-}
-
-.edit-profile-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 24px;
-}
-
-.edit-profile-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: #111827;
-    margin: 0 0 8px 0;
-}
-
-.edit-profile-desc {
-    font-size: 0.85rem;
-    color: #6B7280;
-    margin: 0;
-    line-height: 1.5;
-    max-width: 340px;
-}
-
-.edit-profile-close {
-    background: none;
-    border: none;
-    color: #9CA3AF;
+.avatar-pencil-btn {
+    position: absolute;
+    bottom: 2px; right: 2px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #1e40af;
+    color: white;
+    border: 2px solid white;
+    display: flex; align-items: center; justify-content: center;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 6px;
+    transition: background 0.2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+.avatar-pencil-btn:hover { background: #1e3a8a; }
+.avatar-upload-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.avatar-upload-name {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+.avatar-import-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    border-radius: 9px;
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #1e40af;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    cursor: pointer;
     transition: all 0.2s;
-    flex-shrink: 0;
 }
-
-.edit-profile-close:hover {
-    color: #111827;
-    background: #F3F4F6;
+.avatar-import-btn:hover { background: #eff6ff; border-color: #1e40af; }
+.avatar-upload-hint {
+    font-size: 0.7rem;
+    color: #94a3b8;
+    margin: 0;
 }
-
-.edit-profile-body {
+.profile-modal-footer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px;
+    border-top: 1px solid #f1f5f9;
+    background: #f8fafc;
+}
+.profile-field {
     display: flex;
     flex-direction: column;
-    gap: 20px;
-    margin-bottom: 28px;
+    gap: 6px;
+    margin-bottom: 12px;
 }
-
-.edit-profile-field {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.edit-profile-label {
-    font-size: 0.85rem;
+.profile-label {
+    font-size: 0.75rem;
     font-weight: 600;
-    color: #374151;
+    color: #64748b;
+    letter-spacing: 0.02em;
 }
-
-.edit-profile-input {
-    background: #F9FAFB;
-    border: 1px solid #D1D5DB;
+.profile-input {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
     border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 0.9rem;
-    color: #111827;
+    padding: 9px 13px;
+    font-size: 0.875rem;
+    color: #1e293b;
     outline: none;
     transition: all 0.2s;
     font-family: inherit;
+    width: 100%;
 }
-
-.edit-profile-input:focus {
-    border-color: #1e40af;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+.profile-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
 }
-
-.edit-profile-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 12px;
-}
-
-.edit-profile-btn {
-    padding: 9px 20px;
-    border-radius: 8px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    border: none;
-    font-family: inherit;
-}
-
-.edit-profile-btn.cancel {
-    background: transparent;
-    color: #374151;
-    border: 1px solid #D1D5DB;
-}
-
-.edit-profile-btn.cancel:hover {
-    background: #F3F4F6;
-}
-
-.edit-profile-btn.save {
-    background: #1e40af;
-    color: #ffffff;
-}
-
-.edit-profile-btn.save:hover {
-    background: #1e40af;
-}
+.profile-input::placeholder { color: #94a3b8; }
 </style>

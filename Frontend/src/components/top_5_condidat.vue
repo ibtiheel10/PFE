@@ -4,7 +4,23 @@
             <h3>Meilleurs Candidats</h3>
             <a href="#" class="view-all" @click.prevent="$emit('view-all')">Voir tout</a>
         </div>
-        <div class="table-responsive">
+        
+        <!-- Message si aucun candidat excellent -->
+        <div v-if="topCandidates.length === 0" class="empty-candidates-state">
+            <div class="empty-icon">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+            </div>
+            <p class="empty-title">Aucun candidat excellent</p>
+            <p class="empty-description">Les candidats avec un score ≥ 80% apparaîtront ici.</p>
+        </div>
+        
+        <!-- Table des candidats -->
+        <div v-else class="table-responsive">
             <table class="modern-table">
                 <thead>
                     <tr>
@@ -83,25 +99,30 @@ const getDisplayStatus = (candidate: any): string => {
 };
 
 const getScoreColor = (candidate: any) => {
-    const s = getDisplayStatus(candidate);
-    if (s === 'Accepté' || s === 'Entretien') return 'green-fill';
-    if (s === 'Refusé') return 'red-fill';
-    return 'orange-fill';
+    const statut = getDisplayStatus(candidate);
+    
+    // Couleur basée sur le statut - Accepté et Entretien ont la même couleur (vert)
+    if (statut === 'Accepté' || statut === 'Entretien') return 'green-fill';   // Excellent - Vert
+    if (statut === 'Refusé') return 'red-fill';                                 // Faible - Rouge
+    return 'orange-fill';                                                        // En attente - Orange
 };
 
 const getScoreTextClass = (candidate: any) => {
-    const s = getDisplayStatus(candidate);
-    if (s === 'Accepté' || s === 'Entretien') return 'text-green';
-    if (s === 'Refusé') return 'text-red';
-    return 'text-orange';
+    const statut = getDisplayStatus(candidate);
+    
+    // Couleur du texte basée sur le statut - Accepté et Entretien ont la même couleur (vert)
+    if (statut === 'Accepté' || statut === 'Entretien') return 'text-green';   // Excellent - Vert
+    if (statut === 'Refusé') return 'text-red';                                 // Faible - Rouge
+    return 'text-orange';                                                        // En attente - Orange
 };
 
 const getScoreLabel = (candidate: any) => {
-    const s = getDisplayStatus(candidate);
-    if (s === 'Accepté')    return 'Excellent';
-    if (s === 'Entretien')  return 'Entretien';
-    if (s === 'En attente') return 'En attente';
-    if (s === 'Refusé')     return 'Faible';
+    const statut = getDisplayStatus(candidate);
+    
+    // Dans la colonne Score, afficher le niveau de performance
+    if (statut === 'Accepté' || statut === 'Entretien') return 'Excellent';  // Les deux affichent "Excellent" dans Score
+    if (statut === 'Refusé') return 'Faible';
+    if (statut === 'En attente') return 'En attente';
     return '—';
 };
 
@@ -310,6 +331,45 @@ const handleImageError = (event: Event, name: string) => {
 
 .status-pill.refused { background: #FEF2F2; color: #DC2626; }
 .status-pill.refused .status-dot { background: #EF4444; }
+
+/* Empty State */
+.empty-candidates-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 24px;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+}
+
+.empty-icon svg {
+    color: #94a3b8;
+}
+
+.empty-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #334155;
+    margin: 0 0 8px 0;
+}
+
+.empty-description {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
+    max-width: 280px;
+}
 
 /* Responsive Adjustments */
 @media (max-width: 1400px) {

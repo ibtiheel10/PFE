@@ -100,7 +100,7 @@
               </div>
               <div class="jp-stat-line"></div>
               <div class="jp-stat">
-                <span class="jp-stat-val">5 min</span>
+                <span class="jp-stat-val">{{ qcmDuration }}</span>
                 <span class="jp-stat-key">Durée test</span>
               </div>
             </div>
@@ -251,17 +251,17 @@
               <div class="jp-test-stats">
                 <div class="jp-ts">
                   <div class="jp-ts-icon jp-ts-sky"><i class="fa-regular fa-clock"></i></div>
-                  <span class="jp-ts-num">5 min</span>
+                  <span class="jp-ts-num">{{ qcmDuration }}</span>
                   <span class="jp-ts-lbl">durée</span>
                 </div>
                 <div class="jp-ts">
                   <div class="jp-ts-icon jp-ts-indigo"><i class="fa-solid fa-list-check"></i></div>
-                  <span class="jp-ts-num">5</span>
+                  <span class="jp-ts-num">{{ questionsCount }}</span>
                   <span class="jp-ts-lbl">questions</span>
                 </div>
                 <div class="jp-ts">
                   <div class="jp-ts-icon jp-ts-emerald"><i class="fa-solid fa-chart-line"></i></div>
-                  <span class="jp-ts-num">80%</span>
+                  <span class="jp-ts-num">{{ minScore }}%</span>
                   <span class="jp-ts-lbl">min. requis</span>
                 </div>
               </div>
@@ -404,7 +404,13 @@ onMounted(async () => {
 });
 
 const alreadyApplied  = computed(() => !!myApplication.value);
-const applicantsCount = computed(() => 12);
+const applicantsCount = computed(() => job.value?.candidatures?.length || 0);
+const questionsCount = computed(() => job.value?.questions?.length || 5);
+const qcmDuration = computed(() => {
+  const count = questionsCount.value;
+  return count <= 5 ? '5 min' : count <= 10 ? '10 min' : '15 min';
+});
+const minScore = computed(() => job.value?.seuilMinimal || 80);
 
 const isDeadlinePassed = computed(() => {
   if (!job.value || !job.value.DateLimite) return false;
@@ -415,7 +421,7 @@ const isDeadlinePassed = computed(() => {
 
 const recruitmentSteps = computed(() => [
   { title: 'Dépôt de candidature', desc: 'Soumettez votre candidature. Notre équipe examine votre profil sous 48h.', extra: '', icon: 'fa-solid fa-file-arrow-up', color: 'dot-indigo' },
-  { title: 'Test QCM Skillvia', desc: "Évaluation objective de vos compétences techniques via notre plateforme.", extra: job.value ? 'QCM technique · Score min. 80%' : '', icon: 'fa-solid fa-brain', color: 'dot-violet' },
+  { title: 'Test QCM Skillvia', desc: "Évaluation objective de vos compétences techniques via notre plateforme.", extra: job.value ? `QCM technique · Score min. ${minScore.value}%` : '', icon: 'fa-solid fa-brain', color: 'dot-violet' },
   { title: 'Entretien technique', desc: "Échange approfondi avec l'équipe recrutement et les managers techniques.", extra: '', icon: 'fa-solid fa-video', color: 'dot-orange' },
   { title: 'Décision finale', desc: "Retour de l'entreprise sous 5 jours ouvrés après l'entretien.", extra: '', icon: 'fa-solid fa-flag-checkered', color: 'dot-green' },
 ]);

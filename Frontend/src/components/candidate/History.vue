@@ -1,4 +1,4 @@
-<template>
+﻿<template>
     <div class="history-page animate-fade-in-up">
         <!-- Header Section -->
         <div class="header-section">
@@ -45,6 +45,16 @@
                     <!-- Status Indicator Line -->
                     <div class="status-line" :class="getStatusLineColor(app.status)"></div>
 
+                    <!-- Cancel Button (Top Right) -->
+                    <button 
+                        v-if="app.status === 'En attente'"
+                        @click.stop="confirmCancelApplication(app.id)"
+                        class="cancel-icon-btn"
+                        title="Annuler la candidature"
+                    >
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+
                     <div class="card-content">
                         <!-- Company Logo -->
                         <div class="company-logo">
@@ -80,15 +90,7 @@
                         <!-- Action Button -->
                         <div class="action-section">
                             <div v-if="app.status === 'En attente'" class="flex flex-col items-end gap-1">
-                                <span class="text-xs text-gray-400 italic max-w-[200px] text-right">Candidature en cours d’évaluation.</span>
-                                <button
-                                    @click.stop="handleCancel(app.id)"
-                                    class="btn-cancel"
-                                    title="Annuler la candidature"
-                                >
-                                    <i class="fa-solid fa-xmark"></i>
-                                    <span>Annuler</span>
-                                </button>
+                                <span class="text-xs text-gray-400 italic max-w-[200px] text-right">Candidature en cours d'évaluation.</span>
                             </div>
                             <span v-else class="text-xs text-gray-400 italic max-w-[200px] text-right">
                                 {{
@@ -169,9 +171,9 @@ const fetchApplications = async () => {
             status: (() => {
                 const s = (app.statut || '').toLowerCase();
                 if (s === 'expirée' || s.includes('expir')) return 'Expirée';
-                if (s === 'refusé' || s.includes('refus')) return 'Refusé';
+                if (s === 'Refusé' || s.includes('refus')) return 'Refusé';
                 if (s.includes('non retenu')) return 'Refusé';
-                if (s === 'accepté' || s === 'acceptée' || s.includes('accept')) return 'Accepté';
+                if (s === 'Accepté' || s === 'Acceptée' || s.includes('accept')) return 'Accepté';
                 if (s.includes('entretien')) return 'Entretien';
                 return 'En attente';
             })(),
@@ -256,6 +258,24 @@ const getStatusIcon = (status: string) => {
 const showToast = (msg: string) => {
     toastMessage.value = msg;
     setTimeout(() => { toastMessage.value = ''; }, 5000);
+};
+
+const confirmCancelApplication = async (appId: number) => {
+    const result = await Swal.fire({
+        title: 'Êtes-vous sûr de vouloir annuler cette candidature ?',
+        text: 'Cette action est irréversible.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Confirmer',
+        cancelButtonText: 'Annuler',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    });
+
+    if (result.isConfirmed) {
+        await handleCancel(appId);
+    }
 };
 
 const handleCancel = async (appId: number) => {
@@ -375,6 +395,36 @@ const handleCancel = async (appId: number) => {
     border-color: #1e40af40;
 }
 
+.cancel-icon-btn {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: white;
+    border: 1.5px solid #fecaca;
+    color: #dc2626;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 10;
+    font-size: 16px;
+}
+
+.cancel-icon-btn:hover {
+    background: #fef2f2;
+    border-color: #f87171;
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+}
+
+.cancel-icon-btn:active {
+    transform: scale(0.95);
+}
+
 .status-line {
     position: absolute;
     left: 0;
@@ -476,23 +526,29 @@ const handleCancel = async (appId: number) => {
     display: flex;
     align-items: center;
     gap: 6px;
-    padding: 7px 14px;
-    border-radius: 8px;
-    background: #fef2f2;
+    padding: 8px 16px;
+    border-radius: 10px;
+    background: white;
     color: #dc2626;
-    border: 1px solid #fecaca;
+    border: 1.5px solid #fecaca;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.08);
 }
 
 .btn-cancel:hover {
-    background: #fee2e2;
+    background: #fef2f2;
     border-color: #f87171;
-    transform: scale(1.02);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.15);
 }
 
+.btn-cancel:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(220, 38, 38, 0.08);
+}
 /* Responsive */
 .mobile-status {
     display: none;

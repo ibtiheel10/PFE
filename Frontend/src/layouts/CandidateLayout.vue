@@ -280,10 +280,10 @@
               </p>
               <p v-if="profileSaveError" class="text-xs text-red-400 font-semibold">{{ profileSaveError }}</p>
               <div class="flex gap-3 ml-auto">
-                <button @click="showEditProfile = false" class="px-4 py-2 text-sm font-semibold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                <button @click="showEditProfile = false" class="px-5 py-2.5 text-sm font-semibold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 shadow-sm hover:shadow">
                   Annuler
                 </button>
-                <button @click="saveProfile" class="px-5 py-2 text-sm font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-500 transition shadow-lg shadow-blue-900/30">
+                <button @click="saveProfile" class="px-6 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg shadow-blue-900/30 hover:shadow-xl hover:shadow-blue-900/40 hover:-translate-y-0.5">
                   Enregistrer
                 </button>
               </div>

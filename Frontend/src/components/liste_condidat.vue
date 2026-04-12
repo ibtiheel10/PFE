@@ -353,25 +353,30 @@ const getDisplayStatus = (candidate: any): string => {
 };
 
 const getScoreColor = (candidate: any) => {
-    const s = getDisplayStatus(candidate);
-    if (s === 'Accepté' || s === 'Entretien') return 'green-fill';
-    if (s === 'Refusé')   return 'red-fill';
-    return 'orange-fill';
+    const statut = getDisplayStatus(candidate);
+    
+    // Couleur basée sur le statut - Accepté et Entretien ont la même couleur (vert)
+    if (statut === 'Accepté' || statut === 'Entretien') return 'green-fill';   // Excellent - Vert
+    if (statut === 'Refusé') return 'red-fill';                                 // Faible - Rouge
+    return 'orange-fill';                                                        // En attente - Orange
 };
 
 const getScoreTextClass = (candidate: any) => {
-    const s = getDisplayStatus(candidate);
-    if (s === 'Accepté' || s === 'Entretien') return 'text-green';
-    if (s === 'Refusé')   return 'text-red';
-    return 'text-orange';
+    const statut = getDisplayStatus(candidate);
+    
+    // Couleur du texte basée sur le statut - Accepté et Entretien ont la même couleur (vert)
+    if (statut === 'Accepté' || statut === 'Entretien') return 'text-green';   // Excellent - Vert
+    if (statut === 'Refusé') return 'text-red';                                 // Faible - Rouge
+    return 'text-orange';                                                        // En attente - Orange
 };
 
 const getScoreLabel = (candidate: any) => {
-    const s = getDisplayStatus(candidate);
-    if (s === 'Accepté')   return 'Excellent';
-    if (s === 'Entretien') return 'Entretien';
-    if (s === 'En attente') return 'Moyen';
-    if (s === 'Refusé')    return 'Faible';
+    const statut = getDisplayStatus(candidate);
+    
+    // Dans la colonne Score, afficher le niveau de performance
+    if (statut === 'Accepté' || statut === 'Entretien') return 'Excellent';  // Les deux affichent "Excellent" dans Score
+    if (statut === 'Refusé') return 'Faible';
+    if (statut === 'En attente') return 'En attente';
     return 'N/A';
 };
 
