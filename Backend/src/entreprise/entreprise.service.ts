@@ -191,6 +191,7 @@ export class EntrepriseService {
             .leftJoin('o.entreprise', 'ent')
             .select(`TO_CHAR(c."datePostulation", 'Mon YY')`, 'mois')
             .addSelect('COUNT(*)', 'count')
+            .addSelect(`DATE_TRUNC('month', c."datePostulation")`, 'month_date')
             .where('ent.id = :userId', { userId })
             .andWhere('c."datePostulation" >= :from', { from: threeMonthsAgo })
             .groupBy(`DATE_TRUNC('month', c."datePostulation")`)
@@ -198,18 +199,26 @@ export class EntrepriseService {
             .orderBy(`DATE_TRUNC('month', c."datePostulation")`, 'ASC')
             .getRawMany();
 
-        const candidaturesLast3Months = raw3Months.map((r) => ({
-            period: r.mois,
-            count: parseInt(r.count, 10),
-        }));
+        // Fill missing months with 0
+        const candidaturesLast3Months: { period: string; count: number }[] = [];
+        const currentDate = new Date();
+        for (let i = 2; i >= 0; i--) {
+            const date = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+            const monthLabel = date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+            const existing = raw3Months.find(r => {
+                const rDate = new Date(r.month_date);
+                return rDate.getMonth() === date.getMonth() && rDate.getFullYear() === date.getFullYear();
+            });
+            candidaturesLast3Months.push({
+                period: monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1),
+                count: existing ? parseInt(existing.count, 10) : 0,
+            });
+        }
 
         // Fetch data for 30 days (by week/day chunks)
         const thirtyDaysAgo = new Date();
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
 
-        // Group by 5-day intervals or just return daily and group in frontend, 
-        // Let's do daily but only return points that have data, or pad.
-        // For simplicity, we'll return daily aggregated data
         const raw30Days = await this.candidatureRepo
             .createQueryBuilder('c')
             .leftJoin('c.offre', 'o')
@@ -224,10 +233,39 @@ export class EntrepriseService {
             .orderBy(`DATE_TRUNC('day', c."datePostulation")`, 'ASC')
             .getRawMany();
 
-        const candidaturesLast30Days = raw30Days.map((r) => ({
-            period: r.jour,
-            count: parseInt(r.count, 10),
-        }));
+        // Fill missing days with 0 (sample every 5 days for cleaner chart)
+        const candidaturesLast30Days: { period: string; count: number }[] = [];
+        const now = new Date();
+        
+        // Create a map of existing data
+        const dataMap = new Map<string, number>();
+        raw30Days.forEach(r => {
+            const rDate = new Date(r.date_val);
+            dataMap.set(rDate.toDateString(), parseInt(r.count, 10));
+        });
+        
+        // Generate 7 evenly spaced points over 30 days
+        for (let i = 6; i >= 0; i--) {
+            const daysBack = Math.floor((29 * i) / 6);
+            const date = new Date(now);
+            date.setDate(date.getDate() - daysBack);
+            date.setHours(0, 0, 0, 0);
+            
+            const dayLabel = date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+            
+            // Sum up candidatures in a 2-day window around this point
+            let count = 0;
+            for (let j = -1; j <= 1; j++) {
+                const checkDate = new Date(date);
+                checkDate.setDate(checkDate.getDate() + j);
+                count += dataMap.get(checkDate.toDateString()) || 0;
+            }
+            
+            candidaturesLast30Days.push({
+                period: dayLabel,
+                count: count,
+            });
+        }
 
         // Fetch data for 7 days
         const sevenDaysAgo = new Date();
@@ -247,10 +285,22 @@ export class EntrepriseService {
             .orderBy(`DATE_TRUNC('day', c."datePostulation")`, 'ASC')
             .getRawMany();
 
-        const candidaturesLast7Days = raw7Days.map((r) => ({
-            period: r.jour,
-            count: parseInt(r.count, 10),
-        }));
+        // Fill missing days with 0
+        const candidaturesLast7Days: { period: string; count: number }[] = [];
+        const currentDay = new Date();
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date(currentDay);
+            date.setDate(date.getDate() - i);
+            const dayLabel = date.toLocaleDateString('fr-FR', { weekday: 'short', day: '2-digit' });
+            const existing = raw7Days.find(r => {
+                const rDate = new Date(r.date_val);
+                return rDate.toDateString() === date.toDateString();
+            });
+            candidaturesLast7Days.push({
+                period: dayLabel,
+                count: existing ? parseInt(existing.count, 10) : 0,
+            });
+        }
 
         const topCandidats = await this.candidatureRepo
             .createQueryBuilder('c')

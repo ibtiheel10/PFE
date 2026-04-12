@@ -231,17 +231,17 @@
                         <Top5Candidates :candidates="candidatesSource" @view-all="activeNav = 'Candidats'" />
 
                         <!-- Score Chart -->
-                        <div class="card chart-card animate-fade-in-up" style="animation-delay: 0.5s">
-                            <div class="card-header-modern">
-                                <div>
-                                    <h3>Candidatures</h3>
-                                    <p class="chart-subtitle-modern">{{ chartSubtitle }}</p>
+                        <div class="card chart-card-minimal animate-fade-in-up" style="animation-delay: 0.5s">
+                            <div class="chart-header-minimal">
+                                <div class="chart-title-section-minimal">
+                                    <h3 class="chart-main-title-minimal">Candidatures</h3>
+                                    <p class="chart-subtitle-minimal">{{ chartSubtitle }}</p>
                                 </div>
-                                <div class="time-period-tabs">
+                                <div class="time-period-tabs-minimal">
                                     <button 
                                         v-for="period in ['3 derniers mois', '30 derniers jours', '7 derniers jours']" 
                                         :key="period"
-                                        class="period-tab" 
+                                        class="period-tab-minimal" 
                                         :class="{ active: activePeriod === period }"
                                         @click="changePeriod(period)"
                                         :disabled="isChartLoading"
@@ -251,14 +251,14 @@
                                 </div>
                             </div>
                             
-                            <div class="chart-area-modern" :class="{ 'chart-loading': isChartLoading }">
+                            <div class="chart-area-minimal" :class="{ 'chart-loading': isChartLoading }">
                                 <!-- Loading State -->
                                 <div v-if="isChartLoading" class="chart-loader">
-                                    <i class="fa-solid fa-spinner fa-spin text-3xl text-[#1e40af]"></i>
-                                    <p class="text-sm text-gray-500 mt-2">Chargement des données...</p>
+                                    <i class="fa-solid fa-spinner fa-spin text-2xl text-blue-400"></i>
+                                    <p class="text-xs text-gray-400 mt-2">Chargement...</p>
                                 </div>
                                 
-                                <!-- ApexCharts Modern Interactive Chart -->
+                                <!-- ApexCharts Minimal Chart -->
                                 <apexchart
                                     v-else
                                     :key="activePeriod"
@@ -266,7 +266,7 @@
                                     height="280"
                                     :options="chartOptions"
                                     :series="chartSeries"
-                                    class="modern-apex-chart"
+                                    class="minimal-apex-chart"
                                 ></apexchart>
                             </div>
                         </div>
@@ -957,7 +957,7 @@ const chartOptions = computed(() => {
     return {
         chart: {
             type: 'area',
-            height: 300,
+            height: 280,
             toolbar: {
                 show: false
             },
@@ -967,14 +967,10 @@ const chartOptions = computed(() => {
             animations: {
                 enabled: true,
                 easing: 'easeinout',
-                speed: 1500,
+                speed: 800,
                 animateGradually: {
                     enabled: true,
-                    delay: 250
-                },
-                dynamicAnimation: {
-                    enabled: true,
-                    speed: 600
+                    delay: 150
                 }
             },
             fontFamily: 'Inter, sans-serif',
@@ -988,8 +984,8 @@ const chartOptions = computed(() => {
         },
         stroke: {
             curve: 'smooth',
-            width: 2,
-            colors: ['#60A5FA'],
+            width: 2.5,
+            colors: ['#60a5fa'],
             lineCap: 'round'
         },
         fill: {
@@ -997,22 +993,22 @@ const chartOptions = computed(() => {
             gradient: {
                 shade: 'light',
                 type: 'vertical',
-                shadeIntensity: 0.5,
-                gradientToColors: ['#3B82F6', '#1E40AF'],
+                shadeIntensity: 0.1,
+                gradientToColors: ['#dbeafe'],
                 inverseColors: false,
-                opacityFrom: 0.65,
+                opacityFrom: 0.4,
                 opacityTo: 0.05,
-                stops: [0, 50, 100]
+                stops: [0, 100]
             }
         },
-        colors: ['#60A5FA'],
+        colors: ['#60a5fa'],
         xaxis: {
             categories: periodData.map(m => m.period),
             labels: {
                 style: {
-                    colors: '#9CA3AF',
+                    colors: '#9ca3af',
                     fontSize: '11px',
-                    fontWeight: 500,
+                    fontWeight: 400,
                     fontFamily: 'Inter, sans-serif'
                 },
                 rotate: 0,
@@ -1027,33 +1023,27 @@ const chartOptions = computed(() => {
                 show: false
             },
             crosshairs: {
-                show: true,
-                width: 1,
-                stroke: {
-                    color: '#E5E7EB',
-                    width: 1,
-                    dashArray: 3
-                }
+                show: false
             }
         },
         yaxis: {
             show: true,
             labels: {
                 style: {
-                    colors: '#9CA3AF',
+                    colors: '#d1d5db',
                     fontSize: '11px',
-                    fontWeight: 500,
+                    fontWeight: 400,
                     fontFamily: 'Inter, sans-serif'
                 },
                 formatter: (value: number) => Math.floor(value).toString(),
-                offsetX: -5
+                offsetX: -10
             },
             min: 0,
             forceNiceScale: true
         },
         grid: {
             show: true,
-            borderColor: '#F3F4F6',
+            borderColor: '#f3f4f6',
             strokeDashArray: 0,
             position: 'back',
             xaxis: {
@@ -1068,28 +1058,28 @@ const chartOptions = computed(() => {
             },
             padding: {
                 top: 0,
-                right: 10,
+                right: 20,
                 bottom: 0,
-                left: 5
+                left: 0
             }
         },
         tooltip: {
             enabled: true,
             shared: false,
-            followCursor: true,
+            followCursor: false,
             intersect: false,
             theme: 'light',
             x: {
-                show: true
+                show: false
             },
             y: {
-                formatter: (value: number) => `${value} candidature${value > 1 ? 's' : ''}`,
+                formatter: (value: number) => `${value}`,
                 title: {
                     formatter: () => ''
                 }
             },
             marker: {
-                show: true
+                show: false
             },
             style: {
                 fontSize: '12px',
@@ -1097,53 +1087,33 @@ const chartOptions = computed(() => {
             },
             custom: function({ series, seriesIndex, dataPointIndex, w }: any) {
                 const value = series[seriesIndex][dataPointIndex];
-                const category = w.globals.labels[dataPointIndex];
                 return `
                     <div style="
-                        background: rgba(255, 255, 255, 0.98);
-                        backdrop-filter: blur(10px);
-                        padding: 10px 14px;
-                        border-radius: 10px;
-                        box-shadow: 0 10px 30px rgba(59, 130, 246, 0.2), 0 0 0 1px rgba(59, 130, 246, 0.1);
-                        border: 1px solid rgba(96, 165, 250, 0.2);
+                        background: #ffffff;
+                        padding: 8px 12px;
+                        border-radius: 8px;
+                        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                        border: 1px solid #e5e7eb;
                     ">
                         <div style="
-                            font-size: 10px;
-                            color: #6B7280;
-                            font-weight: 600;
-                            margin-bottom: 5px;
-                            text-transform: uppercase;
-                            letter-spacing: 0.8px;
-                        ">${category}</div>
-                        <div style="
-                            font-size: 22px;
-                            background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 50%, #1E40AF 100%);
-                            -webkit-background-clip: text;
-                            -webkit-text-fill-color: transparent;
-                            background-clip: text;
-                            font-weight: 800;
-                            line-height: 1;
-                            margin-bottom: 3px;
+                            font-size: 18px;
+                            color: #1f2937;
+                            font-weight: 700;
                         ">${value}</div>
-                        <div style="
-                            font-size: 10px;
-                            color: #9CA3AF;
-                            font-weight: 500;
-                        ">candidature${value > 1 ? 's' : ''}</div>
                     </div>
                 `;
             }
         },
         markers: {
-            size: 0,
-            colors: ['#FFFFFF'],
-            strokeColors: '#60A5FA',
+            size: 5,
+            colors: ['#60a5fa'],
+            strokeColors: '#ffffff',
             strokeWidth: 2,
             hover: {
-                size: 6,
+                size: 7,
                 sizeOffset: 2
             },
-            discrete: []
+            shape: 'circle'
         },
         legend: {
             show: false
@@ -1151,8 +1121,7 @@ const chartOptions = computed(() => {
         states: {
             hover: {
                 filter: {
-                    type: 'lighten',
-                    value: 0.1
+                    type: 'none'
                 }
             },
             active: {
@@ -1160,23 +1129,7 @@ const chartOptions = computed(() => {
                     type: 'none'
                 }
             }
-        },
-        responsive: [{
-            breakpoint: 768,
-            options: {
-                chart: {
-                    height: 250
-                },
-                xaxis: {
-                    labels: {
-                        rotate: -45,
-                        style: {
-                            fontSize: '10px'
-                        }
-                    }
-                }
-            }
-        }]
+        }
     };
 });
 
@@ -1190,6 +1143,52 @@ const changePeriod = async (period: string) => {
     await new Promise(resolve => setTimeout(resolve, 300));
     isChartLoading.value = false;
 };
+
+// Computed properties for chart footer
+const trendText = computed(() => {
+    if (!dashboardData.value) return 'Tendance en hausse de 0% ce mois-ci';
+    
+    let periodData = [];
+    if (activePeriod.value === '3 derniers mois') {
+        periodData = dashboardData.value.candidaturesLast3Months || [];
+    } else if (activePeriod.value === '7 derniers jours') {
+        periodData = dashboardData.value.candidaturesLast7Days || [];
+    } else {
+        periodData = dashboardData.value.candidaturesLast30Days || [];
+    }
+    
+    if (periodData.length < 2) return 'Tendance en hausse de 0% ce mois-ci';
+    
+    const lastValue = periodData[periodData.length - 1]?.count || 0;
+    const previousValue = periodData[periodData.length - 2]?.count || 0;
+    
+    if (previousValue === 0) return 'Tendance en hausse ce mois-ci';
+    
+    const percentChange = (((lastValue - previousValue) / previousValue) * 100).toFixed(1);
+    const direction = parseFloat(percentChange) >= 0 ? 'en hausse' : 'en baisse';
+    
+    return `Tendance ${direction} de ${Math.abs(parseFloat(percentChange))}% ce mois-ci`;
+});
+
+const chartPeriodRange = computed(() => {
+    if (!dashboardData.value) return '';
+    
+    let periodData = [];
+    if (activePeriod.value === '3 derniers mois') {
+        periodData = dashboardData.value.candidaturesLast3Months || [];
+    } else if (activePeriod.value === '7 derniers jours') {
+        periodData = dashboardData.value.candidaturesLast7Days || [];
+    } else {
+        periodData = dashboardData.value.candidaturesLast30Days || [];
+    }
+    
+    if (periodData.length === 0) return '';
+    
+    const firstPeriod = periodData[0]?.period || '';
+    const lastPeriod = periodData[periodData.length - 1]?.period || '';
+    
+    return `${firstPeriod} - ${lastPeriod}`;
+});
 
 const chartPaths = computed(() => {
     let points = [0, 0, 0, 0, 0, 0, 0];
@@ -1569,16 +1568,16 @@ const displayJobs = computed(() => {
     color: #DC2626;
 }
 
-/* Wave Chart Styles */
-.chart-area-modern {
-    height: 220px;
+/* Wave Chart Styles - Minimal Design */
+.chart-area-minimal {
+    height: 280px;
     position: relative;
-    padding: 1rem 0;
+    padding: 0;
     transition: opacity 0.3s ease;
 }
 
-.chart-area-modern.chart-loading {
-    opacity: 0.6;
+.chart-area-minimal.chart-loading {
+    opacity: 0.5;
 }
 
 .chart-loader {
@@ -1593,32 +1592,118 @@ const displayJobs = computed(() => {
     z-index: 10;
 }
 
-.wave-chart {
+/* Minimal Chart Card */
+.chart-card-minimal {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.chart-header-minimal {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.chart-title-section-minimal {
+    flex: 1;
+    min-width: 200px;
+}
+
+.chart-main-title-minimal {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.25rem 0;
+    line-height: 1.3;
+}
+
+.chart-subtitle-minimal {
+    font-size: 0.8125rem;
+    color: #9ca3af;
+    margin: 0;
+    font-weight: 400;
+}
+
+.time-period-tabs-minimal {
+    display: flex;
+    gap: 0.25rem;
+    background: #f9fafb;
+    padding: 0.25rem;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+}
+
+.period-tab-minimal {
+    padding: 0.4rem 0.875rem;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.period-tab-minimal:hover:not(:disabled) {
+    background: #ffffff;
+    color: #374151;
+}
+
+.period-tab-minimal.active {
+    background: #eff6ff;
+    color: #1e40af;
+    box-shadow: 0 0 0 2px #3b82f6;
+    font-weight: 600;
+}
+
+.period-tab-minimal:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Minimal ApexChart Styles */
+.minimal-apex-chart {
     width: 100%;
     height: 100%;
 }
 
-/* Modern ApexChart Styles */
-.modern-apex-chart {
-    width: 100%;
-    height: 100%;
+.minimal-apex-chart :deep(.apexcharts-tooltip) {
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+    border: 1px solid #e5e7eb !important;
 }
 
-.modern-apex-chart :deep(.apexcharts-tooltip) {
-    border-radius: 10px !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15) !important;
-}
-
-.modern-apex-chart :deep(.apexcharts-xaxistooltip) {
+.minimal-apex-chart :deep(.apexcharts-xaxistooltip) {
     display: none !important;
 }
 
-.modern-apex-chart :deep(.apexcharts-grid-borders) {
-    stroke: #f1f5f9 !important;
+.minimal-apex-chart :deep(.apexcharts-grid-borders) {
+    stroke: #f3f4f6 !important;
 }
 
-.modern-apex-chart :deep(.apexcharts-marker) {
-    transition: all 0.3s ease !important;
+.minimal-apex-chart :deep(.apexcharts-gridline) {
+    stroke: #f3f4f6 !important;
+}
+
+.minimal-apex-chart :deep(.apexcharts-xaxis-label) {
+    fill: #9ca3af !important;
+}
+
+.minimal-apex-chart :deep(.apexcharts-yaxis-label) {
+    fill: #d1d5db !important;
+}
+
+.minimal-apex-chart :deep(.apexcharts-marker) {
+    transition: all 0.2s ease !important;
 }
 
 .chart-area-path {

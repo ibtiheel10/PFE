@@ -524,9 +524,10 @@ const getStatusAccent = (statut: string) => {
 };
 
 const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-blue-600';
-    return 'text-orange-500';
+    if (score >= 80) return 'text-green-600';      // 80-100% : Vert
+    if (score >= 60) return 'text-blue-600';       // 60-79% : Bleu
+    if (score >= 40) return 'text-orange-500';     // 40-59% : Orange
+    return 'text-red-600';                         // 0-39% : Rouge
 };
 
 const goToJobs = () => router.push('/candidat/jobs');
@@ -612,26 +613,8 @@ const goToResults = () => router.push('/resultats');
 .bars-scroll-wrapper {
   width: 100%;
   height: 100%;
-  overflow-x: auto;
+  overflow-x: hidden;
   overflow-y: hidden;
-  /* Thin scrollbar style */
-  scrollbar-width: thin;
-  scrollbar-color: #CBD5E1 #F1F5F9;
-}
-
-.bars-scroll-wrapper::-webkit-scrollbar {
-  height: 5px;
-}
-.bars-scroll-wrapper::-webkit-scrollbar-track {
-  background: #F1F5F9;
-  border-radius: 4px;
-}
-.bars-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-}
-.bars-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #94A3B8;
 }
 
 .bars-wrapper {
@@ -1013,15 +996,29 @@ const goToResults = () => router.push('/resultats');
 }
 .result-row:hover { background-color: #f9fafb; }
 .score-bar-bg {
-  width: 48px;
-  height: 4px;
-  background: #f3f4f6;
-  border-radius: 2px;
+  width: 80px;
+  height: 5px;
+  background: #e5e7eb;
+  border-radius: 3px;
   overflow: hidden;
 }
 .score-bar-fill {
   height: 100%;
-  border-radius: 2px;
+  border-radius: 3px;
   transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Score color classes for progress bars */
+.bg-green-600 {
+  background-color: #16a34a !important;
+}
+.bg-blue-600 {
+  background-color: #2563eb !important;
+}
+.bg-orange-500 {
+  background-color: #f97316 !important;
+}
+.bg-red-600 {
+  background-color: #dc2626 !important;
 }
 </style>
