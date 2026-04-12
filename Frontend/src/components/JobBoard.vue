@@ -213,6 +213,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { getOffres, type OffreEmploi } from '../services/offreService';
+import { getMesCandidatures } from '../services/candidatureService';
 
 const router = useRouter();
 
@@ -232,8 +233,21 @@ const fetchJobs = async () => {
     loading.value = true;
     const allJobs = await getOffres();
     
+    // Get applied jobs to filter them out
+    let appliedIds = new Set<string>();
+    if (localStorage.getItem('userToken') || localStorage.getItem('user_token')) {
+        try {
+            const candidatures = await getMesCandidatures();
+            candidatures.forEach(c => {
+                if (c.offre && c.offre.id) appliedIds.add(String(c.offre.id));
+            });
+        } catch (e) {
+            console.warn("Could not fetch candidatures", e);
+        }
+    }
+
     // Simple client-side filtering for now as the backend getOffres() returns all
-    let filtered = allJobs;
+    let filtered = allJobs.filter(j => !appliedIds.has(String(j.id)));
     if (searchQuery.value) {
       const q = searchQuery.value.toLowerCase();
       filtered = filtered.filter(j => 

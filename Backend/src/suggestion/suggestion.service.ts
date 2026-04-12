@@ -46,7 +46,7 @@ const normalizeKey = (s: string): string =>
 
 /** True when the raw name looks like a generic/vague label */
 const isVague = (key: string): boolean =>
-  ['expertise', 'basique', 'technique', 'niveau', 'general', 'competence', 'skill', 'other'].includes(key);
+  ['niveau', 'skill', 'other'].includes(key);
 
 /** Build a human-readable reason string for a suggestion */
 const buildReason = (matched: Array<{ name: string; score: number }>): string => {
@@ -56,7 +56,7 @@ const buildReason = (matched: Array<{ name: string; score: number }>): string =>
     .slice(0, 3)
     .map(s => `${s.name} (${s.score}%)`)
     .join(', ');
-  return `Compétences correspondantes : ${top}`;
+  return `Connaissances correspondantes : ${top}`;
 };
 
 @Injectable()
@@ -68,7 +68,7 @@ export class SuggestionService {
     private readonly candidatureRepo: Repository<Candidature>,
     @InjectRepository(OffreEmploi)
     private readonly offreRepo: Repository<OffreEmploi>,
-  ) {}
+  ) { }
 
   // ══════════════════════════════════════════════════════════════════════════════
   // PUBLIC: Main suggestion entry point
@@ -123,7 +123,7 @@ export class SuggestionService {
 
     // Build ILIKE conditions matching against competences OR title
     const conditions = skillNames.map((_, i) =>
-      `(LOWER(offre.competences) LIKE LOWER(:skill${i}) OR LOWER(offre."TitreDePost") LIKE LOWER(:skill${i}))`,
+      `(LOWER(offre.competences) LIKE LOWER(:skill${i}) OR LOWER(offre.TitreDePost) LIKE LOWER(:skill${i}))`,
     );
     const params: Record<string, string> = {};
     skillNames.forEach((skill, i) => { params[`skill${i}`] = `%${skill}%`; });

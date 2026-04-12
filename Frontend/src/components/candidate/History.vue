@@ -1,4 +1,4 @@
-﻿<template>
+<template>
     <div class="history-page animate-fade-in-up">
         <!-- Header Section -->
         <div class="header-section">
@@ -40,7 +40,8 @@
                 <div 
                     v-for="app in filteredApplications" 
                     :key="app.id" 
-                    class="application-card"
+                    class="application-card cursor-pointer"
+                    @click="router.push('/job-details-candidat/' + app.jobId)"
                 >
                     <!-- Status Indicator Line -->
                     <div class="status-line" :class="getStatusLineColor(app.status)"></div>

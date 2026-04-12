@@ -112,7 +112,7 @@ export class CandidaturesService {
             const q = questions[i];
             
             // Extract competency tag added during generation
-            let compName = q.contenu?.category || (candidature.offre?.TitreDePost ? `Compétence ${candidature.offre.TitreDePost}` : 'Compétence Générale');
+            let compName = q.contenu?.category || (candidature.offre?.TitreDePost ? candidature.offre.TitreDePost : 'Spécialité');
             if (!statsPerComp[compName]) {
                 statsPerComp[compName] = { total: 0, correct: 0 };
             }
@@ -177,7 +177,7 @@ export class CandidaturesService {
         
         for (let [compName, stats] of Object.entries(statsPerComp)) {
             // Failsafe normalization: strip descriptive prefixes
-            compName = compName.replace(/^(Bon niveau en|Connaissances en|Notions en|Maîtrise de|Compétence en|Introduction à|Bases de)\s+/i, '').trim();
+            compName = compName.replace(/^(Bon niveau en|Connaissances en|Notions en|Maîtrise de|Introduction à|Bases de)\s+/i, '').trim();
             compName = compName.charAt(0).toUpperCase() + compName.slice(1);
 
             const rawScore = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;

@@ -599,7 +599,7 @@ export class EntrepriseService {
                     question: q.question,
                     options: normalizedOptions,
                     correctAnswer: correctAnswerText,
-                    category: q.category || 'Compétence Technique',
+                    category: q.category || 'Sujet ciblé',
                 },
                 chronometre: q.chronometre || 30,
                 isCorrectVerified: false,
@@ -684,7 +684,7 @@ export class EntrepriseService {
         const context = `
 Titre du poste: ${offre.TitreDePost}
 Description: ${safeDescription}
-Compétences: ${offre.competences || 'Non spécifié'}
+Sujets: ${offre.competences || 'Non spécifié'}
         `.trim();
 
         return this.aiService.generateRecommendation(context, results);
@@ -867,7 +867,7 @@ Compétences: ${offre.competences || 'Non spécifié'}
                 isCorrect: typeof opt === 'object' && opt !== null ? !!opt.isCorrect : false,
             })),
             difficulty: q.contenu?.difficulty ?? 'Intermédiaire',
-            category: q.contenu?.category ?? 'Spécialisation',
+            category: q.contenu?.category ?? 'Sujet ciblé',
             chronometre: q.chronometre,
             isCorrectVerified: q.isCorrectVerified,
             createdAt: q.createdAt
@@ -895,7 +895,7 @@ Compétences: ${offre.competences || 'Non spécifié'}
                 questionId: q.id,
                 texteQuestion: q.contenu?.question || '',
                 difficulte: q.contenu?.difficulty || 'Intermédiaire',
-                categorie: q.contenu?.category || 'Compétence Technique',
+                categorie: q.contenu?.category || 'Sujet ciblé',
                 totalReponses,
                 bonnesReponses,
                 tauxReussite: Math.round(tauxReussite)
