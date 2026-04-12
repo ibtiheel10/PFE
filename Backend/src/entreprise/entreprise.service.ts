@@ -485,7 +485,7 @@ export class EntrepriseService {
             return {
                 question: questionText,
                 options: normalizedOpts,
-                category: q.category || q.contenu?.category || 'Aptitude',
+                category: q.category || q.contenu?.category || 'Compétence Technique',
                 correctAnswer: normalizedOpts.find((o: any) => o.isCorrect)?.text || '',
                 chronometre: q.chronometre ?? 30,
             };
@@ -533,7 +533,7 @@ export class EntrepriseService {
             return {
                 question: questionText,
                 options: normalizedOpts,
-                category: q.category || q.contenu?.category || 'Aptitude',
+                category: q.category || q.contenu?.category || 'Compétence Technique',
                 correctAnswer: normalizedOpts.find((o: any) => o.isCorrect)?.text || '',
                 chronometre: q.chronometre ?? 30,
             };
@@ -599,7 +599,7 @@ export class EntrepriseService {
                     question: q.question,
                     options: normalizedOptions,
                     correctAnswer: correctAnswerText,
-                    category: q.category || 'Aptitude',
+                    category: q.category || 'Compétence Technique',
                 },
                 chronometre: q.chronometre || 30,
                 isCorrectVerified: false,
@@ -895,7 +895,7 @@ Compétences: ${offre.competences || 'Non spécifié'}
                 questionId: q.id,
                 texteQuestion: q.contenu?.question || '',
                 difficulte: q.contenu?.difficulty || 'Intermédiaire',
-                categorie: q.contenu?.category || 'Aptitude',
+                categorie: q.contenu?.category || 'Compétence Technique',
                 totalReponses,
                 bonnesReponses,
                 tauxReussite: Math.round(tauxReussite)

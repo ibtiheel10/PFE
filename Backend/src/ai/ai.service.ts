@@ -541,7 +541,7 @@ Retourne UNIQUEMENT ce JSON valide :
     if (offre && questions.length > 0) {
       const entities: Question[] = questions.map((q) => {
         const e = new Question();
-        const categoryTag = (q as any).category || (q.options?.[0]?.text ? 'Compétence Métier' : 'itAptude Spécialisée');
+        const categoryTag = (q as any).category || (q.options?.[0]?.text ? 'Compétence Métier' : 'Compétence Technique');
         e.contenu = { question: q.question, options: q.options, category: categoryTag };
         e.chronometre = 30;
         e.offre = offre;
