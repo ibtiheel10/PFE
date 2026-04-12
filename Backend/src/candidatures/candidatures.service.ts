@@ -58,13 +58,8 @@ export class CandidaturesService {
         return {
             candidatureId: candidature.id,
             offreTitle: candidature.offre.TitreDePost,
-            // Total duration = sum of all question timers (each in seconds)
-            // If a question timer looks like minutes (≤ 60), convert to seconds
-            totalDurationSeconds: questions.reduce((sum, q) => {
-                const t = q.chronometre || 30;
-                // heuristic: values ≤ 60 were stored as minutes, convert to seconds
-                return sum + (t <= 60 ? t * 60 : t);
-            }, 0),
+            // La durée totale du QCM est fixée strictement à 3 minutes (180 secondes)
+            totalDurationSeconds: 180,
             questions: questions.map(q => ({
                 id: q.id,
                 text: q.contenu?.question ?? '',
@@ -117,7 +112,7 @@ export class CandidaturesService {
             const q = questions[i];
             
             // Extract competency tag added during generation
-            let compName = q.contenu?.category || 'Basique';
+            let compName = q.contenu?.category || (candidature.offre?.TitreDePost ? `Compétence ${candidature.offre.TitreDePost}` : 'Aptitude Professionnelle');
             if (!statsPerComp[compName]) {
                 statsPerComp[compName] = { total: 0, correct: 0 };
             }
@@ -179,15 +174,14 @@ export class CandidaturesService {
         const scorePercent = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
         const ScoreParCompetence: Record<string, number> = {};
-        const validDiscreteScores = [0, 20, 40, 50, 80, 100];
         
-        for (const [compName, stats] of Object.entries(statsPerComp)) {
+        for (let [compName, stats] of Object.entries(statsPerComp)) {
+            // Failsafe normalization: strip descriptive prefixes
+            compName = compName.replace(/^(Bon niveau en|Connaissances en|Notions en|Maîtrise de|Compétence en|Introduction à|Bases de)\s+/i, '').trim();
+            compName = compName.charAt(0).toUpperCase() + compName.slice(1);
+
             const rawScore = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
-            // Snap to the closest required discrete score: 0%, 20%, 40%, 50%, 80%, 100%
-            const closestScore = validDiscreteScores.reduce((prev, curr) => 
-                Math.abs(curr - rawScore) < Math.abs(prev - rawScore) ? curr : prev
-            );
-            ScoreParCompetence[compName] = closestScore;
+            ScoreParCompetence[compName] = rawScore; // Pourcentage exact
         }
 
         candidature.score = scorePercent;
@@ -245,6 +239,7 @@ export class CandidaturesService {
             Temps: candidature.tempsEcoule,
             TopPercent: Math.max(1, 100 - scorePercent),
             ScoreParCompetence,
+            skillsAnalysis: aiRecommendation?.detailedSkills || { technicalSkills: [], behavioralSkills: [] },
             aiRecommendation,
             answers: testResults
         });
@@ -331,7 +326,7 @@ export class CandidaturesService {
         for (const c of all) {
             if (c.score === null || c.score === undefined) {
                 if (c.offre?.dateLancementQcm) {
-                    const expiry = new Date(new Date(c.offre.dateLancementQcm).getTime() + 1 * 60_000);
+                    const expiry = new Date(new Date(c.offre.dateLancementQcm).getTime() + 4 * 60_000); // 1 min connection + 3 min QCM
                     if (now >= expiry) {
                         c.statut = 'Expirée';
                     }
@@ -353,7 +348,8 @@ export class CandidaturesService {
         for (const c of all) {
             if (c.score === null || c.score === undefined) {
                 if (c.offre?.dateLancementQcm) {
-                    const expiry = new Date(new Date(c.offre.dateLancementQcm).getTime() + 1 * 60_000);
+                    // Délai = 1 min pour se connecter + 3 minutes pour le QCM
+                    const expiry = new Date(new Date(c.offre.dateLancementQcm).getTime() + 4 * 60_000);
                     if (now >= expiry) {
                         c.statut = 'Expirée';
                     }

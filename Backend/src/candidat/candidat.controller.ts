@@ -44,12 +44,10 @@ export class CandidatController {
     @ApiResponse({ status: 200, description: 'Suggestions returned.' })
     async getSuggestions(
         @Request() req: any,
-        @Query('threshold') threshold?: string,
         @Query('limit') limit?: string,
     ) {
-        const th = threshold ? parseInt(threshold, 10) : 50;
         const lim = limit ? parseInt(limit, 10) : 6;
-        return this.candidatService.getSuggestions(req.user.userId, th, lim);
+        return this.candidatService.getSuggestions(req.user.userId, lim);
     }
 
     @Put('mon-profil')
