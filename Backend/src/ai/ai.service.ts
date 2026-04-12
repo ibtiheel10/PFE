@@ -56,17 +56,17 @@ export class AiService {
     return process.env.AI_API_KEY || '';
   }
 
- private get fallbackModels(): string[] {
-  // Liste ordonnée de modèles Groq à tester en cas de surcharge d'un des modèles (très fréquent)
-  return [
-    'mixtral-8x7b-32768',
-    'llama-3.1-70b-versatile',
-    'llama-3.1-8b-instant',
-    'llama3-70b-8192',
-    'llama3-8b-8192',
-    'gemma2-9b-it'
-  ];
-}
+  private get fallbackModels(): string[] {
+    // Liste ordonnée de modèles Groq à tester en cas de surcharge d'un des modèles (très fréquent)
+    return [
+      'mixtral-8x7b-32768',
+      'llama-3.1-70b-versatile',
+      'llama-3.1-8b-instant',
+      'llama3-70b-8192',
+      'llama3-8b-8192',
+      'gemma2-9b-it'
+    ];
+  }
 
   // ══════════════════════════════════════════════════════════════════════════════
   // PRIVATE: Call AI API (OpenAI-compatible endpoint — works with Groq, OpenAI, etc.)
@@ -81,7 +81,7 @@ export class AiService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
-    
+
     const models = this.fallbackModels;
     let lastError: any;
 
@@ -95,7 +95,7 @@ export class AiService {
             messages: [
               {
                 role: 'system',
-                content: 'Tu es un expert en recrutement et évaluation technique. Tu génères des QCM professionnels en JSON strict.',
+                content: 'Tu es un expert en recrutement. Tu génères des QCM professionnels en JSON strict.',
               },
               {
                 role: 'user',
@@ -120,12 +120,12 @@ export class AiService {
         lastError = error;
         const status = error.response?.status;
         this.logger.warn(`[AI] Request failed for model ${model}: ${error.message} (status: ${status || 'N/A'})`);
-        
+
         // On stoppe immédiatement si c'est un problème d'authentification
         if (status === 401) {
           throw new HttpException('AI_API_KEY invalide ou expirée.', HttpStatus.BAD_GATEWAY);
         }
-        
+
         // Pour les erreurs 503 (Unavailable), 429 (Rate Limit) ou timeout on passe au modèle alternatif
         this.logger.warn(`[AI] Modèle indisponible ou surchargé. Basculement vers l'alternative suivante...`);
       }
@@ -289,19 +289,63 @@ export class AiService {
   // PRIVATE: Parse competences string into a list of skill names
   // ══════════════════════════════════════════════════════════════════════════════
 
+  /**
+   * Extrait 5 compétences ultra-précises à partir d'une description de poste.
+   * Évite les termes vagues.
+   */
+  async extractPreciseSkills(jobTitle: string, jobDescription: string): Promise<string[]> {
+    this.logger.log(`[AI] Extracting precise skills for: ${jobTitle}`);
+
+    const prompt = `Analyse ce poste : "${jobTitle}".
+Description : ${jobDescription.substring(0, 800)}
+
+Extrais exactement 5 compétences PRÉCISES et RECONNUES (ex: SQL, React.js, API REST, Docker, etc.).
+RÈGLES CRITIQUES :
+
+- Chaque compétence doit être EXCLUSIVEMENT un NOM DE TECHNOLOGIE ou un CONCEPT COURT.
+- Interdiction de faire des phrases. Pas de "Bon niveau en...", juste "Python".
+- Format attendu : ["SQL", "React.js", "Architecture Microservices", "Node.js", "TypeScript"] (exemple).
+- Retourne UNIQUEMENT la liste JSON, sans texte explicatif.`;
+
+    try {
+      const raw = await this.callAI(prompt, 300, 15000);
+      const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const objStart = cleaned.indexOf('[');
+      const objEnd = cleaned.lastIndexOf(']');
+      if (objStart !== -1 && objEnd > objStart) {
+        const skills = JSON.parse(cleaned.substring(objStart, objEnd + 1));
+        if (Array.isArray(skills) && skills.length > 0) {
+          return skills.map(s => String(s).trim()).filter(s => s.length > 2).slice(0, 5);
+        }
+      }
+    } catch (err) {
+      this.logger.error(`[AI] Skill extraction failed: ${err.message}`);
+    }
+
+    // Fallback un peu plus qualitatif
+    return [
+      `${jobTitle} Avancé`,
+      `Architecture & Design Patterns`,
+      `Optimisation & Performance`,
+      `Sécurité des Applications`,
+      `Tests Unitaires & Intégration`
+    ];
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════════
+  // PRIVATE: Parse competences string into a list of skill names
+  // ══════════════════════════════════════════════════════════════════════════════
+
   private parseCompetenceNames(competencesStr: string, jobTitle: string): string[] {
-    if (competencesStr) {
+    if (competencesStr && competencesStr.trim().length > 2) {
       const parts = competencesStr
         .split(/[,\n-]/)
         .map(s => s.replace(/^[-•*\d.]+\s*/, '').trim())
         .filter(s => s.length > 2);
       if (parts.length > 0) return parts.slice(0, 5);
     }
-    return [
-      `${jobTitle} (Bases)`,
-      `Architecture & Design`,
-      `Performance & Qualité`,
-    ];
+    // Return empty if invalid, caller will handle extraction
+    return [];
   }
 
   // ══════════════════════════════════════════════════════════════════════════════
@@ -310,11 +354,26 @@ export class AiService {
 
   private async generateWithRetry(
     jobTitle: string,
-    competences: string,
+    competences: string | string[],
     previousQuestions: string[] = [],
     fullDescription: string = '',
   ): Promise<QuizQuestion[]> {
-    const competenceNames = this.parseCompetenceNames(competences, jobTitle);
+    let competenceNames: string[] = [];
+    if (Array.isArray(competences)) {
+      competenceNames = competences;
+    } else {
+      competenceNames = this.parseCompetenceNames(competences, jobTitle);
+      // Si parsing échoue et qu'on a une description, on tente l'extraction IA
+      if (competenceNames.length === 0 && fullDescription) {
+        competenceNames = await this.extractPreciseSkills(jobTitle, fullDescription);
+      }
+    }
+
+    // Sécurité ultime : si toujours rien
+    if (competenceNames.length === 0) {
+      competenceNames = [`Spécialisation ${jobTitle}`, 'Algorithmes', 'Architecture'];
+    }
+
     this.logger.log(`[AI] Generating questions for competences: ${competenceNames.join(' | ')}`);
 
     const compStrList = competenceNames.map(c => `[${c}]`).join(', ');
@@ -342,12 +401,18 @@ RÈGLES STRICTES:
 - Exactement ${needed} questions
 - 4 options par question (A, B, C, D)
 - 1 seule bonne réponse indiquée avec isCorrect: true
-- Questions de niveau technique professionnel
 
-Retourne UNIQUEMENT ce JSON valide, rien d'autre:
+RÈGLES D'OR POUR LES COMPÉTENCES :
+- CHAQUE QUESTION DOIT AVOIR UN CHAMP "competence".
+- Utilise UNIQUEMENT les noms de compétences issus de cette liste : ${compStrList}.
+- INTERDICTION STRICTE d'utiliser des catégories comme "Expertise", "Basique", "Technique", "Compétence", "Général", etc.
+- Le champ "competence" dans le JSON doit contenir uniquement le NOM COURT de la compétence.
+
+Retourne UNIQUEMENT ce JSON valide :
 
 [
   {
+    "competence": "Nom précis de la compétence",
     "question": "Texte de la question",
     "options": [
       {"text": "Option A", "isCorrect": false},
@@ -399,7 +464,15 @@ Retourne UNIQUEMENT ce JSON valide, rien d'autre:
                 allQuestions.some(prev => normalize(prev.question) === normalize(q.question));
 
               if (!duplicate) {
-                (q as any).category = items[i].category || competenceNames[0] || 'Basique';
+                // Determine the best category for the question
+                let assignedComp = items[i].competence || items[i].category;
+
+                // If AI failed to provide a valid competence, assign one rotationally from the original list
+                if (!assignedComp || ['compétence', 'expertise', 'technique', 'basique'].includes(assignedComp.toLowerCase())) {
+                  assignedComp = competenceNames[allQuestions.length % (competenceNames.length || 1)] || competenceNames[0] || jobTitle;
+                }
+
+                (q as any).category = assignedComp;
                 allQuestions.push(q);
               }
             }
@@ -422,12 +495,12 @@ Retourne UNIQUEMENT ce JSON valide, rien d'autre:
     }
 
     this.logger.error('[AI] Échec total de la génération par IA après tentatives. Utilisation du fallback de secours.');
-    
+
     // FALLBACK ULTIME : Garantit que l'application ne plantera jamais lors du passage de tests
     // Même en cas de panne globale prolongée de l'API externe
     const fallbackQuestions: any[] = [];
     const baseTopics = competenceNames.length > 0 ? competenceNames : ['Développement', 'Logique', 'Architecture logicielle'];
-    
+
     for (let i = 0; i < 5; i++) {
       const topic = baseTopics[i % baseTopics.length];
       fallbackQuestions.push({
@@ -437,7 +510,7 @@ Retourne UNIQUEMENT ce JSON valide, rien d'autre:
           { text: "Respecter les standards, structurer le code proprement et assurer une bonne couverture de tests.", isCorrect: true },
           { text: "Ignorer continuellement la gestion des erreurs dans l'application.", isCorrect: false },
           { text: "Utiliser des solutions complexes et non maintenables pour des requêtes simples.", isCorrect: false },
-          { text: "Livrer sans documentation technique pour gagner du temps.", isCorrect: false }
+          { text: "Livrer sans documentation pour gagner du temps.", isCorrect: false }
         ],
         isCorrectVerified: true,
         chronometre: 30,
@@ -468,7 +541,7 @@ Retourne UNIQUEMENT ce JSON valide, rien d'autre:
     if (offre && questions.length > 0) {
       const entities: Question[] = questions.map((q) => {
         const e = new Question();
-        const categoryTag = (q as any).category || 'Basique';
+        const categoryTag = (q as any).category || (q.options?.[0]?.text ? 'Compétence Métier' : 'itAptude Spécialisée');
         e.contenu = { question: q.question, options: q.options, category: categoryTag };
         e.chronometre = 30;
         e.offre = offre;
@@ -532,72 +605,29 @@ Retourne UNIQUEMENT ce JSON valide, rien d'autre:
 
     const baseRecommendations: string[] = wrongItems.length > 0
       ? wrongItems.map(r => `Révisez la notion : "${r.question.substring(0, 100)}" — la bonne réponse était : "${r.correctAnswer}"`)
-      : ['Maintenez ce niveau d\'excellence et continuez votre veille technique.'];
+      : ['Maintenez ce niveau d\'excellence et continuez votre veille.'];
 
     // ─── Attempt AI enrichment ─────────────────────────────────────────────────
     try {
-      const correctList = correctItems.map(r => `- Q: "${r.question.substring(0, 150)}" → Réponse correcte: "${r.selectedAnswer}"`).join('\n');
-      const wrongList = wrongItems.map(r => `- Q: "${r.question.substring(0, 150)}" → Répondu: "${r.selectedAnswer}", Attendu: "${r.correctAnswer}"`).join('\n');
+      const detailedAnalysis = await this.analyzeDetailedSkills(jobDescription, results);
 
-      const prompt = `Tu es un coach RH expert. Génère UNIQUEMENT un JSON valide, sans aucun texte autour.
-
-Poste : ${jobDescription.substring(0, 350)}
-Score : ${score}% (${correctCount}/${totalQuestions})
-
-Réponses CORRECTES :
-${correctList || 'Aucune.'}
-
-Réponses INCORRECTES :
-${wrongList || 'Aucune.'}
-
-Règles :
-- "strengths" : ${correctItems.length} points forts valorisants liés aux bonnes réponses
-- "weaknesses" : ${wrongItems.length} lacunes identifiées (formulation constructive)
-- "recommendations" : ${wrongItems.length} actions concrètes personnalisées
-
-Format JSON strict :
-{
-  "strengths": ["point fort 1", ...],
-  "weaknesses": ["lacune 1", ...],
-  "recommendations": ["action 1", ...]
-}`;
-
-      for (let attempt = 1; attempt <= 2; attempt++) {
-        this.logger.log(`[AI] Recommendation attempt ${attempt}/2`);
-        try {
-          const raw = await this.callAI(prompt, 1000, 20000);
-          let cleanedRaw = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
-          const objStart = cleanedRaw.indexOf('{');
-          const objEnd = cleanedRaw.lastIndexOf('}');
-          if (objStart !== -1 && objEnd > objStart) {
-            cleanedRaw = cleanedRaw.substring(objStart, objEnd + 1)
-              .replace(/,\s*}/g, '}')
-              .replace(/,\s*]/g, ']');
-
-            const rec = JSON.parse(cleanedRaw);
-            if (
-              Array.isArray(rec.strengths) && rec.strengths.length > 0 &&
-              Array.isArray(rec.weaknesses) &&
-              Array.isArray(rec.recommendations)
-            ) {
-              this.logger.log(`[AI] Recommendation generated on attempt ${attempt}`);
-              return {
-                score,
-                totalQuestions,
-                percentage: score,
-                strengths: rec.strengths,
-                weaknesses: rec.weaknesses.length > 0 ? rec.weaknesses : baseWeaknesses,
-                recommendations: rec.recommendations.length > 0 ? rec.recommendations : baseRecommendations,
-              };
-            }
-          }
-        } catch (err: any) {
-          this.logger.warn(`[AI] Recommendation attempt ${attempt} failed: ${err.message}`);
-        }
-      }
+      return {
+        score,
+        totalQuestions,
+        percentage: score,
+        strengths: detailedAnalysis.detailedSkills.filter(s => s.score >= 70).map(s => `${s.skill} : ${s.justification}`),
+        weaknesses: detailedAnalysis.detailedSkills.filter(s => s.score < 50).map(s => `${s.skill} : ${s.justification}`),
+        recommendations: [
+          ...detailedAnalysis.detailedSkills.filter(s => s.score < 70).map(s => `Renforcez vos connaissances en ${s.skill} : ${s.justification}`),
+          ...detailedAnalysis.behavioralSkills.filter(s => s.score < 70).map(s => `Développez votre ${s.skill} : ${s.justification}`)
+        ],
+        // Enrich the object with the raw analysis for the frontend
+        detailedSkills: detailedAnalysis
+      } as any;
     } catch (err: any) {
-      this.logger.warn(`[AI] Recommendation generation error: ${err.message}`);
+      this.logger.warn(`[AI] Enrichment failed, using fallback: ${err.message}`);
     }
+
 
     // ─── Fallback: deterministic answers ──────────────────────────────────────
     this.logger.warn('[AI] All AI attempts failed — returning deterministic fallback.');
@@ -611,9 +641,66 @@ Format JSON strict :
     };
   }
 
+  /**
+   * Analyse détaillée des compétences et comportements
+   */
+  async analyzeDetailedSkills(jobDescription: string, results: TestResult[]): Promise<{ detailedSkills: any[], behavioralSkills: any[] }> {
+    const prompt = `Tu es un système d’analyse de compétences.
+Analyse les questions et les réponses d’un candidat ci-dessous.
+
+🎯 Objectif :
+Extraire UNIQUEMENT les compétences spécifiques réellement évaluées (Noms ou Soft Skills précis).
+
+❌ INTERDIT :
+- "Niveau", "Bon niveau en", "Connaissances en", "Notions en", "Compétence"
+- toute note globale
+- toute phrase descriptive comme nom de compétence
+
+✅ OBLIGATOIRE :
+- extraire des compétences PRÉCISES et UNIQUES (ex: JavaScript, SQL, REST API, Problem Solving)
+- donner un score entre 0 et 100 pour chaque compétence
+- baser le score uniquement sur les réponses correctes liées à cette compétence
+- fournir une justification courte
+
+CONTEXTE :
+Poste : ${jobDescription.substring(0, 400)}
+Résultats du test :
+${results.map(r => `- Question: ${r.question} | Réussite: ${r.isCorrect ? 'OUI' : 'NON'} | Réponse donnée: ${r.selectedAnswer}`).join('\n')}
+
+📦 Réponds uniquement en JSON valide (sans texte autour) :
+{
+  "detailedSkills": [
+    { "skill": "JavaScript", "score": 100, "justification": "Maîtrise de l'asynchrone" }
+  ],
+  "behavioralSkills": [
+    { "skill": "Problem Solving", "score": 80, "justification": "Logique algorithmique validée" }
+  ]
+}`;
+
+
+    try {
+      const raw = await this.callAI(prompt, 1200, 20000);
+      const cleaned = raw.replace(/```json/gi, '').replace(/```/g, '').trim();
+      const objStart = cleaned.indexOf('{');
+      const objEnd = cleaned.lastIndexOf('}');
+      if (objStart !== -1 && objEnd > objStart) {
+        const parsed = JSON.parse(cleaned.substring(objStart, objEnd + 1));
+        return {
+          detailedSkills: Array.isArray(parsed.detailedSkills) ? parsed.detailedSkills : [],
+          behavioralSkills: Array.isArray(parsed.behavioralSkills) ? parsed.behavioralSkills : []
+        };
+      }
+    } catch (err) {
+      this.logger.error(`[AI] Detailed skills analysis failed: ${err.message}`);
+    }
+
+    return { detailedSkills: [], behavioralSkills: [] };
+  }
+
   // ══════════════════════════════════════════════════════════════════════════════
   // PUBLIC: Generic QCM endpoint
   // ══════════════════════════════════════════════════════════════════════════════
+
 
   async generateQCM(topic: string): Promise<any[]> {
     const questions = await this.generateWithRetry(topic, topic, [], topic);

@@ -57,9 +57,13 @@ const categories = [
   'Management & Gestion',
   'Industrie & Ingénierie',
   'Logistique & Transport',
-  'Juridique',
-  'Santé',
+  'Juridique & Droit',
+  'Santé & Médical',
   'Éducation & Formation',
+  'Tourisme & Hôtellerie',
+  'BTP & Construction',
+  'Agriculture & Environnement',
+  'Sécurité & Défense',
 ];
 
 const toggle = () => { isOpen.value = !isOpen.value; };

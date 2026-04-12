@@ -225,9 +225,8 @@ export class EntrepriseController {
             return await this.entrepriseService.genererQuestionsIA(id, req.user.userId);
         } catch (error: any) {
             console.error('[EntrepriseController] Erreur genererQuestionsIA:', error);
-            const msg = error.message || 'Erreur inconnue';
-            const status = error.status || 500;
-            throw new HttpException(`[Erreur Backend] ${msg}`, status);
+            if (error instanceof HttpException) throw error;
+            throw new HttpException(`[Erreur Backend] ${error.message || 'Erreur inconnue'}`, 500);
         }
     }
 
@@ -262,9 +261,8 @@ export class EntrepriseController {
             );
         } catch (error: any) {
             console.error('[EntrepriseController] Erreur regenererQuestionsIA:', error);
-            const msg = error.message || 'Erreur inconnue';
-            const status = error.status || 500;
-            throw new HttpException(`[Erreur Backend] ${msg}`, status);
+            if (error instanceof HttpException) throw error;
+            throw new HttpException(`[Erreur Backend] ${error.message || 'Erreur inconnue'}`, 500);
         }
     }
 
@@ -299,9 +297,8 @@ export class EntrepriseController {
             );
         } catch (error: any) {
             console.error('[EntrepriseController] Erreur sauvegarderQuestionsIA:', error);
-            const msg = error.message || 'Erreur inconnue';
-            const status = error.status || 500;
-            throw new HttpException(`[Erreur Backend] ${msg}`, status);
+            if (error instanceof HttpException) throw error;
+            throw new HttpException(`[Erreur Backend] ${error.message || 'Erreur inconnue'}`, 500);
         }
     }
 

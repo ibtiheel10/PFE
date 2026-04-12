@@ -4,7 +4,7 @@ import { IsEmail, IsIn, IsNotEmpty, IsString, MaxLength, MinLength } from 'class
 const VALID_SUBJECTS = [
     'Question générale',
     'Réclamation',
-    'Support technique',
+    'Assistance',
     'Partenariat',
     'Autre',
 ];
