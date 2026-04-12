@@ -112,7 +112,7 @@ export class CandidaturesService {
             const q = questions[i];
             
             // Extract competency tag added during generation
-            let compName = q.contenu?.category || (candidature.offre?.TitreDePost ? `Compétence ${candidature.offre.TitreDePost}` : 'Aptitude Professionnelle');
+            let compName = q.contenu?.category || (candidature.offre?.TitreDePost ? `Compétence ${candidature.offre.TitreDePost}` : 'Compétence Générale');
             if (!statsPerComp[compName]) {
                 statsPerComp[compName] = { total: 0, correct: 0 };
             }
@@ -233,12 +233,29 @@ export class CandidaturesService {
         candidature.score = scorePercent;
         candidature.tempsEcoule = tempsEcoule || candidature.tempsEcoule || '0:00';
         
+        let finalScoreParCompetence = { ...ScoreParCompetence };
+        if (
+            aiRecommendation?.detailedSkills?.detailedSkills?.length > 0 ||
+            aiRecommendation?.detailedSkills?.behavioralSkills?.length > 0
+        ) {
+            finalScoreParCompetence = {}; // override generic ones with granular AI skills
+            const ds = aiRecommendation.detailedSkills.detailedSkills || [];
+            const bs = aiRecommendation.detailedSkills.behavioralSkills || [];
+            ds.forEach((s: any) => { if (s.skill) finalScoreParCompetence[s.skill] = Number(s.score) || 0; });
+            bs.forEach((s: any) => { if (s.skill) finalScoreParCompetence[s.skill] = Number(s.score) || 0; });
+            
+            // Failsafe: Si jamais l'IA génère 0 skill même si length > 0 semblait dire le contraire
+            if (Object.keys(finalScoreParCompetence).length === 0) {
+                 finalScoreParCompetence = { ...ScoreParCompetence };
+            }
+        }
+
         candidature.evaluationDetails = JSON.stringify({
             TotalQuestions: totalQuestions,
             CorrectAnswers: correctCount,
             Temps: candidature.tempsEcoule,
             TopPercent: Math.max(1, 100 - scorePercent),
-            ScoreParCompetence,
+            ScoreParCompetence: finalScoreParCompetence,
             skillsAnalysis: aiRecommendation?.detailedSkills || { technicalSkills: [], behavioralSkills: [] },
             aiRecommendation,
             answers: testResults

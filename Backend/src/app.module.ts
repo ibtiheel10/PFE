@@ -21,6 +21,7 @@ import { ContactMessage } from './entities/contact-message.entity';
 import { OffresModule } from './offres/offres.module';
 import { CandidaturesModule } from './candidatures/candidatures.module';
 import { QuestionsModule } from './questions/questions.module';
+import { SuggestionModule } from './suggestion/suggestion.module';
 import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
@@ -61,6 +62,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     QuestionsModule,
     NotificationsModule,
     ContactModule,
+    SuggestionModule,
     ScheduleModule.forRoot(),
   ],
 })

@@ -206,25 +206,38 @@
                     </div>
 
                     <!-- Suggestions list -->
-                    <div v-else class="divide-y divide-gray-50">
+                    <div v-else class="jobs-list px-4 py-2">
                         <div
                             v-for="offre in smartSuggestions"
                             :key="offre.id"
-                            class="suggestion-item"
+                            class="job-item"
                             @click="goToJob(offre.id)"
                         >
-                            <div class="suggestion-accent" :style="{ backgroundColor: offre._matchColor || '#1e40af' }"></div>
-                            <div class="flex-1 min-w-0 py-3 pr-4">
-                                <div class="flex items-start justify-between gap-1 mb-0.5">
-                                    <h4 class="font-bold text-sm text-gray-800 group-hover:text-[#1e40af] truncate transition-colors duration-200">{{ offre.TitreDePost }}</h4>
-                                    <span v-if="offre._matchScore" class="text-[9px] font-bold px-1.5 py-0.5 rounded-md flex-shrink-0" :style="{ background: offre._matchColor + '20', color: offre._matchColor }">{{ offre._matchScore }}%</span>
+                            <div class="job-header">
+                                <h4 style="transition: color 0.2s;" onmouseover="this.style.color='#1e40af'" onmouseout="this.style.color='inherit'">{{ offre.TitreDePost }}</h4>
+                                <div class="relative">
+                                    <button class="menu-dots" @click.stop="goToJob(offre.id)">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>
+                                    </button>
                                 </div>
-                                <p class="text-xs text-gray-400 mb-2">{{ (offre as any).entreprise?.nom || 'Entreprise Confidentielle' }} &bull; {{ offre.Localisation }}</p>
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span v-if="offre.Categorie" class="text-[10px] font-semibold bg-blue-50 text-[#1e40af] px-2 py-0.5 rounded-md">{{ offre.Categorie }}</span>
-                                    <span v-if="offre.ModeDeTravail" class="text-[10px] font-semibold bg-gray-100 text-gray-500 px-2 py-0.5 rounded-md">{{ offre.ModeDeTravail }}</span>
-                                    <span v-if="offre._isMatch" class="text-[9px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md">✓ Correspond</span>
+                            </div>
+                            <div class="job-meta">
+                                <div class="meta-item">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                         <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                                    </svg>
+                                    {{ (offre as any).entreprise?.nom || offre.TitreDePost || offre.titre || 'Offre d\'emploi' }} &bull; {{ offre.Localisation }}
                                 </div>
+                                <div class="meta-item" v-if="offre.Categorie">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                         <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                                    </svg>
+                                    {{ offre.Categorie }}
+                                </div>
+                            </div>
+                            <div class="job-footer">
+                                <span class="status-tag active" v-if="offre._isMatch">✓ Correspond à {{ offre._matchScore }}%</span>
+                                <span class="status-tag draft" v-else>Suggestion IA</span>
                             </div>
                         </div>
                     </div>
@@ -909,24 +922,86 @@ const goToResults = () => router.push('/resultats');
   align-items: center;
 }
 
-/* Suggestion Items */
-.suggestion-item {
+/* Job Items (Adapted from Employers View) */
+.jobs-list {
   display: flex;
-  padding: 0.5rem 0.5rem 0.5rem 0;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+.job-item {
+  border: 1px solid #F3F4F6;
+  border-radius: 12px;
+  padding: 1rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
-  transition: background-color 0.2s;
-  position: relative;
+  background: linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%);
 }
-.suggestion-item:hover { background-color: #f9fafb; }
-.suggestion-accent {
-  width: 3px;
-  margin-right: 1rem;
-  border-radius: 0 4px 4px 0;
-  transform: scaleY(0);
-  transform-origin: center;
-  transition: transform 0.2s;
+
+.job-item:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+  border-color: #dbeafe;
 }
-.suggestion-item:hover .suggestion-accent { transform: scaleY(1); }
+
+.job-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.4rem;
+}
+
+.job-header h4 {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.menu-dots {
+  background: none;
+  border: none;
+  color: #9CA3AF;
+  cursor: pointer;
+  padding: 0;
+}
+
+.job-meta {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+.job-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.status-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.status-tag.active {
+  background: #ECFDF5;
+  color: #059669;
+}
+
+.status-tag.draft {
+  background: #F3F4F6;
+  color: #6B7280;
+}
 
 /* Result Rows */
 .result-row {
