@@ -475,9 +475,10 @@ const goToJobs = () => {
 };
 
 const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-green-600';
-    if (score >= 80) return 'text-blue-600';
-    return 'text-orange-500';
+    if (score >= 80) return 'text-green-600';      // 80-100% : Vert
+    if (score >= 60) return 'text-blue-600';       // 60-79% : Bleu
+    if (score >= 40) return 'text-orange-500';     // 40-59% : Orange
+    return 'text-red-600';                         // 0-39% : Rouge
 };
 
 const handleSearch = () => {
@@ -812,5 +813,19 @@ const getAppStatusLabel = (app: any): string => normalizeAppStatus(app);
 
 .application-card:hover .card-title {
   color: #3b82f6;
+}
+
+/* Score color classes */
+.text-green-600 {
+  color: #16a34a !important;
+}
+.text-blue-600 {
+  color: #2563eb !important;
+}
+.text-orange-500 {
+  color: #f97316 !important;
+}
+.text-red-600 {
+  color: #dc2626 !important;
 }
 </style>

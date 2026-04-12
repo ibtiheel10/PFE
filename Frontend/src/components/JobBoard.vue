@@ -309,12 +309,14 @@ watch(currentPage, fetchJobs);
   font-family: 'Inter', sans-serif;
   width: 100%;
   background: transparent;
+  overflow-x: hidden;
 }
 
 .jobboard-page {
   display: flex;
   flex-direction: column;
   height: 100%;
+  overflow-x: hidden;
 }
 
 /* ─── Hero Banner ─── */
@@ -324,7 +326,7 @@ watch(currentPage, fetchJobs);
   position: relative;
   overflow: hidden;
   border-radius: 0 0 24px 24px;
-  margin: -1px -1px 0 -1px;
+  margin: 0;
 }
 
 .hero-banner::before {
