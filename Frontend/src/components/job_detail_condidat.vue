@@ -1,76 +1,36 @@
 <template>
   <div class="jp-root">
 
-    <!-- ══════════════════════ TOPBAR ══════════════════════ -->
+    <!-- ══════════════════════ TOPBAR (SIMPLIFIÉ) ══════════════════════ -->
     <header class="jp-nav">
       <div class="jp-nav-inner">
+        <!-- Logo -->
+        <router-link to="/candidat/jobs" class="jp-brand">
+          <LogoIcon customClass="w-8 h-8" />
+          <span class="jp-brand-name">Skillvia</span>
+        </router-link>
 
-        <div class="jp-brand">
-          <LogoIcon customClass="w-10 h-10" />
-          <span class="jp-brand-name" style="color: #1e40af; font-weight: 900; font-size: 22px; letter-spacing: -0.03em; line-height: 1;">Skillvia</span>
-        </div>
-
-        <div class="jp-nav-divider"></div>
-
+        <!-- Breadcrumb -->
         <nav class="jp-crumb">
-          <router-link to="/candidat/jobs" class="jp-crumb-link">
-            <i class="fa-solid fa-grid-2"></i>
-            <span>Offres d'emploi</span>
-          </router-link>
+          <router-link to="/candidat/jobs" class="jp-crumb-link">Offres d'emploi</router-link>
           <i class="fa-solid fa-chevron-right jp-crumb-sep"></i>
           <span class="jp-crumb-cur" v-if="job">{{ job.TitreDePost }}</span>
         </nav>
-
-        <div class="jp-nav-actions">
-          <div class="jp-nav-status" v-if="alreadyApplied">
-            <span class="jp-nav-status-dot"></span>
-            <span>Candidature active</span>
-          </div>
-          <router-link to="/candidat/dashboard" class="jp-dash-btn">
-            <i class="fa-solid fa-table-columns"></i>
-            <span>Dashboard</span>
-            <i class="fa-solid fa-arrow-right jp-dash-arrow"></i>
-          </router-link>
-        </div>
-
       </div>
     </header>
 
     <!-- ══════════════════════ CONTENT ══════════════════════ -->
     <main class="jp-main" v-if="job">
 
-      <!-- ── HERO SECTION ────────────────────────────────── -->
+      <!-- ── HERO SECTION (SIMPLIFIÉ) ────────────────────────────────── -->
       <section class="jp-hero">
-        <!-- Background decoration -->
-        <div class="jp-hero-bg">
-          <div class="jp-hero-orb jp-hero-orb1"></div>
-          <div class="jp-hero-orb jp-hero-orb2"></div>
-          <div class="jp-hero-orb jp-hero-orb3"></div>
-        </div>
-
         <div class="jp-hero-inner">
           <!-- LEFT: Job info -->
           <div class="jp-hero-left">
-
-            <!-- Job Icon + Badges -->
-            <div class="jp-job-icon" :style="{ background: (job.iconColor || '#6366f1') + '25' }">
-              <i :class="job.icon || 'fa-solid fa-briefcase'"
-                 :style="{ color: job.iconColor || '#fff', fontSize: '1.6rem' }"></i>
-            </div>
-
-            <div class="jp-hero-tags">
-              <span class="jp-tag jp-tag-cat">
-                <i class="fa-solid fa-tag"></i>{{ job.Categorie }}
-              </span>
-              <span class="jp-tag jp-tag-type">{{ job.TypeDeContrat }}</span>
-              <span class="jp-tag jp-tag-exp">
-                <i class="fa-regular fa-clock"></i>
-                Expire le {{ job.DateLimite ? new Date(job.DateLimite).toLocaleDateString('fr-FR') : 'N/A' }}
-              </span>
-            </div>
-
+            <!-- Titre du poste -->
             <h1 class="jp-hero-title">{{ job.TitreDePost }}</h1>
 
+            <!-- Informations principales -->
             <div class="jp-hero-meta">
               <span class="jp-meta-chip">
                 <i class="fa-regular fa-building"></i>{{ job.entreprise ? job.entreprise.nom : 'Entreprise Confidentielle' }}
@@ -78,30 +38,28 @@
               <span class="jp-meta-chip">
                 <i class="fa-solid fa-location-dot"></i>{{ job.Localisation }}
               </span>
-              <span class="jp-meta-chip jp-meta-salary">
-                <i class="fa-solid fa-coins"></i>{{ job.Salaire || 'Non précisé' }} DT
-              </span>
-              <span class="jp-meta-chip jp-meta-date">
-                <i class="fa-regular fa-calendar"></i>
-                Publié le {{ new Date(job.DatePublication).toLocaleDateString('fr-FR') }}
-              </span>
             </div>
 
-            <!-- Quick stats bar -->
+            <!-- Badges simples -->
+            <div class="jp-hero-tags">
+              <span class="jp-tag">{{ job.Categorie }}</span>
+              <span class="jp-tag">{{ job.TypeDeContrat }}</span>
+              <span class="jp-tag">{{ qcmDuration }} · {{ questionsCount }} questions</span>
+            </div>
+
+            <!-- Statistiques -->
             <div class="jp-stats-bar">
               <div class="jp-stat">
                 <span class="jp-stat-val">{{ applicantsCount }}</span>
                 <span class="jp-stat-key">Candidats</span>
               </div>
-              <div class="jp-stat-line"></div>
               <div class="jp-stat">
                 <span class="jp-stat-val">{{ job.NbPost }}</span>
-                <span class="jp-stat-key">Postes ouverts</span>
+                <span class="jp-stat-key">Postes</span>
               </div>
-              <div class="jp-stat-line"></div>
               <div class="jp-stat">
-                <span class="jp-stat-val">{{ qcmDuration }}</span>
-                <span class="jp-stat-key">Durée test</span>
+                <span class="jp-stat-val">{{ minScore }}%</span>
+                <span class="jp-stat-key">Score min</span>
               </div>
             </div>
           </div>
@@ -110,41 +68,26 @@
           <div class="jp-apply-panel">
             <!-- Not yet applied -->
             <template v-if="!alreadyApplied">
-              <div class="jp-apply-header">
-                <div class="jp-apply-icon">
-                  <i class="fa-solid fa-rocket"></i>
-                </div>
-                <div>
-                  <div class="jp-apply-label">Rejoindre l'équipe</div>
-                  <div class="jp-apply-co"><strong>{{ job.entreprise ? job.entreprise.nom : 'Entreprise Confidentielle' }}</strong></div>
-                </div>
-              </div>
-              <button class="jp-btn-apply" @click="applyToJob" :disabled="isDeadlinePassed" :class="{ 'opacity-50 cursor-not-allowed': isDeadlinePassed }">
+              <button class="jp-btn-apply" @click="applyToJob" :disabled="isDeadlinePassed">
                 <i class="fa-solid fa-paper-plane"></i>
-                {{ isDeadlinePassed ? 'Date limite dépassée' : 'Postuler maintenant' }}
+                {{ isDeadlinePassed ? 'Date limite dépassée' : 'Postuler' }}
               </button>
               <p class="jp-apply-note">
                 <i class="fa-solid fa-shield-halved"></i>
-                Candidature sécurisée · Réponse sous 48h
+                Candidature sécurisée
               </p>
             </template>
 
             <!-- Already applied -->
             <template v-else>
               <div class="jp-applied-banner">
-                <div class="jp-applied-check">
-                  <i class="fa-solid fa-circle-check"></i>
-                </div>
-                <div>
-                  <div class="jp-applied-title">Candidature envoyée !</div>
-                  <div class="jp-applied-hint">Votre dossier est en cours d'examen</div>
-                </div>
+                <i class="fa-solid fa-circle-check"></i>
+                <span>Candidature envoyée</span>
               </div>
 
               <div v-if="myApplication" class="jp-status-row">
-                <span class="jp-status-label">Statut :</span>
+                <span class="jp-status-label">Statut</span>
                 <span class="jp-status-chip" :class="getStatusClass(myApplication.statut)">
-                  <i :class="getStatusIcon(myApplication.statut)"></i>
                   {{ myApplication.statut }}
                 </span>
               </div>
@@ -154,7 +97,7 @@
                 class="jp-btn-cancel"
                 @click="confirmCancel = true"
               >
-                <i class="fa-solid fa-xmark"></i>Annuler la postulation
+                <i class="fa-solid fa-xmark"></i>Annuler
               </button>
             </template>
           </div>
@@ -175,27 +118,37 @@
             </div>
             <div class="jp-card-body">
               <p class="jp-desc">{{ job.Description }}</p>
-              <div class="jp-exp-pill">
-                <span class="jp-exp-key">Expérience requise</span>
-                <span class="jp-exp-val">{{ job.ExperienceRequise || 'Non spécifiée' }}</span>
+              <div class="jp-exp-badge">
+                <i class="fa-solid fa-briefcase"></i>
+                <span class="jp-exp-txt">Expérience requise : <strong>{{ job.ExperienceRequise || 'Non spécifiée' }}</strong></span>
               </div>
             </div>
           </div>
 
           <!-- Skills -->
           <div class="jp-card">
-            <div class="jp-card-head">
-              <div class="jp-card-ico jp-ico-violet"><i class="fa-solid fa-bolt"></i></div>
-              <h2 class="jp-card-title">Compétences requises</h2>
-            </div>
             <div class="jp-card-body">
-              <div class="jp-skills">
-                <span
-                  class="jp-skill"
-                  v-for="skill in ((job as any).competences ? (job as any).competences.split(',') : [])"
+              <div class="jp-skills-header">
+                <h3 class="jp-card-sub-title">Compétences requises</h3>
+                <span class="jp-skills-count" v-if="formattedSkills.length > 0">{{ formattedSkills.length }} au total</span>
+              </div>
+              
+              <div class="jp-skills-grid">
+                <div 
+                  class="jp-skill-card" 
+                  v-for="skill in formattedSkills" 
                   :key="skill"
-                >{{ skill.trim() }}</span>
-                <span v-if="!(job as any).competences" class="jp-no-skill">Non spécifiées</span>
+                >
+                  <div class="jp-skill-check">
+                    <i class="fa-solid fa-circle-check"></i>
+                  </div>
+                  <span class="jp-skill-name">{{ skill }}</span>
+                </div>
+              </div>
+              
+              <div v-if="formattedSkills.length === 0" class="jp-no-skill-empty">
+                <i class="fa-solid fa-layer-group"></i>
+                <p>Aucune compétence spécifique répertoriée pour ce poste.</p>
               </div>
             </div>
           </div>
@@ -287,42 +240,31 @@
               <div class="jp-tip-item">
                 <div class="jp-tip-num n1">1</div>
                 <div class="jp-tip-content">
-                  <span class="jp-tip-label">Personnalisez votre candidature</span>
-                  <span class="jp-tip-sub">Adaptez votre lettre et CV au poste</span>
+                  <span class="jp-tip-label">Révisez les bases techniques</span>
+                  <span class="jp-tip-sub">Relisez les compétences requises pour mieux appréhender le QCM.</span>
                 </div>
               </div>
               <div class="jp-tip-item">
                 <div class="jp-tip-num n2">2</div>
                 <div class="jp-tip-content">
-                  <span class="jp-tip-label">Relisez la description du poste</span>
-                  <span class="jp-tip-sub">Identifiez les mots-clés importants</span>
+                  <span class="jp-tip-label">Optimisez votre environnement</span>
+                  <span class="jp-tip-sub">Installez-vous au calme avec une connexion internet stable.</span>
                 </div>
               </div>
               <div class="jp-tip-item">
                 <div class="jp-tip-num n3">3</div>
                 <div class="jp-tip-content">
-                  <span class="jp-tip-label">Préparez des exemples concrets</span>
-                  <span class="jp-tip-sub">Illustrez vos expériences passées</span>
+                  <span class="jp-tip-label">Gérez votre temps de test</span>
+                  <span class="jp-tip-sub">Répondez rapidement mais soigneusement, le test est chronométré.</span>
                 </div>
               </div>
               <div class="jp-tip-item">
                 <div class="jp-tip-num n4">4</div>
                 <div class="jp-tip-content">
-                  <span class="jp-tip-label">Vérifiez vos compétences requises</span>
-                  <span class="jp-tip-sub">Mettez en avant vos acquis clés</span>
+                  <span class="jp-tip-label">Valorisez votre score Skillvia</span>
+                  <span class="jp-tip-sub">Un score élevé est votre meilleur atout pour décrocher l'entretien.</span>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- CTA Card -->
-          <div class="jp-card jp-cta-card" v-if="!alreadyApplied">
-            <div class="jp-card-body">
-              <p class="jp-cta-title">Prêt à postuler chez <strong>{{ job.entreprise ? job.entreprise.nom : 'Entreprise Confidentielle' }} ?</strong></p>
-              <button class="jp-btn-apply jp-btn-full" @click="applyToJob" :disabled="isDeadlinePassed" :class="{ 'opacity-50 cursor-not-allowed': isDeadlinePassed }">
-                <i class="fa-solid fa-paper-plane"></i>
-                {{ isDeadlinePassed ? 'Date limite dépassée' : 'Postuler maintenant' }}
-              </button>
             </div>
           </div>
 
@@ -407,10 +349,21 @@ const alreadyApplied  = computed(() => !!myApplication.value);
 const applicantsCount = computed(() => job.value?.candidatures?.length || 0);
 const questionsCount = computed(() => job.value?.questions?.length || 5);
 const qcmDuration = computed(() => {
-  const count = questionsCount.value;
-  return count <= 5 ? '5 min' : count <= 10 ? '10 min' : '15 min';
+  return '3 min'; // Durée fixe de 3 minutes
 });
 const minScore = computed(() => job.value?.seuilMinimal || 80);
+
+const formattedSkills = computed(() => {
+  const competences = (job.value as any)?.competences;
+  if (!competences) return [];
+  // Support for comma, semicolon, pipe, and newline separators
+  let list = competences.split(/[;,|\n\r]/).filter((s: string) => s.trim().length > 0);
+  if (list.length <= 1) {
+    list = competences.split(/\s{2,}/);
+  }
+  return list.map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+});
+
 
 const isDeadlinePassed = computed(() => {
   if (!job.value || !job.value.DateLimite) return false;
@@ -420,10 +373,10 @@ const isDeadlinePassed = computed(() => {
 });
 
 const recruitmentSteps = computed(() => [
-  { title: 'Dépôt de candidature', desc: 'Soumettez votre candidature. Notre équipe examine votre profil sous 48h.', extra: '', icon: 'fa-solid fa-file-arrow-up', color: 'dot-indigo' },
-  { title: 'Test QCM Skillvia', desc: "Évaluation objective de vos compétences techniques via notre plateforme.", extra: job.value ? `QCM technique · Score min. ${minScore.value}%` : '', icon: 'fa-solid fa-brain', color: 'dot-violet' },
-  { title: 'Entretien technique', desc: "Échange approfondi avec l'équipe recrutement et les managers techniques.", extra: '', icon: 'fa-solid fa-video', color: 'dot-orange' },
-  { title: 'Décision finale', desc: "Retour de l'entreprise sous 5 jours ouvrés après l'entretien.", extra: '', icon: 'fa-solid fa-flag-checkered', color: 'dot-green' },
+  { title: 'Dépôt de Candidature', desc: 'Soumettez votre candidature instantanément via Skillvia. Votre profil est immédiatement pris en compte.', extra: '', icon: 'fa-solid fa-file-arrow-up', color: 'dot-indigo' },
+  { title: 'Évaluation Skillvia', desc: "Validez vos compétences techniques via notre test QCM automatisé et certifiez votre niveau.", extra: job.value ? `QCM technique · Score min. ${minScore.value}%` : '', icon: 'fa-solid fa-brain', color: 'dot-violet' },
+  { title: 'Entretien de Sélection', desc: "Rencontrez l'équipe pour un échange approfondi sur vos projets et votre motivation.", extra: '', icon: 'fa-solid fa-video', color: 'dot-orange' },
+  { title: 'Offre & Intégration', desc: "Recevez une réponse rapide pour finaliser votre recrutement et rejoindre l'équipe.", extra: '', icon: 'fa-solid fa-flag-checkered', color: 'dot-green' },
 ]);
 
 const applyToJob = async () => {
@@ -490,104 +443,79 @@ const showToast = (emoji: string, msg: string) => {
 }
 
 /* ═══════════════════════════════════════════════════════
-   NAVIGATION
+   NAVIGATION (SIMPLIFIÉ)
 ═══════════════════════════════════════════════════════ */
 .jp-nav {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(226,232,240,0.8);
-  box-shadow: 0 1px 16px rgba(0,0,0,0.05);
+  background: #fff;
+  border-bottom: 1px solid #E5E7EB;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
+
 .jp-nav-inner {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 28px;
-  height: 66px;
+  height: 64px;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 20px;
 }
-.jp-brand { display: flex; align-items: center; gap: 12px; flex-shrink: 0; cursor: pointer; text-decoration: none; }
-.jp-logo {
-  width: 40px; height: 40px;
-  background: #2563EB;
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 16px rgba(37,99,235,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
-  transition: transform .25s, box-shadow .25s;
+
+.jp-brand { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  text-decoration: none;
+  transition: opacity .2s;
 }
-.jp-brand:hover .jp-logo { transform: rotate(-8deg) scale(1.12); box-shadow: 0 6px 22px rgba(37,99,235,0.45); }
-.jp-brand-text { display: flex; flex-direction: column; line-height: 1; }
+
+.jp-brand:hover {
+  opacity: 0.8;
+}
+
 .jp-brand-name {
-  font-size: 1.15rem; font-weight: 900;
-  color: #111827;
-  letter-spacing: -0.04em;
-}
-.jp-brand-tag {
-  font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
-  color: #94A3B8; margin-top: 2px;
+  color: #1e40af; 
+  font-weight: 800; 
+  font-size: 20px; 
+  letter-spacing: -0.02em;
 }
 
-.jp-nav-divider { width: 1px; height: 28px; background: #E2E8F0; flex-shrink: 0; }
+.jp-crumb { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  flex: 1; 
+  font-size: 14px; 
+  min-width: 0; 
+}
 
-.jp-crumb { display: flex; align-items: center; gap: 8px; flex: 1; font-size: 13px; min-width: 0; }
 .jp-crumb-link {
-  display: inline-flex; align-items: center; gap: 6px;
-  color: #64748B; font-weight: 600; text-decoration: none;
-  padding: 6px 14px; border-radius: 9px;
-  background: #F8FAFC; border: 1px solid #E2E8F0;
-  transition: all .2s; white-space: nowrap;
+  color: #64748B; 
+  font-weight: 600; 
+  text-decoration: none;
+  transition: color .2s;
 }
-.jp-crumb-link:hover { color: #2563EB; background: #EFF6FF; border-color: #BFDBFE; }
-.jp-crumb-link i { color: #9CA3AF; font-size: 12px; }
-.jp-crumb-sep { color: #CBD5E1; font-size: 9px; }
+
+.jp-crumb-link:hover { 
+  color: #1e40af; 
+}
+
+.jp-crumb-sep { 
+  color: #CBD5E1; 
+  font-size: 10px; 
+}
+
 .jp-crumb-cur {
-  font-weight: 700; color: #1E293B;
-  padding: 6px 14px; border-radius: 9px;
-  background: #fff; border: 1px solid #E2E8F0;
-  max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  font-weight: 700; 
+  color: #1E293B;
+  max-width: 300px; 
+  overflow: hidden; 
+  text-overflow: ellipsis; 
+  white-space: nowrap;
 }
-
-/* Right side: status + dash button */
-.jp-nav-actions { margin-left: auto; display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-
-.jp-nav-status {
-  display: inline-flex; align-items: center; gap: 7px;
-  padding: 6px 12px; border-radius: 999px;
-  background: #ECFDF5; border: 1px solid #A7F3D0;
-  font-size: 12px; font-weight: 700; color: #065F46; white-space: nowrap;
-}
-.jp-nav-status-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #10B981;
-  box-shadow: 0 0 0 2px rgba(16,185,129,0.25);
-  animation: pulse-dot 2s infinite;
-}
-@keyframes pulse-dot {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
-  50% { box-shadow: 0 0 0 5px rgba(16,185,129,0); }
-}
-
-.jp-dash-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 10px 20px; border-radius: 12px;
-  background: #1D4ED8;
-  color: #fff; font-size: 13px; font-weight: 700;
-  text-decoration: none; white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(37,99,235,0.3);
-  transition: all .25s; border: 1px solid #1E40AF;
-}
-.jp-dash-btn:hover {
-  background: #1E40AF;
-  transform: translateY(-1px); box-shadow: 0 6px 20px rgba(37,99,235,0.4);
-}
-.jp-dash-arrow { font-size: 11px; transition: transform .3s; opacity: 0.6; }
-.jp-dash-btn:hover .jp-dash-arrow { transform: translateX(4px); opacity: 1; }
 
 /* ═══════════════════════════════════════════════════════
    MAIN WRAPPER
@@ -599,205 +527,269 @@ const showToast = (emoji: string, msg: string) => {
 }
 
 /* ═══════════════════════════════════════════════════════
-   HERO SECTION
+   HERO SECTION (SIMPLIFIÉ)
 ═══════════════════════════════════════════════════════ */
 .jp-hero {
-  position: relative;
-  border-radius: 20px;
-  overflow: hidden;
+  border-radius: 16px;
   margin-bottom: 28px;
-  background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 45%, #2563EB 80%, #3B82F6 100%);
-  box-shadow: 0 8px 32px rgba(37,99,235,0.22);
+  background: linear-gradient(135deg, #1E40AF 0%, #2563EB 100%);
+  box-shadow: 0 4px 20px rgba(37,99,235,0.15);
 }
-.jp-hero-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
-.jp-hero-orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.4;
-}
-.jp-hero-orb1 { width: 350px; height: 350px; background: #1D4ED8; top: -100px; right: -60px; }
-.jp-hero-orb2 { width: 200px; height: 200px; background: #0EA5E9; bottom: -60px; left: 200px; opacity: 0.2; }
-.jp-hero-orb3 { width: 150px; height: 150px; background: #F59E0B; bottom: -50px; right: 300px; opacity: 0.1; }
 
 .jp-hero-inner {
-  position: relative;
-  z-index: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 24px;
-  padding: 40px 44px;
+  gap: 32px;
+  padding: 32px 40px;
 }
 
 /* Job identity */
 .jp-hero-left { flex: 1; min-width: 0; }
 
-.jp-job-icon {
-  width: 68px; height: 68px;
-  border-radius: 18px;
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: 18px;
-  border: 1.5px solid rgba(255,255,255,0.18);
-  backdrop-filter: blur(12px);
-  background: rgba(255,255,255,0.12) !important;
-}
-.jp-job-icon i { color: white !important; }
-
-.jp-hero-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
-.jp-tag {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 5px 13px;
-  border-radius: 999px;
-  font-size: 12px; font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.jp-tag-cat  { background: rgba(255,255,255,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
-.jp-tag-type { background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.8); border: 1px solid rgba(255,255,255,0.15); }
-.jp-tag-exp  { background: rgba(251,191,36,0.2); color: #FDE68A; border: 1px solid rgba(251,191,36,0.3); }
-
 .jp-hero-title {
-  font-size: 2.1rem;
-  font-weight: 900;
+  font-size: 2rem;
+  font-weight: 800;
   color: #fff;
-  letter-spacing: -0.045em;
-  line-height: 1.15;
-  margin-bottom: 18px;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+  margin-bottom: 16px;
 }
 
-.jp-hero-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-.jp-meta-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.12);
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12.5px; color: rgba(255,255,255,0.75);
+.jp-hero-meta { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 12px; 
+  margin-bottom: 16px; 
 }
-.jp-meta-chip i { font-size: 11px; color: rgba(255,255,255,0.45); }
-.jp-meta-salary { color: #A5F3FC; background: rgba(6,182,212,0.12); border-color: rgba(6,182,212,0.25); }
-.jp-meta-salary i { color: #67E8F9; }
-.jp-meta-date { color: rgba(255,255,255,0.5); }
+
+.jp-meta-chip {
+  display: inline-flex; 
+  align-items: center; 
+  gap: 6px;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px; 
+  color: rgba(255,255,255,0.9);
+  font-weight: 500;
+}
+
+.jp-meta-chip i { 
+  font-size: 12px; 
+  color: rgba(255,255,255,0.7); 
+}
+
+.jp-hero-tags { 
+  display: flex; 
+  flex-wrap: wrap; 
+  gap: 8px; 
+  margin-bottom: 20px; 
+}
+
+.jp-tag {
+  display: inline-flex; 
+  align-items: center; 
+  gap: 5px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px; 
+  font-weight: 600;
+  background: rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.95);
+  border: 1px solid rgba(255,255,255,0.25);
+}
 
 /* Stats bar */
 .jp-stats-bar {
   display: inline-flex;
   align-items: center;
-  gap: 0;
-  background: rgba(0,0,0,0.2);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px;
-  overflow: hidden;
+  gap: 24px;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 16px 24px;
 }
-.jp-stat { padding: 12px 22px; text-align: center; }
-.jp-stat-val { display: block; font-size: 1.1rem; font-weight: 900; color: #fff; line-height: 1; }
-.jp-stat-key { display: block; font-size: 10.5px; font-weight: 600; color: rgba(255,255,255,0.4); letter-spacing: 0.04em; margin-top: 3px; }
-.jp-stat-line { width: 1px; height: 36px; background: rgba(255,255,255,0.1); }
+
+.jp-stat { 
+  text-align: center; 
+}
+
+.jp-stat-val { 
+  display: block; 
+  font-size: 1.5rem; 
+  font-weight: 800; 
+  color: #fff; 
+  line-height: 1; 
+}
+
+.jp-stat-key { 
+  display: block; 
+  font-size: 11px; 
+  font-weight: 500; 
+  color: rgba(255,255,255,0.6); 
+  margin-top: 4px; 
+}
 
 /* Apply panel */
 .jp-apply-panel {
-  width: 250px;
+  width: 220px;
   flex-shrink: 0;
-  background: rgba(255,255,255,0.08);
-  backdrop-filter: blur(22px);
-  -webkit-backdrop-filter: blur(22px);
-  border: 1.5px solid rgba(255,255,255,0.18);
-  border-radius: 22px;
-  padding: 24px 22px;
+  background: rgba(255,255,255,0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 12px;
 }
-.jp-apply-header { display: flex; align-items: center; gap: 12px; }
-.jp-apply-icon {
-  width: 44px; height: 44px;
-  background: linear-gradient(135deg, #F59E0B, #FBBF24);
-  border-radius: 12px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; color: white;
-  flex-shrink: 0;
-  box-shadow: 0 4px 14px rgba(245,158,11,0.35);
-}
-.jp-apply-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
-.jp-apply-co { font-size: 13.5px; font-weight: 800; color: #fff; }
 
 .jp-btn-apply {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  padding: 13px 20px;
+  gap: 10px;
+  padding: 14px 24px;
   border-radius: 12px;
-  background: #fff;
-  color: #1D4ED8;
+  background: #ffffff;
+  color: #1e40af;
   border: none;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   cursor: pointer;
   width: 100%;
-  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
-  transition: all .25s;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), inset 0 -4px 0 rgba(0, 0, 0, 0.05);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  letter-spacing: 0.01em;
 }
+
 .jp-btn-apply:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(0,0,0,0.15);
-  background: #EFF6FF;
+  transform: translateY(-3px);
+  background: #fdfdfd;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18), inset 0 -4px 0 rgba(0, 0, 0, 0.05);
+  filter: brightness(1.02);
 }
+
+.jp-btn-apply:active {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.jp-btn-apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .jp-btn-apply i { flex-shrink: 0; }
-.jp-btn-full {
-  background: #2563EB;
-  color: #fff;
-  box-shadow: 0 5px 18px rgba(37,99,235,0.4);
-}
-.jp-btn-full:hover {
-  box-shadow: 0 8px 26px rgba(37,99,235,0.5);
-  background: #1D4ED8;
-}
 
 .jp-apply-note {
-  font-size: 11px; color: rgba(255,255,255,0.4);
-  display: flex; align-items: center; gap: 5px;
-  text-align: center; line-height: 1.4;
+  font-size: 11px; 
+  color: rgba(255,255,255,0.6);
+  display: flex; 
+  align-items: center; 
+  gap: 5px;
+  text-align: center; 
+  line-height: 1.4;
+  justify-content: center;
 }
-.jp-apply-note i { font-size: 11px; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+
+.jp-apply-note i { 
+  font-size: 11px; 
+  color: rgba(255,255,255,0.5); 
+}
 
 .jp-applied-banner {
-  display: flex; align-items: flex-start; gap: 12px;
-  background: rgba(16,185,129,0.15);
-  border: 1px solid rgba(16,185,129,0.3);
-  border-radius: 14px; padding: 14px;
+  display: flex; 
+  align-items: center; 
+  gap: 10px;
+  background: rgba(16,185,129,0.2);
+  border: 1px solid rgba(16,185,129,0.4);
+  border-radius: 10px; 
+  padding: 12px;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
 }
-.jp-applied-check {
-  width: 34px; height: 34px;
-  background: #10B981; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  color: white; font-size: 15px; flex-shrink: 0;
-}
-.jp-applied-title { font-size: 13.5px; font-weight: 800; color: #fff; }
-.jp-applied-hint  { font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 2px; }
 
-.jp-status-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.jp-status-label { font-size: 12px; color: rgba(255,255,255,0.5); }
-.jp-status-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 4px 10px; border-radius: 999px;
-  font-size: 12px; font-weight: 700;
+.jp-applied-banner i {
+  font-size: 18px;
+  color: #10B981;
 }
-.sc-blue   { background: rgba(99,102,241,0.25); color: #C7D2FE; border: 1px solid rgba(99,102,241,0.4); }
-.sc-orange { background: rgba(251,146,60,0.2);  color: #FED7AA; border: 1px solid rgba(251,146,60,0.3); }
-.sc-red    { background: rgba(239,68,68,0.2);   color: #FECACA; border: 1px solid rgba(239,68,68,0.3); }
+
+.jp-status-row { 
+  display: flex; 
+  align-items: center; 
+  justify-content: space-between;
+  gap: 8px; 
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 8px;
+}
+
+.jp-status-label { 
+  font-size: 12px; 
+  font-weight: 600;
+  color: rgba(255,255,255,0.7); 
+}
+
+.jp-status-chip {
+  padding: 4px 12px; 
+  border-radius: 6px;
+  font-size: 12px; 
+  font-weight: 600;
+}
+
+.sc-blue { background: rgba(59,130,246,0.2); color: #93C5FD; border: 1px solid rgba(59,130,246,0.3); }
+.sc-orange { background: rgba(251,146,60,0.2); color: #FED7AA; border: 1px solid rgba(251,146,60,0.3); }
+.sc-red { background: rgba(239,68,68,0.2); color: #FCA5A5; border: 1px solid rgba(239,68,68,0.3); }
 
 .jp-btn-cancel {
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  background: rgba(239,68,68,0.12);
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  gap: 6px;
+  background: rgba(239,68,68,0.15);
   color: #FCA5A5;
-  border: 1px solid rgba(239,68,68,0.25);
-  padding: 10px; border-radius: 10px;
-  font-size: 12.5px; font-weight: 700;
-  cursor: pointer; width: 100%;
+  border: 1px solid rgba(239,68,68,0.3);
+  padding: 10px 16px; 
+  border-radius: 8px;
+  font-size: 13px; 
+  font-weight: 600;
+  cursor: pointer; 
+  width: 100%;
   transition: all .2s;
 }
-.jp-btn-cancel:hover { background: rgba(239,68,68,0.22); }
+
+.jp-btn-cancel:hover { 
+  background: rgba(239,68,68,0.25); 
+  border-color: rgba(239,68,68,0.4);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .jp-hero-inner { 
+    flex-direction: column; 
+    padding: 24px; 
+  }
+  .jp-apply-panel { 
+    width: 100%; 
+  }
+  .jp-hero-title { 
+    font-size: 1.5rem; 
+  }
+  .jp-stats-bar { 
+    flex-wrap: wrap; 
+    gap: 12px; 
+    padding: 12px 16px; 
+  }
+  .jp-stat { 
+    padding: 8px 12px; 
+  }
+}
 
 /* ═══════════════════════════════════════════════════════
    CONTENT GRID
@@ -836,7 +828,22 @@ const showToast = (emoji: string, msg: string) => {
   display: flex; align-items: center; gap: 13px;
   border-bottom: 1px solid #F1F5FB;
 }
+
+.jp-card-head-simple {
+  padding: 18px 24px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
 .jp-card-title { font-size: 1rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; }
+
+.jp-card-title-simple { 
+  font-size: 0.95rem; 
+  font-weight: 700; 
+  color: #1f2937; 
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
 .jp-card-body  { padding: 20px 24px 24px; }
 
 /* Colored icon boxes */
@@ -855,30 +862,94 @@ const showToast = (emoji: string, msg: string) => {
 
 /* Description */
 .jp-desc {
-  font-size: 0.9rem;
-  line-height: 1.85;
-  color: #475569;
-  margin-bottom: 16px;
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: #334155;
+  margin-bottom: 20px;
 }
-.jp-exp-pill {
-  display: inline-flex; align-items: center; gap: 12px;
-  background: #EFF6FF; border: 1px solid #BFDBFE;
-  border-radius: 10px; padding: 10px 16px;
+.jp-exp-badge {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: #f8fafc; border: 1px solid #e2e8f0;
+  border-radius: 12px; padding: 12px 18px;
+  transition: all 0.2s ease;
 }
-.jp-exp-key { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: #2563EB; }
-.jp-exp-val { font-size: 13.5px; font-weight: 700; color: #1E3A8A; }
+.jp-exp-badge i { font-size: 14px; color: #1e40af; }
+.jp-exp-txt { font-size: 13.5px; color: #475569; font-weight: 500; }
+.jp-exp-txt strong { color: #1e40af; font-weight: 700; }
 
-/* Skills */
-.jp-skills { display: flex; flex-wrap: wrap; gap: 8px; }
-.jp-skill {
-  padding: 7px 15px;
-  background: #EFF6FF; color: #1D4ED8;
-  border-radius: 8px; font-size: 13px; font-weight: 600;
-  border: 1px solid #BFDBFE;
-  transition: all .2s;
+/* Skills Grid Redesign */
+.jp-skills-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
-.jp-skill:hover { background: #DBEAFE; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(37,99,235,0.15); }
-.jp-no-skill { font-size: 13px; color: #94A3B8; font-style: italic; }
+.jp-card-sub-title { font-size: 1.05rem; font-weight: 800; color: #0F172A; margin: 0; }
+.jp-skills-count { font-size: 11px; font-weight: 700; color: #3B82F6; background: #EFF6FF; padding: 4px 10px; border-radius: 6px; }
+
+.jp-skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.jp-skill-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 14px 18px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: default;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.jp-skill-card:hover {
+  border-color: #3B82F6;
+  box-shadow: 0 12px 20px -5px rgba(37, 99, 235, 0.12), 0 8px 10px -6px rgba(37, 99, 235, 0.08);
+  transform: translateY(-3px) scale(1.01);
+}
+
+.jp-skill-check {
+  width: 26px;
+  height: 26px;
+  background: linear-gradient(135deg, #60A5FA 0%, #2563EB 100%);
+  color: #FFFFFF;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(37, 99, 235, 0.25);
+  transition: all 0.3s ease;
+}
+
+.jp-skill-card:hover .jp-skill-check {
+  transform: rotate(10deg) scale(1.1);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+}
+
+.jp-skill-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.jp-no-skill-empty {
+  text-align: center;
+  padding: 40px 20px;
+  background: #F9FAFB;
+  border: 1px dashed #E2E8F0;
+  border-radius: 16px;
+  color: #94A3B8;
+}
+
+.jp-no-skill-empty i { font-size: 24px; margin-bottom: 12px; opacity: 0.5; }
+.jp-no-skill-empty p { font-size: 13px; font-weight: 500; }
 
 /* ═══════════════════════════════════════════════════════
    TIMELINE
@@ -965,16 +1036,6 @@ const showToast = (emoji: string, msg: string) => {
   font-size: 11px; color: white;
   box-shadow: 0 2px 8px rgba(16,185,129,0.3);
 }
-
-/* ═══════════════════════════════════════════════════════
-   CTA CARD
-═══════════════════════════════════════════════════════ */
-.jp-cta-card {
-  background: linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%);
-  border-color: #BFDBFE;
-}
-.jp-cta-text { font-size: 0.9rem; color: #1E3A8A; margin-bottom: 14px; line-height: 1.5; }
-.jp-cta-text strong { color: #1E40AF; }
 
 /* ═══════════════════════════════════════════════════════
    LOADING
