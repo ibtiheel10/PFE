@@ -500,7 +500,21 @@ const goToJobs = () => router.push('/candidat/jobs');
 .skills-icon-wrap { width: 32px; height: 32px; background: #eff6ff; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
 .skills-title { font-size: 16px; font-weight: 700; color: #1e293b; margin: 0; }
 
-.skills-list { display: flex; flex-direction: column; gap: 22px; }
+.skills-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 22px; 
+  max-height: 350px; 
+  overflow-y: auto; 
+  padding-right: 12px;
+  /* Support Firefox / Standard Browsers */
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #eff6ff; 
+}
+.skills-list::-webkit-scrollbar { width: 8px; }
+.skills-list::-webkit-scrollbar-track { background: #eff6ff; border-radius: 10px; }
+.skills-list::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+.skills-list::-webkit-scrollbar-thumb:hover { background: #2563eb; }
 
 .skill-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
 .skill-name { font-size: 14px; font-weight: 700; color: #334155; }

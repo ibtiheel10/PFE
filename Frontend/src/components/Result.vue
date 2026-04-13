@@ -304,7 +304,7 @@ onMounted(async () => {
   } catch (err: any) {
       if (err.response?.status === 403) {
           import('../services/swal').then(module => { const Swal = module.default;
-              Swal.default.fire('Accès refusé', "L'évaluation n'est pas encore terminée ou le score n'est pas finalisé.", 'error');
+              Swal.fire('Accès refusé', "L'évaluation n'est pas encore terminée ou le score n'est pas finalisé.", 'error');
           });
           router.push('/candidat/dashboard');
           return;
@@ -570,7 +570,21 @@ const donutChartOptions = ref({
 .card-section-title { font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; }
 
 /* ── Competencies ── */
-.competency-list { display: flex; flex-direction: column; gap: 18px; }
+.competency-list { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 18px; 
+  max-height: 350px; 
+  overflow-y: auto; 
+  padding-right: 12px;
+  /* Support Firefox / Standard Browsers */
+  scrollbar-width: thin;
+  scrollbar-color: #3b82f6 #eff6ff;
+}
+.competency-list::-webkit-scrollbar { width: 8px; }
+.competency-list::-webkit-scrollbar-track { background: #eff6ff; border-radius: 10px; }
+.competency-list::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 10px; }
+.competency-list::-webkit-scrollbar-thumb:hover { background: #2563eb; }
 .competency-item { }
 .competency-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .competency-name { font-size: 13px; font-weight: 600; color: #374151; }
