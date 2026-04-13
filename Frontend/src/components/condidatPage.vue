@@ -158,7 +158,7 @@
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-5" v-if="dashboard && recentNonExpired.length > 0">
                              <!-- Loop through real non-expired applications -->
-                            <div v-for="app in recentNonExpired" :key="app.id" class="application-card">
+                            <div v-for="app in recentNonExpired" :key="app.id" class="application-card cursor-pointer" @click="router.push(`/job-details-candidat/${app.offre.id}`)">
                                 <div class="flex justify-between items-start mb-4">
                                      <div class="card-icon card-icon-teal">
                                         <svg class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" /></svg>
@@ -230,7 +230,7 @@
                             <BoltIcon class="w-5 h-5 text-yellow-500" />
                         </div>
                         <div class="divide-y divide-gray-50" v-if="dashboard && dashboard.suggestions.length > 0">
-                            <div v-for="suggestion in dashboard.suggestions" :key="suggestion.id" class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group" @click="router.push(`/job/${suggestion.id}`)">
+                            <div v-for="suggestion in dashboard.suggestions" :key="suggestion.id" class="p-4 hover:bg-gray-50 transition-colors cursor-pointer group" @click="router.push(`/job-details-candidat/${suggestion.id}`)">
                                 <div class="flex justify-between items-start mb-1">
                                     <h4 class="font-bold text-sm text-gray-800 group-hover:text-blue-600">{{ suggestion.TitreDePost }}</h4>
                                 </div>
@@ -326,7 +326,8 @@
                         <tr
                             v-for="app in historyApplications"
                             :key="app.id"
-                            class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors"
+                            class="border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors cursor-pointer"
+                            @click="router.push(`/job-details-candidat/${app.offre.id}`)"
                         >
                             <td class="px-6 py-4">
                                 <div class="font-semibold text-gray-800 text-sm">{{ app.offre.TitreDePost }}</div>
@@ -451,9 +452,9 @@ onMounted(async () => {
 
 const handleNav = async (itemName: string) => {
     if (itemName === 'Offres') {
-        router.push('/jobs');
+        router.push('/candidat/jobs');
     } else if (itemName === 'Mes Résultats') {
-        router.push('/result');
+        router.push('/resultats');
     } else {
         activeNav.value = itemName;
         // Load history data lazily when the user navigates to Historique
@@ -471,7 +472,7 @@ const handleNav = async (itemName: string) => {
 };
 
 const goToJobs = () => {
-    router.push('/jobs');
+    router.push('/candidat/jobs');
 };
 
 const getScoreColor = (score: number) => {

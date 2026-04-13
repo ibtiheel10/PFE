@@ -405,7 +405,6 @@ RÈGLES STRICTES:
 RÈGLES D'OR POUR LES COMPÉTENCES :
 - CHAQUE QUESTION DOIT AVOIR UN CHAMP "competence".
 - Utilise UNIQUEMENT les noms de compétences issus de cette liste : ${compStrList}.
-- INTERDICTION STRICTE d'utiliser des catégories comme "Expertise", "Basique", "Technique", "Compétence", "Général", etc.
 - Le champ "competence" dans le JSON doit contenir uniquement le NOM COURT de la compétence.
 
 Retourne UNIQUEMENT ce JSON valide :
@@ -468,7 +467,7 @@ Retourne UNIQUEMENT ce JSON valide :
                 let assignedComp = items[i].competence || items[i].category;
 
                 // If AI failed to provide a valid competence, assign one rotationally from the original list
-                if (!assignedComp || ['compétence', 'expertise', 'technique', 'basique'].includes(assignedComp.toLowerCase())) {
+                if (!assignedComp) {
                   assignedComp = competenceNames[allQuestions.length % (competenceNames.length || 1)] || competenceNames[0] || jobTitle;
                 }
 
@@ -541,7 +540,7 @@ Retourne UNIQUEMENT ce JSON valide :
     if (offre && questions.length > 0) {
       const entities: Question[] = questions.map((q) => {
         const e = new Question();
-        const categoryTag = (q as any).category || (q.options?.[0]?.text ? 'Compétence Métier' : 'Compétence Technique');
+        const categoryTag = (q as any).category || (q.options?.[0]?.text ? 'Sujet Métier' : 'Hard Skill');
         e.contenu = { question: q.question, options: q.options, category: categoryTag };
         e.chronometre = 30;
         e.offre = offre;
@@ -649,12 +648,7 @@ Retourne UNIQUEMENT ce JSON valide :
 Analyse les questions et les réponses d’un candidat ci-dessous.
 
 🎯 Objectif :
-Extraire UNIQUEMENT les compétences spécifiques réellement évaluées (Noms ou Soft Skills précis).
-
-❌ INTERDIT :
-- "Niveau", "Bon niveau en", "Connaissances en", "Notions en", "Compétence"
-- toute note globale
-- toute phrase descriptive comme nom de compétence
+Extraire les compétences spécifiques réellement évaluées (Noms ou Soft Skills précis).
 
 ✅ OBLIGATOIRE :
 - extraire des compétences PRÉCISES et UNIQUES (ex: JavaScript, SQL, REST API, Problem Solving)

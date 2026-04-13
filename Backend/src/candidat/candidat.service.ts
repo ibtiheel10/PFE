@@ -88,7 +88,7 @@ export class CandidatService {
                 if (details.ScoreParCompetence) {
                     for (let [key, val] of Object.entries(details.ScoreParCompetence)) {
                         // Failsafe: Strip descriptive prefixes if they leaked through
-                        key = key.replace(/^(Bon niveau en|Connaissances en|Notions en|Maîtrise de|Compétence en|Introduction à|Bases de)\s+/i, '').trim();
+                        key = key.replace(/^(Bon niveau en|Connaissances en|Notions en|Maîtrise de|Introduction à|Bases de)\s+/i, '').trim();
                         key = key.charAt(0).toUpperCase() + key.slice(1);
 
                         // Skip if we already have a granular match to avoid duplication
