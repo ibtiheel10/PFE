@@ -477,8 +477,11 @@
                     <div class="flex justify-between items-center pt-4 border-t border-gray-50 dark:border-gray-700">
                         <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Taille: {{ company.size }}</span>
                         <div class="flex gap-2">
-                            <button class="p-1.5 text-gray-400 hover:text-blue-600 transition-colors"><PencilSquareIcon class="w-4 h-4" /></button>
-                            <button class="p-1.5 text-gray-400 hover:text-red-600 transition-colors"><TrashIcon class="w-4 h-4" /></button>
+                            <button @click="viewCompanyDetails(company)" class="p-1.5 text-gray-400 hover:text-blue-600 transition-colors" title="Voir les détails">
+                                <EyeIcon class="w-4 h-4" />
+                            </button>
+                            <button @click="editCompany(company)" class="p-1.5 text-gray-400 hover:text-blue-600 transition-colors" title="Modifier l'entreprise"><PencilSquareIcon class="w-4 h-4" /></button>
+                            <button @click="deleteCompany(company.id)" class="p-1.5 text-gray-400 hover:text-red-600 transition-colors" title="Supprimer l'entreprise"><TrashIcon class="w-4 h-4" /></button>
                         </div>
                     </div>
                 </div>
@@ -574,6 +577,99 @@
             </button>
         </div>
 
+        <!-- ══ MODAL: Detail Entreprise ══ -->
+        <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+            <div v-if="showDetailModal" class="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4" @click.self="showDetailModal = false">
+                <div class="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden relative border border-gray-100 dark:border-gray-700 animate-scale-in">
+                    <!-- Header -->
+                    <div class="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-10 text-white relative">
+                        <button @click="showDetailModal = false" class="absolute top-6 right-6 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        
+                        <div class="flex items-center gap-6">
+                            <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center text-3xl font-bold border border-white/30 shadow-inner">
+                                {{ selectedCompany?.name?.charAt(0) }}
+                            </div>
+                            <div>
+                                <h2 class="text-3xl font-black tracking-tight mb-1">{{ selectedCompany?.name }}</h2>
+                                <div class="flex items-center gap-2 text-blue-100 text-sm font-medium">
+                                    <EnvelopeIcon class="w-4 h-4" />
+                                    {{ selectedCompany?.email }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="absolute -bottom-6 right-8 flex gap-3">
+                            <span class="px-4 py-2 bg-white dark:bg-gray-900 rounded-xl shadow-lg text-xs font-bold uppercase tracking-widest" :class="selectedCompany?.status === 'Vérifié' ? 'text-green-600' : 'text-yellow-600'">
+                                {{ selectedCompany?.status }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="p-8 pt-12">
+                        <div class="grid grid-cols-2 gap-8 mb-10">
+                            <!-- Information Section -->
+                            <div class="space-y-6">
+                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <BuildingOfficeIcon class="w-4 h-4" />
+                                    Informations Générales
+                                </h3>
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <p class="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Secteur d'activité</p>
+                                        <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ selectedCompany?.sector || 'Non renseigné' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Ville / Localisation</p>
+                                        <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ selectedCompany?.city || 'Non renseignée' }}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[10px] font-bold text-gray-400 uppercase mb-0.5">Taille de l'entreprise</p>
+                                        <p class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ selectedCompany?.size || 'Non précisée' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Activity Section -->
+                            <div class="space-y-6">
+                                <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                    <ArrowTrendingUpIcon class="w-4 h-4" />
+                                    Activité du Compte
+                                </h3>
+                                <div class="bg-gray-50 dark:bg-gray-900/50 rounded-2xl p-4 grid grid-cols-1 gap-4">
+                                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
+                                        <span class="text-xs font-medium text-gray-500">Offres publiées</span>
+                                        <span class="text-sm font-black text-blue-600 dark:text-blue-400">{{ selectedCompany?.offresCount }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 pb-3">
+                                        <span class="text-xs font-medium text-gray-500">Total Candidats</span>
+                                        <span class="text-sm font-black text-indigo-600 dark:text-indigo-400">{{ selectedCompany?.candidaturesCount }}</span>
+                                    </div>
+                                    <div class="flex items-center justify-between pt-1">
+                                        <span class="text-xs font-medium text-gray-500">Inscrit depuis le</span>
+                                        <span class="text-[11px] font-bold text-gray-600 dark:text-gray-300">{{ selectedCompany?.createdAt ? new Date(selectedCompany.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : 'N/A' }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-4">
+                            <button @click="editCompany(selectedCompany); showDetailModal = false" class="flex-1 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-bold py-3.5 rounded-2xl hover:opacity-90 transition-all flex items-center justify-center gap-2 group shadow-xl shadow-gray-200 dark:shadow-none">
+                                <PencilSquareIcon class="w-5 h-5 group-hover:scale-110 transition-transform" />
+                                Modifier les infos
+                            </button>
+                            <button @click="showDetailModal = false" class="px-8 py-3.5 rounded-2xl border-2 border-gray-100 dark:border-gray-700 text-sm font-bold text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                                Fermer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+
         <!-- ══ MODAL: Create User (outside v-if chain) ══ -->
         <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
             <div v-if="showCreateUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showCreateUserModal = false">
@@ -638,6 +734,46 @@
                 </div>
             </div>
         </transition>
+
+        <!-- ══ MODAL: Edit Company ══ -->
+        <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+            <div v-if="showEditCompanyModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showEditCompanyModal = false">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+                    <button @click="showEditCompanyModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Modifier l'entreprise</h2>
+                    <form @submit.prevent="submitEditCompany" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Nom *</label>
+                            <input v-model="editingCompany.nom" required type="text" placeholder="Nom de l'entreprise" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Secteur *</label>
+                            <input v-model="editingCompany.secteur" required type="text" placeholder="Technologie, Finance..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input v-model="editingCompany.estActif" type="checkbox" class="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Entreprise vérifiée</span>
+                            </label>
+                        </div>
+
+                        <div v-if="editCompanyError" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+                            {{ editCompanyError }}
+                        </div>
+
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" @click="showEditCompanyModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Annuler</button>
+                            <button type="submit" :disabled="isEditingCompany" class="flex-1 bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                <svg v-if="isEditingCompany" class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                                {{ isEditingCompany ? 'Mise à jour...' : 'Enregistrer' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </transition>
       </div>
     </main>
   </div>
@@ -665,7 +801,8 @@ import {
     ClipboardDocumentCheckIcon,
     TrashIcon,
     PencilSquareIcon,
-    ExclamationCircleIcon
+    ExclamationCircleIcon,
+    EyeIcon
 } from '@heroicons/vue/24/outline';
 
 const router = useRouter();
@@ -696,6 +833,14 @@ const adminInitials = computed(() => {
     if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return adminName.value.substring(0, Math.min(2, adminName.value.length)).toUpperCase();
 });
+
+const showDetailModal = ref(false);
+const selectedCompany = ref<any>(null);
+
+const viewCompanyDetails = (company: any) => {
+    selectedCompany.value = company;
+    showDetailModal.value = true;
+};
 
 // --- Mock Data for Modules ---
 const users = ref<any[]>([]);
@@ -852,9 +997,13 @@ const fetchAdminData = async () => {
             id: c.id,
             name: c.nom || 'Sans nom',
             sector: c.secteur,
+            email: c.email,
             size: c.taille || 'Non précisé',
             status: c.estActif ? 'Vérifié' : 'En attente',
-            city: c.ville || 'Non précisé'
+            city: c.ville || 'Non précisé',
+            offresCount: c.offresCount || 0,
+            candidaturesCount: c.candidaturesCount || 0,
+            createdAt: c.createdAt
         }));
 
         logs.value = logsRes.data.map((l: any) => ({
@@ -1033,6 +1182,73 @@ const clearLogs = async () => {
     } catch (e: any) {
         console.error('Erreur lors du nettoyage des logs', e);
         Swal.fire({ title: 'Erreur', text: e?.response?.data?.message || 'Erreur lors de la suppression des logs.', icon: 'error' });
+    }
+};
+
+// ── Edit company ──────────────────────────────────────────
+const showEditCompanyModal = ref(false);
+const isEditingCompany = ref(false);
+const editCompanyError = ref('');
+const editingCompany = ref({
+    id: 0,
+    nom: '',
+    secteur: '',
+    estActif: true
+});
+
+const editCompany = (company: any) => {
+    editingCompany.value = {
+        id: company.id,
+        nom: company.name,
+        secteur: company.sector,
+        estActif: company.status === 'Vérifié'
+    };
+    showEditCompanyModal.value = true;
+    editCompanyError.value = '';
+};
+
+const submitEditCompany = async () => {
+    isEditingCompany.value = true;
+    editCompanyError.value = '';
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.put(`${API_BASE}/api/admin/entreprises/${editingCompany.value.id}`, {
+            nom: editingCompany.value.nom,
+            secteur: editingCompany.value.secteur,
+            estActif: editingCompany.value.estActif
+        }, config);
+        showEditCompanyModal.value = false;
+        await fetchAdminData();
+        Swal.fire({ title: 'Succès', text: 'Entreprise mise à jour avec succès', icon: 'success', timer: 2000, showConfirmButton: false });
+    } catch (e: any) {
+        editCompanyError.value = e?.response?.data?.message || 'Erreur lors de la mise à jour.';
+    } finally {
+        isEditingCompany.value = false;
+    }
+};
+
+// ── Delete company ────────────────────────────────────────
+const deleteCompany = async (companyId: number) => {
+    const result = await Swal.fire({ 
+        title: 'Confirmation', 
+        text: 'Voulez-vous vraiment supprimer cette entreprise ? Cette action est irréversible.', 
+        icon: 'warning', 
+        showCancelButton: true, 
+        confirmButtonText: 'Oui, supprimer', 
+        cancelButtonText: 'Annuler',
+        confirmButtonColor: '#dc2626'
+    });
+    if (!result.isConfirmed) return;
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.delete(`${API_BASE}/api/admin/entreprises/${companyId}`, config);
+        await fetchAdminData();
+        Swal.fire({ title: 'Supprimée', text: 'L\'entreprise a été supprimée avec succès', icon: 'success', timer: 2000, showConfirmButton: false });
+    } catch (e: any) {
+        console.error('Erreur lors de la suppression', e);
+        Swal.fire({ title: 'Erreur', text: e?.response?.data?.message || 'Erreur lors de la suppression de l\'entreprise.', icon: 'error' });
     }
 };
 

@@ -111,6 +111,38 @@ export class AdminController {
     }
 
     /**
+     * PUT /api/Admin/entreprises/:id
+     * Updates a company.
+     */
+    @Put('entreprises/:id')
+    @ApiOperation({ summary: 'Update company by ID' })
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                nom: { type: 'string' },
+                secteur: { type: 'string' },
+                taille: { type: 'string' },
+                ville: { type: 'string' },
+                estActif: { type: 'boolean' }
+            }
+        }
+    })
+    async updateCompany(@Param('id') id: string, @Body() updateData: any) {
+        return this.adminService.updateCompany(+id, updateData);
+    }
+
+    /**
+     * DELETE /api/Admin/entreprises/:id
+     * Deletes a company.
+     */
+    @Delete('entreprises/:id')
+    @ApiOperation({ summary: 'Delete company by ID' })
+    async deleteCompany(@Param('id') id: string) {
+        return this.adminService.deleteCompany(+id);
+    }
+
+    /**
      * GET /api/Admin/logs
      * Returns a list of mocked system logs.
      */
