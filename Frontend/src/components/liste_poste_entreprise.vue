@@ -24,7 +24,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-for="job in displayJobs" :key="job.title">
+                    <tr v-for="(job, index) in displayJobs" :key="job.title">
                         <td class="fw-600" style="cursor: pointer; color: #1e40af;" @click="goToJobDetails(job.id)">{{ job.title }}</td>
                         <td><span class="status-tag" :class="job.status === 'ACTIVE' ? 'active' : 'draft'">{{ job.status }}</span></td>
                         <td>{{ job.applicants }}</td>
@@ -37,7 +37,7 @@
 
                                 <!-- Job Action Dropdown -->
                                 <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
-                                    <div v-if="activeJobMenu === job.id" class="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20">
+                                    <div v-if="activeJobMenu === job.id" class="absolute right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-20" :class="index === 0 ? 'top-full mt-1' : 'bottom-full mb-1'">
                                         <button @click.stop="editJob(job)" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
                                             Modifier l'offre

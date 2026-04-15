@@ -102,9 +102,13 @@
                                     <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ notif.message }}</p>
                                     <span class="text-[10px] font-medium mt-1 block" :class="!notif.lu ? 'text-[#1e40af]' : 'text-gray-400'">{{ formatNotifTime(notif.createdAt) }}</span>
                                 </div>
+                                
                                 <button @click.stop="handleDeleteOne(notif.id)" class="opacity-0 group-hover:opacity-100 flex-shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all mt-0.5">
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                 </button>
+                                
+                                <!-- Point bleu pour notification non lue (tout à droite) -->
+                                <div v-if="!notif.lu" class="absolute right-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 bg-blue-500 rounded-full" style="animation: pulseDot 2s ease-in-out infinite;"></div>
                             </div>
                             <div v-if="notifications.length === 0" class="px-4 py-10 text-center">
                                 <svg class="w-8 h-8 text-gray-200 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
@@ -1323,6 +1327,17 @@ const displayJobs = computed(() => {
         opacity: 1;
     }
     50% {
+        opacity: 0.8;
+    }
+}
+
+@keyframes pulseDot {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
         opacity: 0.8;
     }
 }
