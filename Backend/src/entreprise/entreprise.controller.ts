@@ -435,6 +435,20 @@ export class EntrepriseController {
     }
 
     /**
+     * GET /api/Entreprise/candidatures/:id
+     * Récupère les détails complets d'une candidature pour le recruteur.
+     */
+    @Get('candidatures/:id')
+    @ApiOperation({ summary: 'Get full details of a specific candidature' })
+    @ApiParam({ name: 'id', description: 'ID of the candidature' })
+    @ApiResponse({ status: 200, description: 'Candidature details returned.' })
+    @ApiResponse({ status: 403, description: 'Forbidden - Not the owner.' })
+    @ApiResponse({ status: 404, description: 'Candidature not found.' })
+    async getCandidatDetail(@Param('id') id: string, @Request() req: any) {
+        return this.entrepriseService.getCandidatureDetails(+id, req.user.userId);
+    }
+
+    /**
      * DELETE /api/Entreprise/candidatures/:id
      * Supprime une candidature (Owner only).
      */

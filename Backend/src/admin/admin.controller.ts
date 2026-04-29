@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, Param, UseGuards, Request, BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -9,7 +9,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody } from '@nes
 @ApiBearerAuth()
 @Roles('Admin')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Controller('Admin')
+@Controller('admin')
 export class AdminController {
     constructor(private readonly adminService: AdminService) { }
 
@@ -108,6 +108,26 @@ export class AdminController {
     @ApiOperation({ summary: 'Get all companies' })
     async getCompanies() {
         return this.adminService.getCompanies();
+    }
+
+    /**
+     * PATCH /api/Admin/entreprises/:id
+     * Updates company information.
+     */
+    @Patch('entreprises/:id')
+    @ApiOperation({ summary: 'Update company information' })
+    async patchEntreprise(@Param('id') id: string, @Body() dto: any) {
+        return this.adminService.patchEntreprise(+id, dto);
+    }
+
+    /**
+     * DELETE /api/Admin/entreprises/:id
+     * Deletes a company.
+     */
+    @Delete('entreprises/:id')
+    @ApiOperation({ summary: 'Delete a company' })
+    async deleteEntreprise(@Param('id') id: string) {
+        return this.adminService.deleteEntreprise(+id);
     }
 
     /**

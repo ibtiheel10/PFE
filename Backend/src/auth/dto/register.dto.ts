@@ -37,4 +37,12 @@ export class RegisterDto {
     @ApiProperty({ example: '1990-01-01', required: false })
     @IsOptional()
     dateNaissance?: string;
+
+    @ApiProperty({ example: 'Tunis', required: false })
+    @IsOptional()
+    ville?: string;
+
+    @ApiProperty({ example: '11-50', required: false })
+    @IsOptional()
+    taille?: string;
 }

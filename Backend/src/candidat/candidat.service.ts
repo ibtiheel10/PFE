@@ -37,9 +37,20 @@ export class CandidatService {
         // 1. Récupérer toutes les candidatures (pour filtrer les expirées)
         const allApplications = await this.candidatureRepo.find({
             where: { candidat: { id: userId } },
-            relations: ['offre'],
+            relations: ['offre'],   // includes offre.competences for skill anchoring
             order: { datePostulation: 'DESC' },
         });
+
+        // Collect ALL official competence names across all offers this candidate applied to.
+        // The diagram should only show these skills.
+        const officialSkillsSet = new Set<string>();
+        for (const app of allApplications) {
+            const comps = (app.offre?.competences || '')
+                .split(/[,\n-]/)
+                .map((s: string) => s.replace(/^[-•*\d.]+\s*/, '').trim())
+                .filter((s: string) => s.length > 2);
+            comps.forEach((c: string) => officialSkillsSet.add(c));
+        }
 
         // Exclude expired-session candidatures from the history/dashboard flow
         const activeApplications = allApplications.filter(c => !isExpired(c));
@@ -115,18 +126,42 @@ export class CandidatService {
             score: Math.round(total / count),
         }));
 
-        // Final skills analysis for dashboard: merge granular AI analysis with legacy question stats
-        const skillsAnalysis = [...granularSkills];
+        // Build a helper to fuzzy-match a skill name against the official competences set.
+        const normalizeSkill = (s: string) => s.toLowerCase().replace(/[^a-z0-9+#.]/g, '');
+        const isOfficialSkill = (skillName: string): boolean => {
+            // If we have no official list (no evaluated offers), allow everything
+            if (officialSkillsSet.size === 0) return true;
+            const normInput = normalizeSkill(skillName);
+            for (const official of officialSkillsSet) {
+                const normOff = normalizeSkill(official);
+                if (
+                    normOff === normInput ||
+                    normOff.includes(normInput) ||
+                    normInput.includes(normOff) ||
+                    (normOff.length > 3 && normInput.length > 3 &&
+                        (normOff.startsWith(normInput.substring(0, 4)) || normInput.startsWith(normOff.substring(0, 4))))
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        };
 
-        // Add any legacy skills that aren't already represented in granularSkills
+        // Final skills analysis for dashboard: only keep competences matching official offer skills
+        const skillsAnalysis = granularSkills.filter(s => isOfficialSkill(s.category));
+
+        // Add any legacy skills that aren't represented and are official
         for (const legacy of legacySkills) {
-            const alreadyExists = skillsAnalysis.some(s => s.category.toLowerCase() === legacy.category.toLowerCase());
+            if (!isOfficialSkill(legacy.category)) continue;
+            const alreadyExists = skillsAnalysis.some(s =>
+                normalizeSkill(s.category) === normalizeSkill(legacy.category)
+            );
             if (!alreadyExists) {
-                skillsAnalysis.push({ 
-                  category: legacy.category, 
-                  score: legacy.score,
-                  justification: `Évalué lors du test QCM.`,
-                  type: 'technical'
+                skillsAnalysis.push({
+                    category: legacy.category,
+                    score: legacy.score,
+                    justification: 'Évalué lors du test QCM.',
+                    type: 'technical',
                 });
             }
         }

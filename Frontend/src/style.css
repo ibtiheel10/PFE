@@ -1,13 +1,24 @@
 @import "tailwindcss";
 
-/* Global page background - Navy Blue */
+/* Global page background - Light by default */
 html,
 body {
     margin: 0;
     padding: 0;
-    background-color: #0c1222;
+    background-color: #f8fafc; /* Fond clair par défaut */
+    color: #1e293b;
     width: 100%;
     min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Global page background - Dark mode */
+html.dark,
+html.dark-mode,
+.dark body,
+.dark-mode body {
+    background-color: #0c1222 !important; /* Retour au bleu marine en mode sombre */
+    color: #f1f5f9;
 }
 
 /* Global Scrollbar Styling - Sleek Dark Scrollbar (matching dark navy UI) */

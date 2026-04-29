@@ -112,7 +112,7 @@ export class CandidaturesService {
             const q = questions[i];
             
             // Extract competency tag added during generation
-            let compName = q.contenu?.category || (candidature.offre?.TitreDePost ? candidature.offre.TitreDePost : 'Spécialité');
+            let compName = q.contenu?.competence || (q.contenu as any)?.category || (candidature.offre?.TitreDePost ? candidature.offre.TitreDePost : 'Spécialité');
             if (!statsPerComp[compName]) {
                 statsPerComp[compName] = { total: 0, correct: 0 };
             }
@@ -136,7 +136,7 @@ export class CandidaturesService {
                     if (isObj && chosen.isCorrect === true) {
                         isCorrect = true;
                     } else if (!isObj) {
-                        const correctAnswerText: string = ((q.contenu as any)?.correctAnswer || '').trim().toLowerCase();
+                        const correctAnswerText: string = (q.contenu?.options?.find((o: any) => o.isCorrect)?.text || '').trim().toLowerCase();
                         const chosenText = reponseText.toLowerCase().trim();
                         if (correctAnswerText && (chosenText === correctAnswerText ||
                             chosenText.includes(correctAnswerText) ||
@@ -151,8 +151,7 @@ export class CandidaturesService {
                 }
             }
 
-            const correctAnswerText = ((q.contenu as any)?.correctAnswer || 
-                ((q.contenu as any)?.options?.find((o: any) => o.isCorrect)?.text || 'Non spécifié'));
+            const correctAnswerText = (q.contenu?.options?.find((o: any) => o.isCorrect)?.text || 'Non spécifié');
 
             const rep = new ReponseCandidat();
             rep.candidature = candidature;
@@ -166,22 +165,51 @@ export class CandidaturesService {
                 question: q.contenu?.question || `Question ${q.id}`,
                 selectedAnswer: reponseText,
                 correctAnswer: correctAnswerText,
-                isCorrect: isCorrect
+                isCorrect: isCorrect,
+                competence: compName
             });
         }
 
         const totalQuestions = questions.length;
-        const scorePercent = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
+        // ══════════════════════════════════════════════════════════════
+        // SCORE GLOBAL = ratio brut : correctes / total × 100
+        // Chaque question représente 1/total du score global.
+        // Exemple avec 5 questions : chaque correcte = +20%
+        //   2/5 = 40%  |  4/5 = 80%  |  5/5 = 100%
+        // ══════════════════════════════════════════════════════════════
+        const scorePercent = totalQuestions > 0
+            ? Math.round((correctCount / totalQuestions) * 100)
+            : 0;
+
+        // ══════════════════════════════════════════════════════════════
+        // SCORE PAR COMPÉTENCE = correct / nbQuestionsCompétence × 100
+        // Formule universelle indépendante du nombre de questions :
+        //   1 Q : correcte → 100%  |  incorrecte → 0%
+        //   2 Q : 1/2 → 50%        |  2/2 → 100%
+        //   3 Q : 1/3 → 33%        |  2/3 → 66%   |  3/3 → 100%
+        //   4 Q : 1/4 → 25%  ...  jusqu'à 4/4 → 100%
+        //   5 Q : chaque correcte = +20%
+        //
+        // ⚠️ Règle : 0 question → compétence non évaluée (exclue de l'analyse)
+        //            1+ question → incluse même si score = 0%
+        // ══════════════════════════════════════════════════════════════
         const ScoreParCompetence: Record<string, number> = {};
-        
+
         for (let [compName, stats] of Object.entries(statsPerComp)) {
-            // Failsafe normalization: strip descriptive prefixes
-            compName = compName.replace(/^(Bon niveau en|Connaissances en|Notions en|Maîtrise de|Introduction à|Bases de)\s+/i, '').trim();
+            // Normalisation : retirer les préfixes descriptifs
+            compName = compName
+                .replace(/^(Bon niveau en|Connaissances en|Notions en|Maîtrise de|Introduction à|Bases de)\s+/i, '')
+                .trim();
             compName = compName.charAt(0).toUpperCase() + compName.slice(1);
 
-            const rawScore = stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0;
-            ScoreParCompetence[compName] = rawScore; // Pourcentage exact
+            // Formule unique : correct / total × 100 (valide pour 1, 2, 3, 4 ou 5 questions)
+            const compScore = stats.total > 0
+                ? Math.round((stats.correct / stats.total) * 100)
+                : 0;
+
+            // Inclure TOUJOURS cette compétence : des questions ont été générées pour elle
+            ScoreParCompetence[compName] = compScore;
         }
 
         candidature.score = scorePercent;
@@ -191,31 +219,139 @@ export class CandidaturesService {
         
         await this.candidatureRepo.save(candidature);
 
-        // Dynamic ranking for this offer: Re-evaluate ALL candidates
-        const allCandidatesForOffer = await this.candidatureRepo.find({
-            where: { offre: { id: candidature.offre.id } },
-        });
+        // We will compute status and ranks later, once the final averaged score is ready.
 
-        const seuil = candidature.offre.seuilMinimal ?? 0;
-        const evaluatedCandidates = allCandidatesForOffer.filter(c => c.score !== null);
+        // ── Smart competence parsing: handles BOTH newline and comma-separated formats ──
+        // CRITICAL: Keep parenthetical examples (e.g. "Outils (Wireshark, Metasploit)") intact.
+        const rawCompetencesStr = (candidature.offre.competences || '').trim();
+        let officialCompetences: string[] = [];
+        
+        if (rawCompetencesStr) {
+            const flattenCompound = (arr: string[]): string[] => {
+                const flattened: string[] = [];
+                for (const item of arr) {
+                    flattened.push(...item.split(/(?:\/|\bet\b|\band\b|\+|,)/i)
+                      .map(s => s.trim())
+                      .filter(s => s.length > 2 && !['integration', 'intégration'].includes(s.toLowerCase())));
+                }
+                return flattened;
+            };
 
-        const candidaturesToSave: Candidature[] = [];
+            // Try newline-first split (most structured format)
+            const byNewline = rawCompetencesStr
+                .split(/\n/)
+                .map((s: string) => s.replace(/^[-•*\d.]+\s*/, '').trim())
+                .filter((s: string) => s.length > 2);
 
-        for (const c of evaluatedCandidates) {
-            const expectedStatut = (c.score ?? 0) >= seuil ? 'Accepté' : 'Refusé';
-
-            if (c.statut !== expectedStatut) {
-                c.statut = expectedStatut;
-                candidaturesToSave.push(c);
+            if (byNewline.length > 1) {
+                officialCompetences = flattenCompound(byNewline);
+            } else {
+                // Fallback: split by semicolons only
+                const bySemicolon = rawCompetencesStr
+                    .split(/;/)
+                    .map((s: string) => s.replace(/^[-•*\d.]+\s*/, '').trim())
+                    .filter((s: string) => s.length > 2);
+                
+                if (bySemicolon.length > 1) {
+                    officialCompetences = flattenCompound(bySemicolon);
+                } else {
+                    // Last resort: split by comma but rebuild parenthetical groups
+                    const parts: string[] = [];
+                    let current = '';
+                    let depth = 0;
+                    for (const ch of rawCompetencesStr) {
+                        if (ch === '(') depth++;
+                        if (ch === ')') depth--;
+                        if (ch === ',' && depth === 0) {
+                            const p = current.trim();
+                            if (p.length > 2) parts.push(p);
+                            current = '';
+                        } else {
+                            current += ch;
+                        }
+                    }
+                    if (current.trim().length > 2) parts.push(current.trim());
+                    officialCompetences = parts.length > 1 ? flattenCompound(parts) : flattenCompound([rawCompetencesStr]);
+                }
             }
-            if (c.id === candidature.id) {
-                candidature.statut = expectedStatut;
+        }
+        
+        this.logger.log(`[EVAL] Official competences parsed: ${officialCompetences.join(' | ')}`);
+
+        // ── Build an inverted keyword index: each keyword/acronym inside a competence → parent official name ──
+        // This allows 'Wireshark' to match 'Outils de cybersécurité (Wireshark, Metasploit, etc.)'
+        const keywordToOfficial: Map<string, string> = new Map();
+        const norm = (s: string) => s.toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '');
+
+        for (const official of officialCompetences) {
+            // Register the official name itself
+            keywordToOfficial.set(norm(official), official);
+            
+            // Register each word > 3 chars as a keyword
+            const words = official.toLowerCase()
+                .replace(/[^a-z0-9\s]/g, ' ')
+                .split(/\s+/)
+                .filter(w => w.length > 3 && !['avec', 'dans', 'pour', 'les', 'des', 'etc'].includes(w));
+            for (const w of words) {
+                if (!keywordToOfficial.has(w)) keywordToOfficial.set(w, official);
+            }
+            
+            // Also register exact tools listed inside parentheses
+            const parenMatch = official.match(/\(([^)]+)\)/);
+            if (parenMatch) {
+                const tools = parenMatch[1].split(/[,;*]/).map(t => t.trim()).filter(t => t.length > 1 && t.toLowerCase() !== 'etc');
+                for (const tool of tools) {
+                    const normTool = norm(tool);
+                    if (normTool && normTool.length > 2) keywordToOfficial.set(normTool, official);
+                }
             }
         }
 
-        if (candidaturesToSave.length > 0) {
-            await this.candidatureRepo.save(candidaturesToSave);
-        }
+        // Helper: Clean noise from a skill name
+        const cleanSkillName = (name: string): string => {
+            return name
+                .replace(/^(Maîtrise de|Maîtrise du|Connaissance de|Connaissance d[''\u2019]|Notions en|Notions de|Bases de|Expérience avec|Bon niveau en|Bonnes connaissances en)\s+/i, '')
+                .replace(/^ex[:\s]+/gi, '')
+                .replace(/\s*\(.*?\)/, '') // Strip parenthetical from input skill (keep for official only)
+                .replace(/\s+/g, ' ')
+                .trim();
+        };
+
+        // Helper: fuzzy-match an AI-generated skill name → official competence(s)
+        const getAllMatchesToOfficial = (aiSkill: string): string[] => {
+            if (!officialCompetences.length) return [aiSkill];
+            if (!aiSkill || aiSkill.trim().length < 2) return [];
+            
+            const cleaned = cleanSkillName(aiSkill);
+            const normAi = norm(cleaned);
+            if (!normAi || normAi === 'end' || normAi === 'etc') return [];
+
+            const matches = new Set<string>();
+
+            // 1. Direct keyword index lookup (O(1)) — also catches tool names like "Wireshark"
+            if (keywordToOfficial.has(normAi)) matches.add(keywordToOfficial.get(normAi)!);
+            
+            // 2. Check each word of aiSkill against the index
+            const wordsAi = cleaned.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 3);
+            for (const w of wordsAi) {
+                if (keywordToOfficial.has(w)) matches.add(keywordToOfficial.get(w)!);
+            }
+
+            // 3. Substring match in normalized official names
+            if (matches.size === 0) {
+                for (const official of officialCompetences) {
+                    const normOff = norm(official);
+                    if (normOff.includes(normAi) || normAi.includes(normOff)) {
+                        matches.add(official);
+                    }
+                }
+            }
+
+            return [...matches];
+        };
+
         // Wrap AI call so a model failure never blocks submission
         let aiRecommendation: any = null;
         try {
@@ -232,23 +368,147 @@ export class CandidaturesService {
         candidature.totalQuestions = totalQuestions;
         candidature.score = scorePercent;
         candidature.tempsEcoule = tempsEcoule || candidature.tempsEcoule || '0:00';
+
+        // ── 4. Build finalScoreParCompetence & anchoredSkillsAnalysis by grouping ──
+        // STRICT RULE: 
+        // 1. Garder uniquement les compétences liées à au moins une question (ScoreParCompetence).
+        // 2. PAS DE SCORES IA INVENTÉS pour les compétences techniques afin d'éviter les faux diagnostics.
         
-        let finalScoreParCompetence = { ...ScoreParCompetence };
-        if (
-            aiRecommendation?.detailedSkills?.detailedSkills?.length > 0 ||
-            aiRecommendation?.detailedSkills?.behavioralSkills?.length > 0
-        ) {
-            finalScoreParCompetence = {}; // override generic ones with granular AI skills
-            const ds = aiRecommendation.detailedSkills.detailedSkills || [];
-            const bs = aiRecommendation.detailedSkills.behavioralSkills || [];
-            ds.forEach((s: any) => { if (s.skill) finalScoreParCompetence[s.skill] = Number(s.score) || 0; });
-            bs.forEach((s: any) => { if (s.skill) finalScoreParCompetence[s.skill] = Number(s.score) || 0; });
+        const finalScoreParCompetence: Record<string, number> = {};
+        const anchoredDetailedSkills: any[] = [];
+        const evaluatedCompetences = new Set<string>();
+        
+        const groupedScores: Record<string, number[]> = {};
+
+        // Helper: Register a score for canonical skill(s)
+        const addScoreToGroup = (rawSkill: string, score: number) => {
+            const matches = getAllMatchesToOfficial(rawSkill);
+            const targets = matches.length > 0 ? matches : [rawSkill];
             
-            // Failsafe: Si jamais l'IA génère 0 skill même si length > 0 semblait dire le contraire
-            if (Object.keys(finalScoreParCompetence).length === 0) {
-                 finalScoreParCompetence = { ...ScoreParCompetence };
+            for (const canonical of targets) {
+                if (!groupedScores[canonical]) groupedScores[canonical] = [];
+                groupedScores[canonical].push(score);
             }
+        };
+
+        // Populate the groups using ONLY QCM mathematically evaluated skills
+        for (const [rawComp, score] of Object.entries(ScoreParCompetence)) {
+            addScoreToGroup(rawComp, score);
         }
+
+        // Calculate final averages
+        for (const [skillName, scores] of Object.entries(groupedScores)) {
+            const avgScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+            finalScoreParCompetence[skillName] = avgScore;
+            evaluatedCompetences.add(skillName);
+
+            anchoredDetailedSkills.push({
+                skill: skillName,
+                score: avgScore,
+                evaluated: true,
+                justification: 'Évalué lors du QCM.'
+            });
+        }
+
+        // Couverture des compétences: (compétences testées / compétences demandées)
+        const totalRequested = officialCompetences.length;
+        const totalEvaluated = evaluatedCompetences.size;
+        const coveragePercent = totalRequested > 0 
+            ? Math.round((totalEvaluated / totalRequested) * 100) 
+            : 100;
+
+        const anchoredSkillsAnalysis = {
+            detailedSkills: anchoredDetailedSkills,
+            behavioralSkills: (aiRecommendation?.detailedSkills?.behavioralSkills || []).map((s: any) => {
+                const matches = getAllMatchesToOfficial(s.skill || '');
+                return matches.length > 0 ? { ...s, skill: matches[0] } : s;
+            })
+        };
+
+        // ── 5. Rebuild text lists to guarantee consistency & no empty boxes ──
+        
+        // Score global définitif = ratio brut calculé plus haut (correctCount / totalQuestions)
+        // Ne pas recalculer ici pour éviter d'écraser la valeur correcte.
+        candidature.score = scorePercent;
+
+        if (!aiRecommendation || aiRecommendation.error) {
+            aiRecommendation = { score: scorePercent };
+        }
+
+        const formatJustification = (justification: string) => {
+            if (!justification || justification === 'Évalué lors du QCM.' || justification === 'Aucune donnée d\'évaluation directe.') return '';
+            return ` — ${justification.charAt(0).toUpperCase() + justification.slice(1)}`;
+        };
+
+        // Filter: ONLY talk about skills that were actually evaluated in the QCM
+        const evaluatedSkills = anchoredDetailedSkills;
+
+        // Use AI's creative narrative if available, otherwise build varied summaries
+        const finalStrengths = (aiRecommendation.strengths && aiRecommendation.strengths.length > 0)
+            ? aiRecommendation.strengths
+            : evaluatedSkills
+                .filter((s: any) => s.score >= 60)
+                .map((s: any) => {
+                    const justif = formatJustification(s.justification);
+                    const pool = [
+                        `Le candidat démontre une excellente aisance sur : ${s.skill}.`,
+                        `Maîtrise technique confirmée concernant : ${s.skill}.`,
+                        `Point fort identifié en : ${s.skill}.`,
+                        `Expertise notable sur le sujet : ${s.skill}.`
+                    ];
+                    return pool[Math.floor(Math.random() * pool.length)] + justif;
+                });
+
+        const finalWeaknesses = (aiRecommendation.weaknesses && aiRecommendation.weaknesses.length > 0)
+            ? aiRecommendation.weaknesses
+            : evaluatedSkills
+                .filter((s: any) => s.score < 60 && s.score > 0)
+                .map((s: any) => {
+                    const justif = formatJustification(s.justification);
+                    const pool = [
+                        `On note une fragilité technique sur : ${s.skill}.`,
+                        `Des notions à consolider concernant : ${s.skill}.`,
+                        `Compréhension perfectible de : ${s.skill}.`,
+                        `Des lacunes ont été observées sur : ${s.skill}.`
+                    ];
+                    return pool[Math.floor(Math.random() * pool.length)] + justif;
+                });
+
+        const finalRecs = (aiRecommendation.recommendations && aiRecommendation.recommendations.length > 0)
+            ? aiRecommendation.recommendations
+            : evaluatedSkills
+                .filter((s: any) => s.score < 70 && s.score > 0)
+                .map((s: any) => {
+                    const pool = [
+                        `Un perfectionnement approfondi en "${s.skill}" permettrait d'optimiser son efficacité.`,
+                        `Une remise à niveau sur "${s.skill}" est recommandée.`,
+                        `Il serait bénéfique d'explorer davantage : "${s.skill}".`
+                    ];
+                    return pool[Math.floor(Math.random() * pool.length)];
+                });
+
+        // Special case: if a skill was NEVER evaluated (0 score, 0 questions), we DON'T put it in weaknesses or recommendations
+        // This avoids the "unfair 0%" feedback complained by the user.
+
+        // Fallbacks so UI boxes are never empty
+        if (finalStrengths.length === 0) {
+            finalStrengths.push(scorePercent >= 60 
+                ? 'Le profil technique global semble aligné avec les exigences majeures du poste.' 
+                : 'Poursuite de la montée en compétences recommandée pour atteindre les standards du poste.');
+        }
+        if (finalWeaknesses.length === 0) {
+            finalWeaknesses.push(scorePercent >= 80 
+                ? 'Aucune défaillance bloquante détectée sur les sujets abordés lors du test.' 
+                : 'Les erreurs observées ne constituent pas des lacunes structurelles majeures.');
+        }
+        if (finalRecs.length === 0) {
+            finalRecs.push('Maintenir une veille technologique régulière pour consolider les acquis actuels.');
+        }
+
+        aiRecommendation.strengths = finalStrengths.slice(0, 5); // Limit to top 5 for readability
+        aiRecommendation.weaknesses = finalWeaknesses.slice(0, 5);
+        aiRecommendation.recommendations = finalRecs.slice(0, 5);
+        aiRecommendation.detailedSkills = anchoredSkillsAnalysis;
 
         candidature.evaluationDetails = JSON.stringify({
             TotalQuestions: totalQuestions,
@@ -256,10 +516,37 @@ export class CandidaturesService {
             Temps: candidature.tempsEcoule,
             TopPercent: Math.max(1, 100 - scorePercent),
             ScoreParCompetence: finalScoreParCompetence,
-            skillsAnalysis: aiRecommendation?.detailedSkills || { technicalSkills: [], behavioralSkills: [] },
+            Couverture: coveragePercent,
+            skillsAnalysis: anchoredSkillsAnalysis,
             aiRecommendation,
             answers: testResults
         });
+
+        // ── 6. Finalize Status and Save ──
+        const allCandidatesForOffer = await this.candidatureRepo.find({
+            where: { offre: { id: candidature.offre.id } },
+        });
+
+        const seuil = candidature.offre.seuilMinimal ?? 0;
+        const candidaturesToSave: Candidature[] = [];
+
+        for (const c of allCandidatesForOffer) {
+            if (c.score === null) continue;
+            const scoreToUse = (c.id === candidature.id) ? scorePercent : (c.score ?? 0);
+            const expectedStatut = scoreToUse >= seuil ? 'Accepté' : 'Refusé';
+
+            if (c.statut !== expectedStatut) {
+                c.statut = expectedStatut;
+                candidaturesToSave.push(c);
+            }
+            if (c.id === candidature.id) {
+                candidature.statut = expectedStatut;
+            }
+        }
+
+        if (candidaturesToSave.length > 0) {
+            await this.candidatureRepo.save(candidaturesToSave);
+        }
 
         const savedCandidature = await this.candidatureRepo.save(candidature);
         if (reponsesToSave.length > 0) {
@@ -403,6 +690,17 @@ export class CandidaturesService {
         const candidature = await this.candidatureRepo.findOne({
             where: { id },
             relations: ['candidat', 'offre'],
+        });
+        if (!candidature) {
+            throw new NotFoundException(`Candidature avec l'ID ${id} introuvable.`);
+        }
+        return candidature;
+    }
+
+    async findOneWithEntreprise(id: number): Promise<Candidature> {
+        const candidature = await this.candidatureRepo.findOne({
+            where: { id },
+            relations: ['candidat', 'offre', 'offre.entreprise'],
         });
         if (!candidature) {
             throw new NotFoundException(`Candidature avec l'ID ${id} introuvable.`);

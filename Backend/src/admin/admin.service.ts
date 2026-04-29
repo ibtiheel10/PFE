@@ -198,23 +198,67 @@ export class AdminService {
     }
 
     /**
-     * Get all companies for admin dashboard.
+     * Get all companies for admin dashboard, enriched with offresCount and candidatsCount.
      */
     async getCompanies() {
         const companies = await this.userRepo.find({
             where: { role: 'Entreprise' },
-            select: ['id', 'nom', 'secteur', 'email', 'isEmailVerified', 'createdAt']
         });
 
-        // Map to format expected by Admin Dashboard frontend
-        return companies.map(c => ({
-            id: c.id,
-            nom: c.nom || 'Sans nom',
-            secteur: c.secteur || 'Non précisé',
-            email: c.email,
-            estActif: c.isEmailVerified, // Mapping verified to active status
-            dateCreation: c.createdAt
+        const enriched = await Promise.all(companies.map(async (c) => {
+            const offresCount = await this.offreRepo.count({
+                where: { entreprise: { id: c.id } },
+            });
+
+            const candidatsCount = await this.candidatureRepo
+                .createQueryBuilder('cand')
+                .innerJoin('cand.offre', 'o')
+                .innerJoin('o.entreprise', 'ent')
+                .where('ent.id = :id', { id: c.id })
+                .getCount();
+
+            return {
+                id: c.id,
+                nom: c.nom || 'Sans nom',
+                secteur: c.secteur || null,
+                email: c.email,
+                ville: (c as any).ville || null,
+                taille: (c as any).taille || null,
+                estActif: c.isEmailVerified,
+                createdAt: c.createdAt,
+                offresCount,
+                candidatsCount,
+            };
         }));
+
+        return enriched;
+    }
+
+    /**
+     * Update company information (Admin only).
+     */
+    async patchEntreprise(id: number, dto: any) {
+        const company = await this.userRepo.findOneBy({ id, role: 'Entreprise' });
+        if (!company) throw new NotFoundException('Entreprise introuvable.');
+
+        if (dto.nom !== undefined)     company.nom = dto.nom;
+        if (dto.email !== undefined)   company.email = dto.email;
+        if (dto.secteur !== undefined) company.secteur = dto.secteur;
+        if (dto.ville !== undefined)   (company as any).ville = dto.ville;
+        if (dto.taille !== undefined)  (company as any).taille = dto.taille;
+
+        await this.userRepo.save(company);
+        return { message: 'Entreprise mise à jour avec succès.' };
+    }
+
+    /**
+     * Delete a company (Admin only).
+     */
+    async deleteEntreprise(id: number) {
+        const company = await this.userRepo.findOneBy({ id, role: 'Entreprise' });
+        if (!company) throw new NotFoundException('Entreprise introuvable.');
+        await this.userRepo.remove(company);
+        return { message: 'Entreprise supprimée avec succès.' };
     }
 
 private systemMockedLogs = [
@@ -249,7 +293,7 @@ private systemMockedLogs = [
      * Clears system logs.
      */
     async clearLogs() {
-        this.systemMockedLogs = [];
+        this.systemMockedLogs.splice(0, this.systemMockedLogs.length);
         return { message: 'Logs nettoyés avec succès' };
     }
 }

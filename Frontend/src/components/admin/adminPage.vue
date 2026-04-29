@@ -1,0 +1,1381 @@
+<template>
+  <div class="flex h-screen bg-[#F3F4F6] font-[Inter] overflow-hidden" :class="{ 'dark': isDarkMode }">
+    <!-- SIDEBAR -->
+    <aside 
+      class="bg-white border-r border-gray-200 flex flex-col justify-between transition-all duration-300 dark:bg-gray-900 dark:border-gray-800 z-20"
+      :class="isSidebarCollapsed ? 'w-20' : 'w-64'"
+    >
+      <div>
+        <!-- Logo -->
+        <div class="h-16 flex items-center border-b border-gray-100 dark:border-gray-800 overflow-hidden"
+             :class="isSidebarCollapsed ? 'justify-center px-0' : 'px-6'">
+          <div class="flex items-center cursor-pointer" :class="isSidebarCollapsed ? 'gap-0' : 'gap-3'" @click="router.push('/')">
+             <LogoIcon customClass="w-9 h-9 flex-shrink-0" />
+             <span 
+               class="font-black text-[#1e40af] text-[24px] tracking-tight whitespace-nowrap transition-all duration-300 overflow-hidden inline-block"
+               :style="{ 
+                 maxWidth: isSidebarCollapsed ? '0px' : '200px',
+                 opacity: isSidebarCollapsed ? 0 : 1,
+                 marginLeft: isSidebarCollapsed ? '0px' : '12px'
+               }">
+               Skillvia
+             </span>
+          </div>
+        </div>
+
+        <!-- Nav -->
+        <nav class="p-4 space-y-1">
+          <a href="#" 
+             v-for="item in navItems" 
+             :key="item.name"
+             @click.prevent="activeNav = item.name"
+             class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group overflow-hidden whitespace-nowrap relative"
+             :class="[
+                activeNav === item.name ? 'bg-blue-50 text-blue-600 font-semibold shadow-sm ring-1 ring-blue-100 dark:bg-blue-900/20 dark:text-blue-400 dark:ring-blue-900/30' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white',
+                isSidebarCollapsed ? 'justify-center px-0' : ''
+             ]"
+             :title="isSidebarCollapsed ? item.name : ''"
+          >
+            <!-- Active Indicator (Left Border equivalent) -->
+            <div v-if="activeNav === item.name && !isSidebarCollapsed" class="absolute left-0 top-1/2 -translate-y-1/2 h-8 w-1 bg-blue-500 rounded-r-md"></div>
+
+            <component 
+              :is="item.icon" 
+              class="w-5 h-5 transition-transform duration-300 group-hover:scale-110 flex-shrink-0"
+              :class="activeNav === item.name ? 'text-blue-600 dark:text-blue-400' : 'text-gray-400 group-hover:text-gray-600 dark:text-gray-500 dark:group-hover:text-gray-300'" 
+            />
+            <span v-if="!isSidebarCollapsed" class="text-sm transition-opacity duration-200">{{ item.name }}</span>
+          </a>
+        </nav>
+      </div>
+      
+      <!-- Footer: User Profile in Header -->
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex flex-col overflow-hidden relative transition-colors duration-300" :class="{ 'bg-gray-900 text-white': isDarkMode }">
+      <!-- HEADER -->
+      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm z-10 transition-all duration-300 dark:bg-gray-900 dark:border-gray-800 sticky top-0">
+        <!-- Left Side: Toggle & Title -->
+        <div class="flex items-center gap-4">
+            <!-- Sidebar Toggle Button -->
+            <button @click="toggleSidebar" class="p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors focus:outline-none ring-offset-2 focus:ring-2 ring-blue-500/20 dark:text-gray-400 dark:hover:bg-gray-800 dark:hover:text-white">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" xmlns="http://www.w3.org/2000/svg" class="w-6 h-6">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="9" y1="3" x2="9" y2="21" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+
+            <h1 class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-gray-800 to-gray-600 dark:from-white dark:to-gray-300">
+                {{ activeNav === 'Tableau de bord' ? 'Aperçu général' : activeNav }}
+            </h1>
+        </div>
+
+        <!-- Right Side -->
+        <div class="flex items-center gap-6">
+
+            <!-- Dark Mode Toggle -->
+            <button @click="isDarkMode = !isDarkMode" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all dark:hover:bg-gray-800 dark:hover:text-white">
+                <svg v-if="!isDarkMode" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" /></svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            </button>
+
+            <!-- Notifications -->
+            <div class="relative">
+                <button @click="toggleNotifications" class="relative p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-all dark:hover:bg-gray-800 dark:hover:text-white active:scale-95">
+                    <BellIcon class="w-6 h-6" />
+                    <span v-if="unreadCount > 0" class="absolute top-1.5 right-1.5 flex items-center justify-center w-3.5 h-3.5 bg-red-500 border-2 border-white text-white text-[8px] font-bold rounded-full dark:border-gray-900 animate-pulse">{{ unreadCount }}</span>
+                </button>
+
+                <!-- Notifications Dropdown -->
+                <transition enter-active-class="transition ease-out duration-100" enter-from-class="transform opacity-0 scale-95" enter-to-class="transform opacity-100 scale-100" leave-active-class="transition ease-in duration-75" leave-from-class="transform opacity-100 scale-100" leave-to-class="transform opacity-0 scale-95">
+                    <div v-if="showNotifications" class="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 dark:bg-gray-800 dark:border-gray-700 backdrop-blur-sm">
+                        <div class="px-4 py-3 border-b border-gray-50 dark:border-gray-700 flex justify-between items-center">
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Notifications</h3>
+                            <button @click="markAllNotificationsRead" class="text-xs text-blue-600 hover:underline">Tout lire</button>
+                        </div>
+                        <div class="max-h-96 overflow-y-auto">
+                            <div v-if="notifications.length === 0" class="px-4 py-6 text-center text-sm text-gray-500">
+                                Aucune notification.
+                            </div>
+                            <div v-for="notif in notifications" :key="notif.id" 
+                                 @click="markNotificationRead(notif.id)"
+                                 class="px-4 py-3 border-b border-gray-50 dark:border-gray-700 last:border-0 transition-colors cursor-pointer"
+                                 :class="!notif.lu ? 'bg-blue-50/50 dark:bg-blue-900/20 hover:bg-blue-50 dark:hover:bg-blue-900/30' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'">
+                                <p class="text-sm font-bold" :class="!notif.lu ? 'text-blue-900 dark:text-blue-100' : 'text-gray-800 dark:text-gray-200'">{{ notif.titre }}</p>
+                                <p class="text-xs mt-0.5 whitespace-pre-line" :class="!notif.lu ? 'text-blue-700 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'">{{ notif.message }}</p>
+                                <span class="text-[10px] font-medium uppercase mt-1 block" :class="!notif.lu ? 'text-blue-500 dark:text-blue-400' : 'text-gray-400'">{{ formatNotificationTime(notif.createdAt) }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </transition>
+            </div>
+
+            <!-- Profile -->
+            <div class="relative" ref="profileDropdownRef">
+                <button @click="toggleProfileMenu" class="flex items-center gap-3 hover:bg-gray-50 p-1.5 pr-3 rounded-full border border-transparent hover:border-gray-200 transition-all dark:hover:bg-gray-800 dark:hover:border-gray-700">
+                    <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">{{ adminInitials }}</div>
+                    <div class="hidden md:flex flex-col items-start">
+                        <span class="text-sm font-bold text-gray-700 leading-none dark:text-gray-200">{{ adminName }}</span>
+                        <span class="text-[11px] font-medium text-blue-600 mt-1">Super Admin</span>
+                    </div>
+                    <ChevronDownIcon class="w-4 h-4 text-gray-400" />
+                </button>
+
+                 <!-- Dropdown -->
+                     <div v-if="showProfileMenu" class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50 dark:bg-gray-800 dark:border-gray-700 backdrop-blur-sm">
+                        <div class="px-4 py-3 border-b border-gray-50 dark:border-gray-700">
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">{{ adminName }}</p>
+                            <p class="text-xs text-gray-500 truncate dark:text-gray-400">{{ adminEmail }}</p>
+                        </div>
+                         <div class="h-px bg-gray-100 my-1 dark:bg-gray-700"></div>
+                        <a href="#" @click.prevent="handleLogout" class="flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors dark:hover:bg-red-900/20">
+                            <ArrowRightOnRectangleIcon class="w-4 h-4" /> Déconnexion
+                        </a>
+                    </div>
+            </div>
+        </div>
+      </header>
+
+      <div class="flex-1 overflow-y-auto bg-[#F3F4F6] p-6 lg:p-10 dark:bg-gray-900 scroll-smooth relative">
+
+        <!-- ── Global Loading Overlay ── -->
+        <div v-if="isLoadingData" class="fixed inset-0 bg-white/60 dark:bg-gray-900/60 backdrop-blur-sm z-40 flex items-center justify-center">
+          <div class="flex flex-col items-center gap-3">
+            <svg class="animate-spin w-10 h-10 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+            </svg>
+            <span class="text-sm font-semibold text-gray-600 dark:text-gray-300">Chargement des données...</span>
+          </div>
+        </div>
+
+        <!-- ── Error Banner ── -->
+        <div v-if="fetchError && !isLoadingData" class="max-w-4xl mx-auto mb-6 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-5 flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-800/40 flex items-center justify-center flex-shrink-0">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-600 dark:text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+          </div>
+          <div class="flex-1">
+            <p class="text-sm font-bold text-red-700 dark:text-red-400 mb-1">Impossible de charger les données</p>
+            <p class="text-xs text-red-600 dark:text-red-300">{{ fetchError }}</p>
+          </div>
+          <button @click="fetchAdminData" class="flex-shrink-0 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-colors">
+            Réessayer
+          </button>
+        </div>
+
+        <div v-if="activeNav === 'Tableau de bord'" class="max-w-7xl mx-auto space-y-8 pb-10">
+            
+            <!-- Animated Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Stat Card 1 -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden animate-fade-in-up delay-0">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total des utilisateurs</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ formatNumber(dashboardStats.totalUtilisateurs) }}</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                           <UsersIcon class="w-6 h-6"/>
+                        </div>
+                    </div>
+                    <!-- Sparkline (SVG) -->
+                    <div class="h-10 w-full overflow-hidden">
+                        <svg viewBox="0 0 100 25" preserveAspectRatio="none" class="w-full h-full stroke-blue-500 fill-blue-500/10">
+                            <path d="M0,20 Q10,15 20,18 T40,10 T60,15 T80,5 L100,10 V25 H0 Z" stroke-width="2" stroke-linejoin="round" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Stat Card 2 -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden animate-fade-in-up delay-100">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Entreprises</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ formatNumber(dashboardStats.totalEntreprises) }}</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400">
+                           <BuildingOfficeIcon class="w-6 h-6"/>
+                        </div>
+                    </div>
+                    <!-- Sparkline -->
+                    <div class="h-10 w-full overflow-hidden">
+                         <svg viewBox="0 0 100 25" preserveAspectRatio="none" class="w-full h-full stroke-purple-500 fill-purple-500/10">
+                            <path d="M0,10 L20,15 L40,5 L60,20 L80,10 L100,15 V25 H0 Z" stroke-width="2" vector-effect="non-scaling-stroke" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Stat Card 3 -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden animate-fade-in-up delay-200">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tests passés</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ formatNumber(dashboardStats.totalTests) }}</span>
+                            </div>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400">
+                           <ClipboardDocumentCheckIcon class="w-6 h-6"/>
+                        </div>
+                    </div>
+                     <!-- Sparkline -->
+                     <div class="h-10 w-full overflow-hidden">
+                        <svg viewBox="0 0 100 25" preserveAspectRatio="none" class="w-full h-full stroke-green-500 fill-green-500/10">
+                           <path d="M0,25 L10,20 L20,22 L30,15 L40,18 L50,10 L60,12 L70,5 L80,8 L90,2 L100,5 V25 H0 Z" stroke-width="2" />
+                       </svg>
+                   </div>
+                </div>
+
+                <!-- Stat Card 4: Candidatures par offre -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-all duration-300 hover:shadow-lg hover:-translate-y-1 relative overflow-hidden animate-fade-in-up delay-300">
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Candidatures par offre</span>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <span class="text-2xl font-bold text-gray-900 dark:text-white leading-none">{{ dashboardStats.tauxCouverture ?? 0 }}%</span>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-1">des offres ont des candidatures</p>
+                        </div>
+                        <div class="w-12 h-12 rounded-xl flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3 bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+                           <ClipboardDocumentListIcon class="w-6 h-6"/>
+                        </div>
+                    </div>
+                     <!-- Sparkline -->
+                     <div class="h-10 w-full overflow-hidden">
+                         <svg viewBox="0 0 100 25" preserveAspectRatio="none" class="w-full h-full stroke-orange-500 fill-orange-500/10">
+                             <path d="M0,20 Q25,25 50,10 T100,5 V25 H0 Z" stroke-width="2" />
+                         </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Large Area Chart -->
+                <div class="lg:col-span-2 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-shadow duration-300 hover:shadow-md p-6 animate-fade-in-up delay-400">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">Trafic de la plateforme</h3>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 font-medium">Sessions utilisateurs au fil du temps</p>
+                        </div>
+                        <div class="relative group">
+                            <button class="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors text-gray-700 dark:text-gray-300">
+                                <span class="text-xs font-semibold">{{ activePeriod }}</span>
+                                <ChevronDownIcon class="w-3 h-3"/>
+                            </button>
+                            <div class="absolute right-0 top-full mt-1 w-32 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 py-1 hidden group-hover:block z-20">
+                                <button v-for="p in ['Cette semaine', 'Ce mois', 'Cette année']" :key="p" @click="activePeriod = p" class="w-full text-left px-3 py-1.5 text-xs hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">{{ p }}</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="h-72 w-full relative group">
+                        <svg viewBox="0 0 800 300" preserveAspectRatio="none" class="w-full h-full overflow-visible">
+                            <defs>
+                                <linearGradient id="blueGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.4"/>
+                                    <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+                                </linearGradient>
+                            </defs>
+                            <line v-for="y in [75, 150, 225]" :key="y" x1="0" :y1="y" x2="800" :y2="y" stroke="#E5E7EB" stroke-width="1" stroke-dasharray="4" class="dark:stroke-gray-700"/>
+                            <path :d="chartData.fill" fill="url(#blueGradient)" class="transition-all duration-1000 ease-in-out" />
+                            <path :d="chartData.path" fill="none" stroke="#2563EB" stroke-width="3" stroke-linecap="round" class="transition-all duration-1000 ease-in-out" />
+                        </svg>
+                        
+                        <div class="absolute top-1/4 left-1/3 bg-gray-900 text-white text-xs py-1 px-3 rounded shadow-lg pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity transform -translate-y-2">
+                            {{ dashboardStats.traficData ? dashboardStats.traficData.values[dashboardStats.traficData.values.length - 1] : 0 }} visites
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Radial Chart & Demographics -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-shadow duration-300 hover:shadow-md p-6 animate-fade-in-up delay-500 flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2">Démographie des utilisateurs</h3>
+                        <p class="text-sm text-gray-500 dark:text-gray-400 font-medium mb-6">Janvier - Juin 2026</p>
+                    </div>
+
+                    <div class="flex-1 flex flex-col items-center justify-center relative min-h-[200px]">
+                        <!-- Tooltip -->
+                        <div
+                          v-if="donutTooltip.visible"
+                          class="absolute z-20 pointer-events-none px-3 py-2 rounded-xl text-xs font-bold shadow-xl text-white transition-all duration-200"
+                          :class="donutTooltip.type === 'candidat' ? 'bg-blue-600' : 'bg-purple-600'"
+                          style="top: 8px; left: 50%; transform: translateX(-50%);"
+                        >
+                          {{ donutTooltip.label }} : {{ donutTooltip.count }} ({{ donutTooltip.pct }}%)
+                        </div>
+
+                        <svg viewBox="0 0 200 200" class="w-56 h-56 transform -rotate-90" style="overflow: visible;">
+                            <defs>
+                                <linearGradient id="gradientCandidate" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#3B82F6" />
+                                    <stop offset="100%" stop-color="#2563EB" />
+                                </linearGradient>
+                                <linearGradient id="gradientCompany" x1="0%" y1="0%" x2="100%" y2="0%">
+                                    <stop offset="0%" stop-color="#A855F7" />
+                                    <stop offset="100%" stop-color="#9333EA" />
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Track circles -->
+                            <circle cx="100" cy="100" r="80" fill="none" stroke="#F3F4F6" stroke-width="12" class="dark:stroke-gray-700"/>
+                            <circle cx="100" cy="100" r="55" fill="none" stroke="#F3F4F6" stroke-width="12" class="dark:stroke-gray-700"/>
+
+                            <!-- Candidats arc (outer) — hoverable -->
+                            <circle
+                              cx="100" cy="100" r="80"
+                              fill="none"
+                              stroke="url(#gradientCandidate)"
+                              stroke-width="12"
+                              stroke-linecap="round"
+                              :stroke-dasharray="(dashboardStats.demographie ? dashboardStats.demographie.candidatsPct / 100 * 502 : 0) + ', 600'"
+                              class="drop-shadow-sm transition-all duration-1000 ease-out cursor-pointer"
+                              :style="donutTooltip.type === 'candidat' ? 'filter: brightness(1.3); stroke-width: 16;' : ''"
+                              @mouseenter="donutTooltip = { visible: true, type: 'candidat', label: 'Candidats', count: dashboardStats.totalCandidats, pct: dashboardStats.demographie?.candidatsPct ?? 0 }"
+                              @mouseleave="donutTooltip = { visible: false, type: '', label: '', count: 0, pct: 0 }"
+                            />
+
+                            <!-- Entreprises arc (inner) — hoverable -->
+                            <circle
+                              cx="100" cy="100" r="55"
+                              fill="none"
+                              stroke="url(#gradientCompany)"
+                              stroke-width="12"
+                              stroke-linecap="round"
+                              :stroke-dasharray="(dashboardStats.demographie ? dashboardStats.demographie.entreprisesPct / 100 * 345 : 0) + ', 400'"
+                              class="transition-all duration-1000 ease-out delay-200 cursor-pointer"
+                              :style="donutTooltip.type === 'entreprise' ? 'filter: brightness(1.3); stroke-width: 16;' : ''"
+                              @mouseenter="donutTooltip = { visible: true, type: 'entreprise', label: 'Entreprises', count: dashboardStats.totalEntreprises, pct: dashboardStats.demographie?.entreprisesPct ?? 0 }"
+                              @mouseleave="donutTooltip = { visible: false, type: '', label: '', count: 0, pct: 0 }"
+                            />
+                        </svg>
+
+                        <!-- Centre dynamique -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pt-8 pointer-events-none">
+                            <span class="text-4xl font-extrabold tracking-tight transition-all duration-300"
+                              :class="donutTooltip.type === 'candidat' ? 'text-blue-500' : donutTooltip.type === 'entreprise' ? 'text-purple-500' : 'text-gray-900 dark:text-white'"
+                            >
+                              {{ donutTooltip.visible ? formatNumber(donutTooltip.count) : formatNumber(dashboardStats.totalUtilisateurs) }}
+                            </span>
+                            <span class="text-sm font-medium mt-1 transition-all duration-300"
+                              :class="donutTooltip.visible ? 'text-gray-600 dark:text-gray-300' : 'text-gray-500'"
+                            >
+                              {{ donutTooltip.visible ? donutTooltip.label : 'Utilisateurs' }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 text-center">
+                        <div class="flex items-center justify-center gap-6 mb-4">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-blue-500"></span>
+                                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Candidat</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-purple-500"></span>
+                                <span class="text-sm font-medium text-gray-600 dark:text-gray-300">Entreprise</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                             <ArrowTrendingUpIcon class="w-4 h-4 text-emerald-500" />
+                             <span class="font-medium">En hausse de 5.2% ce mois-ci</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Section: System Health -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm transition-shadow duration-300 hover:shadow-md p-6 animate-fade-in-up delay-600">
+                <div class="flex justify-between items-center mb-6">
+                   <h3 class="text-lg font-bold text-gray-900 dark:text-white">Santé du système</h3>
+                   <span class="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1.5 dark:bg-emerald-900/20 dark:text-emerald-400">
+                       <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                       OPÉRATIONNEL
+                   </span>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Metric 1: API Response Time -->
+                    <div>
+                        <div class="flex justify-between items-end mb-2">
+                             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Temps de réponse API</span>
+                             <span class="text-sm font-bold text-gray-900 dark:text-white">{{ dashboardStats.santeAcquise?.apiResponseTime || 0 }}ms</span>
+                        </div>
+                        <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
+                             <!-- Visual representation capping at 500ms for 100% -->
+                            <div class="h-full bg-emerald-500 rounded-full transition-all duration-1000" :style="{ width: Math.min(((dashboardStats.santeAcquise?.apiResponseTime || 0) / 500) * 100, 100) + '%' }"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 2: CPU Load -->
+                     <div>
+                        <div class="flex justify-between items-end mb-2">
+                             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Charge CPU</span>
+                             <span class="text-sm font-bold text-gray-900 dark:text-white">{{ dashboardStats.santeAcquise?.cpuLoad || 0 }}%</span>
+                        </div>
+                        <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
+                            <div class="h-full bg-blue-500 rounded-full transition-all duration-1000 delay-100" :style="{ width: (dashboardStats.santeAcquise?.cpuLoad || 0) + '%' }"></div>
+                        </div>
+                    </div>
+
+                    <!-- Metric 3: Database Uptime -->
+                     <div>
+                        <div class="flex justify-between items-end mb-2">
+                             <span class="text-sm font-medium text-gray-500 dark:text-gray-400">Disponibilité BDD</span>
+                             <span class="text-sm font-bold text-gray-900 dark:text-white">{{ dashboardStats.santeAcquise?.bddUptime || 0 }}%</span>
+                        </div>
+                        <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden dark:bg-gray-700">
+                            <div class="h-full bg-emerald-500 rounded-full transition-all duration-1000 delay-200" :style="{ width: (dashboardStats.santeAcquise?.bddUptime || 0) + '%' }"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- User Management Module -->
+        <div v-else-if="activeNav === 'Gestion Utilisateurs'" class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Utilisateurs</h2>
+            </div>
+
+            <!-- Success / Error banner -->
+            <div v-if="userActionMsg" :class="userActionIsError ? 'bg-red-50 text-red-700 border-red-200' : 'bg-green-50 text-green-700 border-green-200'" class="px-4 py-3 rounded-xl border text-sm font-medium flex items-center justify-between">
+                <span>{{ userActionMsg }}</span>
+                <button @click="userActionMsg = ''" class="ml-4 font-bold opacity-60 hover:opacity-100">✕</button>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <!-- Empty state -->
+                <div v-if="users.length === 0" class="py-16 flex flex-col items-center text-gray-400">
+                    <UsersIcon class="w-12 h-12 mb-3 opacity-30" />
+                    <p class="text-sm font-medium">Aucun utilisateur trouvé</p>
+                </div>
+                <table v-else class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400">Utilisateur</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400">Rôle</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400">Statut</th>
+                            <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider dark:text-gray-400">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50 dark:divide-gray-700">
+                        <tr v-for="user in users" :key="user.id" class="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs uppercase">{{ (user.name || '?').charAt(0) }}</div>
+                                    <div>
+                                        <p class="text-sm font-bold text-gray-900 dark:text-white">{{ user.name }}</p>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ user.email }}</p>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-xs font-medium px-2 py-1 rounded-full" :class="{
+                                    'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400': user.role === 'Candidat',
+                                    'bg-purple-50 text-purple-600 dark:bg-purple-900/20 dark:text-purple-400': user.role === 'Entreprise',
+                                    'bg-orange-50 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400': user.role === 'Admin',
+                                    'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300': !['Candidat','Entreprise','Admin'].includes(user.role)
+                                }">{{ user.role }}</span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="text-xs font-bold px-2 py-1 rounded-full" :class="{
+                                    'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400': user.status === 'Actif',
+                                    'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400': user.status === 'Suspendu'
+                                }">{{ user.status }}</span>
+                            </td>
+                            <td class="px-6 py-4 flex items-center gap-2">
+                                <!-- Toggle active/suspend -->
+                                <button @click="toggleUserStatus(user.id)" :title="user.status === 'Actif' ? 'Suspendre' : 'Activer'" class="p-1.5 rounded-lg text-gray-400 hover:bg-yellow-50 hover:text-yellow-600 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                </button>
+                                <!-- Delete -->
+                                <button @click="deleteUser(user.id)" title="Supprimer" class="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors">
+                                    <TrashIcon class="w-4 h-4" />
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Companies Management Module -->
+        <div v-else-if="activeNav === 'Gestion Entreprises'" class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Gestion des Entreprises</h2>
+                
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div 
+                  v-for="company in companies" 
+                  :key="company.id" 
+                  class="bg-white dark:bg-gray-800 p-6 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200 cursor-pointer group"
+                  @click="openCompanyDetail(company)"
+                >
+                    <div class="flex items-start justify-between mb-4">
+                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-md group-hover:scale-110 transition-transform duration-200">{{ company.name.charAt(0).toUpperCase() }}</div>
+                        <span class="text-[10px] font-bold px-2.5 py-1 rounded-full" :class="company.status === 'Vérifié' ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400' : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/20 dark:text-yellow-400'">{{ company.status }}</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-1">{{ company.name }}</h3>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mb-1">{{ company.email }}</p>
+                    <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">{{ company.sector || 'Secteur non précisé' }} • {{ company.city || 'Non précisé' }}</p>
+                    <div class="flex justify-between items-center pt-4 border-t border-gray-50 dark:border-gray-700">
+                        <span class="text-xs text-gray-400 font-medium uppercase tracking-wider">Taille: {{ company.size }}</span>
+                        <div class="flex gap-2" @click.stop>
+                            <button @click="openEditCompany(company)" class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><PencilSquareIcon class="w-4 h-4" /></button>
+                            <button @click="deleteCompany(company.id)" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><TrashIcon class="w-4 h-4" /></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Logs Module -->
+        <div v-else-if="activeNav === 'Logs Système'" class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Journaux d'activité</h2>
+                <button @click="clearLogs" class="text-sm font-bold text-blue-600 hover:underline">Nettoyer les logs</button>
+            </div>
+
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm divide-y divide-gray-50 dark:divide-gray-700">
+                <div v-for="log in logs" :key="log.id" class="p-4 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-lg flex items-center justify-center" :class="{
+                            'bg-blue-50 text-blue-600 dark:bg-blue-900/20': log.type === 'Auth',
+                            'bg-purple-50 text-purple-600 dark:bg-purple-900/20': log.type === 'Action',
+                            'bg-green-50 text-green-600 dark:bg-green-900/20': log.type === 'Event',
+                            'bg-red-50 text-red-600 dark:bg-red-900/20': log.type === 'Error'
+                        }">
+                           <ClipboardDocumentListIcon v-if="log.type === 'Action'" class="w-5 h-5" />
+                           <UserCircleIcon v-else-if="log.type === 'Auth'" class="w-5 h-5" />
+                           <BellIcon v-else-if="log.type === 'Event'" class="w-5 h-5" />
+                           <ExclamationCircleIcon v-else class="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900 dark:text-white">{{ log.action }}</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Par {{ log.user }}</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-semibold text-gray-400">{{ log.time }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Messages Contact Module -->
+        <div v-else-if="activeNav === 'Messages Contact'" class="max-w-7xl mx-auto space-y-6 animate-fade-in-up">
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-900 dark:text-white">Messages de Contact</h2>
+            </div>
+            
+            <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm overflow-hidden">
+                <div v-if="contactMessages.length === 0" class="p-8 text-center text-gray-500">
+                    Aucun message de contact.
+                </div>
+                <div v-else class="divide-y divide-gray-50 dark:divide-gray-700">
+                    <div v-for="msg in contactMessages" :key="msg.id" class="p-5 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors" :class="{ 'bg-blue-50/30 dark:bg-blue-900/10': msg.statut === 'Non lu'}">
+                        <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                            <div class="flex-1 space-y-2">
+                                <div class="flex items-center gap-3">
+                                    <h3 class="text-base font-bold text-gray-900 dark:text-white">{{ msg.firstName }} {{ msg.lastName }}</h3>
+                                    <span class="text-sm text-gray-500">&lt;{{ msg.email }}&gt;</span>
+                                    <span v-if="msg.statut === 'Non lu'" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700 uppercase tracking-wide">Nouveau</span>
+                                    <span v-else-if="msg.statut === 'Traité'" class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-green-100 text-green-700 uppercase tracking-wide">Traité</span>
+                                </div>
+                                <h4 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ msg.subject }}</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-wrap">{{ msg.message }}</p>
+                                <div v-if="msg.fileName" class="text-xs text-blue-600 font-medium">
+                                    <span class="mr-1">📎</span> Pièce jointe: {{ msg.fileName }}
+                                </div>
+                            </div>
+                            <div class="flex flex-col sm:items-end gap-2 shrink-0">
+                                <span class="text-xs text-gray-400 font-medium">{{ new Date(msg.createdAt).toLocaleString('fr-FR') }}</span>
+                                <div class="flex items-center gap-2 mt-2">
+                                    <button v-if="msg.statut === 'Non lu'" @click="handleMarkContactRead(msg.id)" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors border border-blue-100">
+                                        Marquer comme lu
+                                    </button>
+                                    <button v-if="msg.statut !== 'Traité'" @click="handleMarkContactTreated(msg.id)" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors border border-green-100">
+                                        Marquer traité
+                                    </button>
+                                    <button @click="handleDeleteContact(msg.id)" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors border border-red-100" title="Supprimer">
+                                        <TrashIcon class="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Construction State for other pages -->
+        <div v-else class="flex flex-col items-center justify-center h-full text-gray-500 animate-fade-in-up">
+            <div class="bg-white p-8 rounded-full mb-6 shadow-lg border border-gray-100 dark:bg-gray-800 dark:border-gray-700">
+                <component :is="navItems.find(i => i.name === activeNav)?.icon || Squares2X2Icon" class="w-16 h-16 text-blue-500 dark:text-blue-400" />
+            </div>
+            <h2 class="text-3xl font-bold text-gray-900 mb-2 dark:text-white">{{ activeNav }}</h2>
+            <p class="max-w-md text-center mb-8 dark:text-gray-400">Ce module est actuellement en cours de développement.</p>
+            <button class="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-500/30 text-sm tracking-wide" @click="activeNav = 'Tableau de bord'">
+                Retour au tableau de bord
+            </button>
+        </div>
+
+        <!-- ══ MODAL: Company Detail ══ -->
+        <transition enter-active-class="transition ease-out duration-300" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition ease-in duration-200" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+          <div v-if="showCompanyDetail && selectedCompany" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showCompanyDetail = false">
+            <div class="bg-[#1a1d2e] rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden relative company-detail-modal">
+              <!-- Close -->
+              <button @click="showCompanyDetail = false" class="absolute top-4 right-4 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors text-sm">
+                ✕
+              </button>
+
+              <!-- Header gradient -->
+              <div class="bg-gradient-to-r from-indigo-600 to-purple-700 p-8 flex items-center gap-5">
+                <div class="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur text-white flex items-center justify-center font-black text-2xl shadow-lg">
+                  {{ selectedCompany.name.charAt(0).toUpperCase() }}
+                </div>
+                <div>
+                  <h2 class="text-2xl font-black text-white leading-none">{{ selectedCompany.name }}</h2>
+                  <p class="text-indigo-200 text-sm mt-1.5 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+                    {{ selectedCompany.email }}
+                  </p>
+                </div>
+                <!-- Status badge -->
+                <span class="ml-auto text-[11px] font-bold px-3 py-1.5 rounded-full shrink-0"
+                  :class="selectedCompany.status === 'Vérifié' 
+                    ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' 
+                    : 'bg-yellow-500/20 text-yellow-300 border border-yellow-500/30'"
+                >
+                  {{ selectedCompany.status === 'Vérifié' ? '✓ VÉRIFIÉ' : '⏳ EN ATTENTE' }}
+                </span>
+              </div>
+
+              <!-- Body -->
+              <div class="p-6 grid grid-cols-2 gap-6">
+                <!-- Left: Informations Générales -->
+                <div>
+                  <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/></svg>
+                    Informations Générales
+                  </h3>
+                  <div class="space-y-4">
+                    <div>
+                      <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Secteur d'activité</p>
+                      <p class="text-sm font-bold text-white">{{ selectedCompany.sector || 'Non précisé' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Ville / Localisation</p>
+                      <p class="text-sm font-bold text-white">{{ selectedCompany.city || 'Non précisé' }}</p>
+                    </div>
+                    <div>
+                      <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-0.5">Taille de l'entreprise</p>
+                      <p class="text-sm font-bold text-white">{{ selectedCompany.size || 'Non précisé' }}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Right: Activité du compte -->
+                <div>
+                  <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                    Activité du compte
+                  </h3>
+                  <div class="space-y-3">
+                    <div class="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 border border-white/10">
+                      <span class="text-sm text-gray-300">Offres publiées</span>
+                      <span class="text-lg font-black text-indigo-400">{{ selectedCompany.offresCount ?? 0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 border border-white/10">
+                      <span class="text-sm text-gray-300">Total Candidats</span>
+                      <span class="text-lg font-black text-purple-400">{{ selectedCompany.candidatsCount ?? 0 }}</span>
+                    </div>
+                    <div class="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3 border border-white/10">
+                      <span class="text-sm text-gray-300">Inscrit depuis le</span>
+                      <span class="text-sm font-bold text-gray-200">{{ selectedCompany.createdAt ? new Date(selectedCompany.createdAt).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) : '—' }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer actions -->
+              <div class="px-6 pb-6 flex gap-3">
+                <button 
+                  @click="openEditCompany(selectedCompany); showCompanyDetail = false"
+                  class="flex-1 flex items-center justify-center gap-2 bg-white text-gray-900 font-bold py-3 rounded-xl hover:bg-gray-100 transition-colors text-sm"
+                >
+                  <PencilSquareIcon class="w-4 h-4" />
+                  Modifier les infos
+                </button>
+                <button 
+                  @click="showCompanyDetail = false"
+                  class="px-6 py-3 rounded-xl bg-white/10 text-white font-semibold text-sm hover:bg-white/20 transition-colors border border-white/10"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- ══ MODAL: Edit Company ══ -->
+        <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0 scale-95" enter-to-class="opacity-100 scale-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100 scale-100" leave-to-class="opacity-0 scale-95">
+          <div v-if="showEditCompanyModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showEditCompanyModal = false">
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+              <button @click="showEditCompanyModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+              <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Modifier l'entreprise</h2>
+              <form @submit.prevent="submitEditCompany" class="space-y-4">
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Nom *</label>
+                  <input v-model="editCompanyForm.nom" required type="text" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Email</label>
+                  <input v-model="editCompanyForm.email" type="email" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Secteur</label>
+                  <input v-model="editCompanyForm.secteur" type="text" placeholder="Technologie, Finance..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Ville</label>
+                  <input v-model="editCompanyForm.ville" type="text" placeholder="Tunis, Sfax..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Taille</label>
+                  <select v-model="editCompanyForm.taille" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">-- Non précisé --</option>
+                    <option value="1-10">1-10 employés</option>
+                    <option value="11-50">11-50 employés</option>
+                    <option value="51-200">51-200 employés</option>
+                    <option value="201-500">201-500 employés</option>
+                    <option value="500+">500+ employés</option>
+                  </select>
+                </div>
+                <div v-if="editCompanyError" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">{{ editCompanyError }}</div>
+                <div class="flex gap-3 pt-2">
+                  <button type="button" @click="showEditCompanyModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Annuler</button>
+                  <button type="submit" :disabled="isSavingCompany" class="flex-1 bg-indigo-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                    <svg v-if="isSavingCompany" class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                    {{ isSavingCompany ? 'Sauvegarde...' : 'Sauvegarder' }}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </transition>
+
+        <!-- ══ MODAL: Create User (outside v-if chain) ══ -->
+        <transition enter-active-class="transition ease-out duration-200" enter-from-class="opacity-0" enter-to-class="opacity-100" leave-active-class="transition ease-in duration-150" leave-from-class="opacity-100" leave-to-class="opacity-0">
+            <div v-if="showCreateUserModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" @click.self="showCreateUserModal = false">
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md p-8 relative">
+                    <button @click="showCreateUserModal = false" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                    <h2 class="text-xl font-bold text-gray-900 dark:text-white mb-6">Créer un utilisateur</h2>
+                    <form @submit.prevent="submitCreateUser" class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Nom *</label>
+                            <input v-model="newUser.nom" required type="text" placeholder="Dupont" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Email *</label>
+                            <input v-model="newUser.email" required type="email" placeholder="exemple@mail.com" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Mot de passe *</label>
+                            <input v-model="newUser.password" required type="password" placeholder="Min. 6 caractères" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Rôle *</label>
+                            <select v-model="newUser.role" required class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">-- Sélectionner un rôle --</option>
+                                <option value="Candidat">Candidat</option>
+                                <option value="Entreprise">Entreprise</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <!-- Candidat extra fields -->
+                        <div v-if="newUser.role === 'Candidat'" class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Prénom</label>
+                                <input v-model="newUser.prenom" type="text" placeholder="Marie" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Date de naissance</label>
+                                <input v-model="newUser.dateNaissance" type="date" class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            </div>
+                        </div>
+
+                        <!-- Entreprise extra fields -->
+                        <div v-if="newUser.role === 'Entreprise'">
+                            <label class="block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1 uppercase tracking-wider">Secteur</label>
+                            <input v-model="newUser.secteur" type="text" placeholder="Technologie, Finance..." class="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                        </div>
+
+                        <div v-if="createUserError" class="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-3 rounded-xl">
+                            {{ createUserError }}
+                        </div>
+
+                        <div class="flex gap-3 pt-2">
+                            <button type="button" @click="showCreateUserModal = false" class="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">Annuler</button>
+                            <button type="submit" :disabled="isCreatingUser" class="flex-1 bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-semibold hover:bg-blue-700 transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                <svg v-if="isCreatingUser" class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                                {{ isCreatingUser ? 'Création...' : 'Créer l\'utilisateur' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </transition>
+      </div>
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import axios from 'axios';
+import Swal from '../../services/swal';
+import LogoIcon from '../composants_reutilisables/LogoIcon.vue';
+import { 
+    Squares2X2Icon, 
+    UserGroupIcon, 
+    BuildingOfficeIcon, 
+    ClipboardDocumentListIcon, 
+    Cog6ToothIcon,
+    BellIcon,
+    EnvelopeIcon,
+    ChevronDownIcon,
+    UserCircleIcon,
+    ArrowRightOnRectangleIcon,
+    UsersIcon,
+    ArrowTrendingUpIcon,
+    ClipboardDocumentCheckIcon,
+    TrashIcon,
+    PencilSquareIcon,
+    ExclamationCircleIcon
+} from '@heroicons/vue/24/outline';
+
+const router = useRouter();
+
+// --- State ---
+const activeNav = ref('Tableau de bord');
+const activePeriod = ref('Cette semaine');
+const isDarkMode = ref(false);
+const isSidebarCollapsed = ref(false);
+const showProfileMenu = ref(false);
+const showNotifications = ref(false);
+
+const donutTooltip = ref({
+    visible: false,
+    type: '',
+    label: '',
+    count: 0,
+    pct: 0
+});
+
+const navItems = [
+    { name: 'Tableau de bord', icon: Squares2X2Icon },
+    { name: 'Gestion Utilisateurs', icon: UserGroupIcon },
+    { name: 'Gestion Entreprises', icon: BuildingOfficeIcon },
+    { name: 'Logs Système', icon: ClipboardDocumentListIcon },
+    { name: 'Messages Contact', icon: EnvelopeIcon },
+];
+
+// --- User Profile Data ---
+const sessionInfo = JSON.parse(localStorage.getItem('user_info') || '{}');
+const adminName = ref(sessionInfo.nom || 'Admin');
+const adminEmail = ref(sessionInfo.email || 'admin@skillvia.com');
+const adminInitials = computed(() => {
+    if (!adminName.value) return 'A';
+    const parts = adminName.value.split(' ').filter((p: string) => p.length > 0);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return adminName.value.substring(0, Math.min(2, adminName.value.length)).toUpperCase();
+});
+
+// --- Mock Data for Modules ---
+const users = ref<any[]>([]);
+const companies = ref<any[]>([]);
+const logs = ref<any[]>([]);
+const contactMessages = ref<any[]>([]);
+const notifications = ref<any[]>([]);
+const unreadCount = computed(() => notifications.value.filter(n => !n.lu).length);
+const isLoadingData = ref(false);
+const fetchError = ref('');
+
+const dashboardStats = ref({
+    totalUtilisateurs: 0,
+    totalCandidats: 0,
+    totalEntreprises: 0,
+    totalOffres: 0,
+    totalCandidatures: 0,
+    totalTests: 0,
+    avgCandidaturesParOffre: 0,
+    tauxCouverture: 0,
+    revenuTotal: 0,
+    demographie: null as any,
+    santeAcquise: null as any,
+    traficData: null as any
+});
+
+// --- Formatting Helpers ---
+const formatNumber = (num: number) => {
+    return new Intl.NumberFormat('fr-FR').format(num || 0);
+};
+const formatNotificationTime = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMins < 1) return 'À l\'instant';
+    if (diffMins < 60) return `Il y a ${diffMins} min`;
+    if (diffHours < 24) return `Il y a ${diffHours} h`;
+    if (diffDays === 1) return 'Hier';
+    return date.toLocaleDateString('fr-FR');
+};
+
+// --- Methods ---
+
+const toggleSidebar = () => isSidebarCollapsed.value = !isSidebarCollapsed.value;
+const toggleNotifications = () => {
+    showNotifications.value = !showNotifications.value;
+};
+const toggleProfileMenu = () => showProfileMenu.value = !showProfileMenu.value;
+
+const chartData = computed(() => {
+    // Determine a multiplier based on period to fake different data scales for the UI showcasing
+    const multiplier = activePeriod.value === 'Cette semaine' ? 1 
+                      : activePeriod.value === 'Ce mois' ? 4 
+                      : 12;
+
+    const baseValues = dashboardStats.value.traficData ? dashboardStats.value.traficData.values : [0,0,0,0,0,0,0];
+    const maxVal = Math.max(...baseValues, 100);
+    
+    // SVG Dimensions are 800x300. Map points to this space.
+    // X goes from 0 to 800. Y is inverted (0 is top, 300 is bottom).
+    const points = baseValues.map((val: number, i: number) => {
+        const x = (i / (baseValues.length - 1)) * 800;
+        // Apply multiplier to simulate data, keep within bounds
+        const simVal = (val / maxVal) * 250; 
+        // Small random jitter offset based on multiplier for visual variety between tabs
+        const jitter = multiplier > 1 ? (Math.random() * 40 - 20) : 0;
+        let y = 300 - Math.min(Math.max(simVal + jitter, 20), 280); 
+        return { x, y: Math.round(y) };
+    });
+
+    // Create a smooth bezier curve path using the points
+    let pathStr = `M${points[0].x},${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+        const p1 = points[i];
+        const p2 = points[i + 1];
+        // Control points for a basic horizontal bezier easing
+        const cp1x = (p1.x + p2.x) / 2;
+        pathStr += ` C${cp1x},${p1.y} ${cp1x},${p2.y} ${p2.x},${p2.y}`;
+    }
+
+    const totalCalculatedVisits = baseValues.reduce((a: number, b: number) => a + b, 0) * multiplier;
+
+    return {
+        path: pathStr,
+        fill: `${pathStr} V300 H0 Z`,
+        lastVisits: `${new Intl.NumberFormat('fr-FR').format(totalCalculatedVisits)} Visites`
+    };
+});
+
+// ── API base ──────────────────────────────────────────────
+const API_BASE = ''; // Vite proxy redirige /api/* vers localhost:5173
+
+// ── Modal state ───────────────────────────────────────────
+const showCreateUserModal = ref(false);
+const isCreatingUser = ref(false);
+const createUserError = ref('');
+const userActionMsg = ref('');
+const userActionIsError = ref(false);
+
+// ── Company Detail Modal ──────────────────────────────────
+const showCompanyDetail = ref(false);
+const selectedCompany = ref<any>(null);
+
+const openCompanyDetail = (company: any) => {
+    selectedCompany.value = company;
+    showCompanyDetail.value = true;
+};
+
+// ── Edit Company Modal ────────────────────────────────────
+const showEditCompanyModal = ref(false);
+const isSavingCompany = ref(false);
+const editCompanyError = ref('');
+const editCompanyForm = ref({ id: '', nom: '', email: '', secteur: '', ville: '', taille: '' });
+
+const openEditCompany = (company: any) => {
+    editCompanyForm.value = {
+        id: company.id,
+        nom: company.name || '',
+        email: company.email || '',
+        secteur: company.sector || '',
+        ville: company.city || '',
+        taille: company.size !== 'Non précisé' ? company.size : '',
+    };
+    editCompanyError.value = '';
+    showEditCompanyModal.value = true;
+};
+
+const submitEditCompany = async () => {
+    isSavingCompany.value = true;
+    editCompanyError.value = '';
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.patch(`${API_BASE}/api/admin/entreprises/${editCompanyForm.value.id}`, {
+            nom: editCompanyForm.value.nom,
+            email: editCompanyForm.value.email,
+            secteur: editCompanyForm.value.secteur,
+            ville: editCompanyForm.value.ville,
+            taille: editCompanyForm.value.taille,
+        }, config);
+        showEditCompanyModal.value = false;
+        await fetchAdminData();
+    } catch (e: any) {
+        editCompanyError.value = e?.response?.data?.message || 'Erreur lors de la mise à jour.';
+    } finally {
+        isSavingCompany.value = false;
+    }
+};
+
+const deleteCompany = async (companyId: any) => {
+    const result = await Swal.fire({ title: 'Confirmation', text: 'Supprimer cette entreprise ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Oui', cancelButtonText: 'Non' });
+    if (!result.isConfirmed) return;
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.delete(`${API_BASE}/api/admin/entreprises/${companyId}`, config);
+        await fetchAdminData();
+    } catch (e: any) {
+        Swal.fire({ title: 'Erreur', text: e?.response?.data?.message || 'Erreur lors de la suppression.', icon: 'error' });
+    }
+};
+
+const newUser = ref({
+    nom: '',
+    email: '',
+    password: '',
+    role: '',
+    prenom: '',
+    dateNaissance: '',
+    secteur: ''
+});
+
+const resetNewUser = () => {
+    newUser.value = { nom: '', email: '', password: '', role: '', prenom: '', dateNaissance: '', secteur: '' };
+    createUserError.value = '';
+};
+
+// ── Fetch all admin data ──────────────────────────────────
+const fetchAdminData = async () => {
+    isLoadingData.value = true;
+    fetchError.value = '';
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) {
+            fetchError.value = 'Aucun token d\'authentification trouvé. Veuillez vous reconnecter en tant qu\'Admin.';
+            return;
+        }
+
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        
+        const [statsRes, usersRes, companiesRes, logsRes, contactRes, notificationsRes] = await Promise.all([
+            axios.get(`${API_BASE}/api/admin/dashboard/stats`, config),
+            axios.get(`${API_BASE}/api/admin/users`, config),
+            axios.get(`${API_BASE}/api/admin/entreprises`, config),
+            axios.get(`${API_BASE}/api/admin/logs`, config),
+            axios.get(`${API_BASE}/api/contact`, config),
+            axios.get(`${API_BASE}/api/notifications`, config)
+        ]);
+
+        dashboardStats.value = statsRes.data;
+        notifications.value = notificationsRes.data;
+        
+        users.value = usersRes.data.map((u: any) => ({
+            id: u.id,
+            name: u.nom || 'Utilisateur',
+            email: u.email,
+            role: (u.roles && u.roles.length > 0) ? u.roles[0] : 'Inconnu',
+            status: u.estActif ? 'Actif' : 'Suspendu',
+        }));
+
+        companies.value = companiesRes.data.map((c: any) => ({
+            id: c.id,
+            name: c.nom || 'Sans nom',
+            email: c.email || '',
+            sector: c.secteur || null,
+            size: c.taille || 'Non précisé',
+            status: c.estVerifie || c.estActif ? 'Vérifié' : 'En attente',
+            city: c.ville || null,
+            offresCount: c.offresCount ?? c.nbOffres ?? null,
+            candidatsCount: c.candidatsCount ?? c.nbCandidats ?? null,
+            createdAt: c.createdAt || c.dateCreation || null,
+        }));
+
+        logs.value = logsRes.data.map((l: any) => ({
+            id: l.id,
+            action: l.action,
+            user: l.userId || 'Système',
+            time: new Date(l.dateAction).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            type: l.action?.toLowerCase().includes('login') ? 'Auth' : 
+                  l.action?.toLowerCase().includes('delete') ? 'Error' : 'Action'
+        }));
+
+        contactMessages.value = contactRes.data;
+
+    } catch (e: any) {
+        const status = e?.response?.status;
+        if (status === 401 || status === 403) {
+            fetchError.value = 'Accès refusé (401/403). Votre session a peut-être expiré. Reconnectez-vous en tant qu\'Admin.';
+        } else if (!e?.response) {
+            fetchError.value = `Impossible de contacter le backend sur ${API_BASE}. Vérifiez que le serveur ASP.NET est bien lancé.`;
+        } else {
+            fetchError.value = `Erreur ${status} lors du chargement des données.`;
+        }
+        console.error('fetchAdminData error:', e);
+    } finally {
+        isLoadingData.value = false;
+    }
+};
+
+// ── Create user ───────────────────────────────────────────
+const submitCreateUser = async () => {
+    isCreatingUser.value = true;
+    createUserError.value = '';
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const payload: any = {
+            nom: newUser.value.nom,
+            email: newUser.value.email,
+            password: newUser.value.password,
+            role: newUser.value.role,
+        };
+        if (newUser.value.role === 'Candidat') {
+            payload.prenom = newUser.value.prenom || '';
+            payload.dateNaissance = newUser.value.dateNaissance || null;
+        }
+        if (newUser.value.role === 'Entreprise') {
+            payload.secteur = newUser.value.secteur || '';
+        }
+        await axios.post(`${API_BASE}/api/admin/users`, payload, config);
+        showCreateUserModal.value = false;
+        resetNewUser();
+        userActionIsError.value = false;
+        userActionMsg.value = `✅ Utilisateur créé avec succès.`;
+        await fetchAdminData(); // refresh list + stats
+    } catch (e: any) {
+        const msg = e?.response?.data?.message || 'Erreur lors de la création.';
+        createUserError.value = msg;
+    } finally {
+        isCreatingUser.value = false;
+    }
+};
+
+// ── Contact Messages Actions ──────────────────────────────
+const handleMarkContactRead = async (id: number) => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        // The GET /:id route automatically marks it as read in the backend.
+        await axios.get(`${API_BASE}/api/contact/${id}`, config);
+        const msg = contactMessages.value.find(m => m.id === id);
+        if (msg) msg.statut = 'Lu';
+    } catch (e) {
+        console.error('Erreur mark read', e);
+    }
+};
+
+const handleMarkContactTreated = async (id: number) => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.patch(`${API_BASE}/api/contact/${id}/statut`, {}, config);
+        const msg = contactMessages.value.find(m => m.id === id);
+        if (msg) msg.statut = 'Traité';
+    } catch (e) {
+        console.error('Erreur mark treated', e);
+    }
+};
+
+const handleDeleteContact = async (id: number) => {
+    const result = await Swal.fire({ title: 'Confirmation', text: 'Voulez-vous vraiment supprimer ce message ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Oui', cancelButtonText: 'Non' });
+    if (!result.isConfirmed) return;
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.delete(`${API_BASE}/api/contact/${id}`, config);
+        contactMessages.value = contactMessages.value.filter(m => m.id !== id);
+    } catch (e) {
+        console.error('Erreur delete contact', e);
+    }
+};
+
+// ── Notifications Actions ─────────────────────────────────
+const fetchNotifications = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        if (!token) return;
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        const res = await axios.get(`${API_BASE}/api/notifications`, config);
+        notifications.value = res.data;
+    } catch (e) {
+        console.error('Erreur fetch notifications', e);
+    }
+};
+
+const markNotificationRead = async (id: number) => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.patch(`${API_BASE}/api/notifications/${id}/read`, {}, config);
+        const notif = notifications.value.find(n => n.id === id);
+        if (notif) notif.lu = true;
+    } catch (e) {
+        console.error('Erreur mark notification read', e);
+    }
+};
+
+const markAllNotificationsRead = async () => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.patch(`${API_BASE}/api/notifications/mark-all-read`, {}, config);
+        notifications.value.forEach(n => n.lu = true);
+    } catch (e) {
+        console.error('Erreur mark all notifications read', e);
+    }
+};
+
+// ── Toggle user active/suspended ─────────────────────────
+const toggleUserStatus = async (userId: string) => {
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.put(`${API_BASE}/api/admin/users/${userId}/statut`, {}, config);
+        await fetchAdminData();
+    } catch (e) {
+        console.error('Toggle status error', e);
+    }
+};
+
+// ── Delete user ───────────────────────────────────────────
+const deleteUser = async (userId: string) => {
+    const result = await Swal.fire({ title: 'Confirmation', text: 'Supprimer cet utilisateur ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Oui', cancelButtonText: 'Non' });
+    if (!result.isConfirmed) return;
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.delete(`${API_BASE}/api/admin/users/${userId}`, config);
+        userActionIsError.value = false;
+        userActionMsg.value = '🗑️ Utilisateur supprimé.';
+        await fetchAdminData();
+    } catch (e: any) {
+        userActionIsError.value = true;
+        userActionMsg.value = e?.response?.data?.message || 'Erreur lors de la suppression.';
+    }
+};
+
+// ── Clear system logs ──────────────────────────────────────
+const clearLogs = async () => {
+    const result = await Swal.fire({ title: 'Confirmation', text: 'Voulez-vous vraiment nettoyer tous les journaux système ?', icon: 'warning', showCancelButton: true, confirmButtonText: 'Oui, nettoyer', cancelButtonText: 'Annuler', confirmButtonColor: '#ef4444' });
+    if (!result.isConfirmed) return;
+    try {
+        const token = localStorage.getItem('userToken');
+        const config = { headers: { Authorization: `Bearer ${token}` } };
+        await axios.delete(`${API_BASE}/api/admin/logs`, config);
+        logs.value = []; // Clear array locally
+        Swal.fire({ title: 'Nettoyé !', text: 'Les journaux ont été effacés avec succès.', icon: 'success', timer: 2000, showConfirmButton: false });
+    } catch (e: any) {
+        console.error('Erreur lors du nettoyage des logs', e);
+        Swal.fire({ title: 'Erreur', text: e?.response?.data?.message || 'Erreur lors de la suppression des logs.', icon: 'error' });
+    }
+};
+
+onMounted(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        isDarkMode.value = true;
+    }
+    fetchAdminData();
+});
+
+const handleLogout = async () => {
+    const result = await Swal.fire({ title: 'Déconnexion', text: 'Voulez-vous vraiment vous déconnecter ?', icon: 'question', showCancelButton: true, confirmButtonText: 'Oui', cancelButtonText: 'Non' });
+    if(result.isConfirmed) {
+        try {
+            await axios.post(`${API_BASE}/api/auth/logout`);
+        } catch (e) { console.error(e); }
+        localStorage.removeItem('userToken');
+        localStorage.removeItem('userRole');
+        router.push('/');
+    }
+};
+
+</script>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* Company Detail Modal */
+.company-detail-modal {
+  background: #12141f;
+  border: 1px solid rgba(255,255,255,0.07);
+}
+
+/* Animations */
+.animate-fade-in-up {
+    animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.delay-0 { animation-delay: 0.1s; }
+.delay-100 { animation-delay: 0.2s; }
+.delay-200 { animation-delay: 0.3s; }
+.delay-300 { animation-delay: 0.4s; }
+.delay-400 { animation-delay: 0.5s; }
+.delay-500 { animation-delay: 0.6s; }
+.delay-600 { animation-delay: 0.7s; }
+
+@keyframes fadeInUp {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-draw-path {
+    stroke-dasharray: 1000;
+    stroke-dashoffset: 1000;
+    animation: draw 2s ease-out forwards 0.5s;
+}
+
+@keyframes draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+</style>

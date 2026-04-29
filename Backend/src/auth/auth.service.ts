@@ -56,6 +56,8 @@ export class AuthService {
             password: hashed,
             role: dto.role,
             secteur: dto.secteur,
+            ville: dto.ville,
+            taille: dto.taille,
             dateNaissance: dto.dateNaissance,
             isEmailVerified: false,
         });
