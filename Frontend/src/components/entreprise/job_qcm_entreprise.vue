@@ -98,20 +98,6 @@
                   <svg v-if="opt.isCorrect" class="opt-check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
                 </div>
               </div>
-
-              <!-- Meta -->
-              <div class="q-meta">
-                <span class="badge-time">
-                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                  {{ q.timer < 60 ? q.timer + ' sec' : (q.timer % 60 === 0 ? (q.timer / 60) + ' min' : Math.floor(q.timer / 60) + ' min ' + (q.timer % 60) + ' sec') }}
-                </span>
-                <span class="badge-pts" :class="q.questionType === 'soft' ? 'pts-soft' : 'pts-tech'">
-                  {{ q.points ?? 2 }} pt{{ (q.points ?? 2) > 1 ? 's' : '' }}
-                </span>
-                <span class="badge-type" :class="q.questionType === 'soft' ? 'type-soft' : 'type-tech'">
-                  {{ q.questionType === 'soft' ? '💬 Soft skill' : '🎯 Technique' }}
-                </span>
-              </div>
             </div>
 
             <!-- Delete -->
@@ -145,21 +131,6 @@
         </div>
 
       </div><!-- /qcm-card -->
-
-      <!-- Footer -->
-      <div class="footer">
-        <button 
-          class="btn-publish" 
-          :disabled="publishing || questions.length === 0 || qcmPublie" 
-          :class="{ 'btn-disabled': qcmPublie }"
-          @click="publish"
-        >
-          <span v-if="publishing" class="spinner"></span>
-          <svg v-if="!publishing && !qcmPublie" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
-          <svg v-if="qcmPublie" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-          {{ publishing ? 'Publication…' : (qcmPublie ? 'QCM Déjà Publié' : 'Publier le QCM') }}
-        </button>
-      </div>
 
     </template>
 
@@ -563,54 +534,6 @@ html, body, #app { background: #F3F4F6 !important; }
 .opt-text  { flex: 1; }
 .opt-check { margin-left: auto; color: #16A34A; flex-shrink: 0; }
 
-/* Meta */
-.q-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-
-.badge-diff {
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-.badge-diff.easy   { background: #DCFCE7; color: #15803D; }
-.badge-diff.medium { background: #FEF9C3; color: #854D0E; }
-.badge-diff.hard   { background: #FEE2E2; color: #B91C1C; }
-
-.badge-time {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  background: #F9FAFB;
-  color: #6B7280;
-  border: 1px solid #E5E7EB;
-}
-
-.badge-pts {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 9px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 700;
-}
-.pts-tech { background: #EFF6FF; color: #1e40af; border: 1px solid #BFDBFE; }
-.pts-soft { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
-
-.badge-type {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 10px;
-  border-radius: 20px;
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-.type-tech { background: #EFF6FF; color: #1e3a8a; }
-.type-soft { background: #FAF5FF; color: #6D28D9; }
-
 /* Delete button */
 .btn-del {
   background: none;
@@ -686,53 +609,6 @@ html, body, #app { background: #F3F4F6 !important; }
 .sk-title { height: 38px; width: 40%; margin-bottom: 0.5rem; }
 .sk-tags  { height: 22px; width: 30%; margin-bottom: 1.5rem; }
 .sk-card  { height: 280px; border-radius: 16px; }
-
-/* ── Footer ─────────────────────────── */
-.footer { display: flex; justify-content: flex-end; }
-
-.btn-publish {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: #1e40af;
-  color: #fff;
-  border: none;
-  border-radius: 10px;
-  padding: 0.7rem 1.6rem;
-  font-size: 0.875rem;
-  font-weight: 700;
-  font-family: 'Inter', sans-serif;
-  cursor: pointer;
-  transition: background .2s, transform .2s, box-shadow .2s;
-  box-shadow: 0 4px 14px rgba(30, 64, 175, 0.3);
-}
-.btn-publish:hover:not(:disabled) {
-  background: #1e3a8a;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(30, 64, 175, 0.38);
-}
-.btn-publish:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.btn-publish.btn-disabled {
-  background: #E2E8F0 !important;
-  color: #64748B !important;
-  border-color: #CBD5E1 !important;
-  cursor: default;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-.spinner {
-  width: 14px; height: 14px;
-  border: 2px solid rgba(255,255,255,0.35);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin .65s linear infinite;
-}
-@keyframes spin { to{transform:rotate(360deg)} }
 
 /* ── Toast ──────────────────────────── */
 .toast {

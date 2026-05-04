@@ -26,7 +26,7 @@
           <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">PROGRESSION</p>
           <p class="text-[13px] font-bold text-slate-900 leading-none">Question {{ currentQuestionIndex + 1 }} sur {{ questions.length }}</p>
         </div>
-        <div class="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold text-[13px] border border-blue-100">
+        <div v-if="hasTimeLimit" class="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-xl font-bold text-[13px] border border-blue-100">
           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
@@ -202,9 +202,8 @@ const progressPercentage = computed(() =>
 );
 
 // ── Timer ─────────────────────────────────────────────────────────────────────
-// Duration is set dynamically from the backend (sum of question timers)
-const FALLBACK_DURATION_SECONDS = 300; // fallback if backend doesn't return duration
-const sessionDurationSeconds = ref(FALLBACK_DURATION_SECONDS);
+const hasTimeLimit = ref(true); // Indique si un chronomètre est configuré
+const sessionDurationSeconds = ref(0);
 const totalTimeSeconds = ref(0);
 let timerInterval = 0;
 
@@ -212,6 +211,7 @@ const getSessionStartTimeKey = (id: string | string[]) => `qcm_start_time_${id}`
 const getSessionDurationKey  = (id: string | string[]) => `qcm_duration_${id}`;
 
 const formattedTimeLeft = computed(() => {
+  if (!hasTimeLimit.value) return '';
   const m = Math.floor(totalTimeSeconds.value / 60);
   const s = totalTimeSeconds.value % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
@@ -221,6 +221,8 @@ const formattedTimeLeft = computed(() => {
 const totalTimeInSeconds = ref(0);
 
 const startTimer = () => {
+  if (!hasTimeLimit.value) return; // Pas de chronomètre si pas de limite
+  
   timerInterval = window.setInterval(() => {
     if (totalTimeSeconds.value > 0) {
       totalTimeSeconds.value--;
@@ -264,43 +266,53 @@ onMounted(async () => {
       timer: q.timer || 30,
     }));
 
-    // Use duration from backend; persist it so page refreshes stay consistent
-    const startTimeKey    = getSessionStartTimeKey(candId);
-    const durationKey     = getSessionDurationKey(candId);
-
-    // Resolve the authoritative duration for this session
-    const backendDuration: number = res.data.totalDurationSeconds || FALLBACK_DURATION_SECONDS;
-    const storedDuration  = localStorage.getItem(durationKey);
-    if (!storedDuration) {
-      // First load — save the backend value
-      localStorage.setItem(durationKey, String(backendDuration));
-      sessionDurationSeconds.value = backendDuration;
+    // Vérifier si une durée est configurée (null = pas de limite de temps)
+    const backendDuration = res.data.totalDurationSeconds;
+    
+    if (backendDuration === null || backendDuration === undefined) {
+      // Pas de limite de temps configurée
+      hasTimeLimit.value = false;
+      sessionDurationSeconds.value = 0;
     } else {
-      // Resuming — use the already-stored value so it doesn't change on refresh
-      sessionDurationSeconds.value = parseInt(storedDuration);
+      // Limite de temps configurée
+      hasTimeLimit.value = true;
+      const startTimeKey = getSessionStartTimeKey(candId);
+      const durationKey = getSessionDurationKey(candId);
+
+      const storedDuration = localStorage.getItem(durationKey);
+      if (!storedDuration) {
+        // First load — save the backend value
+        localStorage.setItem(durationKey, String(backendDuration));
+        sessionDurationSeconds.value = backendDuration;
+      } else {
+        // Resuming — use the already-stored value so it doesn't change on refresh
+        sessionDurationSeconds.value = parseInt(storedDuration);
+      }
+
+      if (questions.value.length > 0) {
+        let startTime = localStorage.getItem(startTimeKey);
+        if (!startTime) {
+          startTime = Date.now().toString();
+          localStorage.setItem(startTimeKey, startTime);
+        }
+
+        const elapsedSeconds = Math.floor((Date.now() - parseInt(startTime)) / 1000);
+        const remainingSeconds = sessionDurationSeconds.value - elapsedSeconds;
+
+        if (remainingSeconds <= 0) {
+          totalTimeSeconds.value = 0;
+          totalTimeInSeconds.value = sessionDurationSeconds.value;
+          handleNext(true);
+        } else {
+          totalTimeSeconds.value = remainingSeconds;
+          totalTimeInSeconds.value = elapsedSeconds;
+          sessionStorage.setItem(getSessionKey(candId), '1');
+          startTimer();
+        }
+      }
     }
 
-    if (questions.value.length > 0) {
-      let startTime = localStorage.getItem(startTimeKey);
-      if (!startTime) {
-        startTime = Date.now().toString();
-        localStorage.setItem(startTimeKey, startTime);
-      }
-
-      const elapsedSeconds   = Math.floor((Date.now() - parseInt(startTime)) / 1000);
-      const remainingSeconds = sessionDurationSeconds.value - elapsedSeconds;
-
-      if (remainingSeconds <= 0) {
-        totalTimeSeconds.value    = 0;
-        totalTimeInSeconds.value  = sessionDurationSeconds.value;
-        handleNext(true);
-      } else {
-        totalTimeSeconds.value   = remainingSeconds;
-        totalTimeInSeconds.value = elapsedSeconds;
-        sessionStorage.setItem(getSessionKey(candId), '1');
-        startTimer();
-      }
-    } else {
+    if (questions.value.length === 0) {
       Swal.fire({ title: 'Erreur', text: "Aucune question trouvée pour ce test.", icon: 'error' });
       router.push('/candidat/evaluations');
     }

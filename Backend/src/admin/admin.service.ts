@@ -235,6 +235,45 @@ export class AdminService {
     }
 
     /**
+     * Get detailed information about a specific company.
+     */
+    async getCompanyDetails(id: number) {
+        const company = await this.userRepo.findOne({
+            where: { id, role: 'Entreprise' },
+        });
+
+        if (!company) {
+            throw new NotFoundException('Entreprise introuvable.');
+        }
+
+        // Get published offers count
+        const offresCount = await this.offreRepo.count({
+            where: { entreprise: { id } },
+        });
+
+        // Get total candidates count across all offers
+        const candidatsCount = await this.candidatureRepo
+            .createQueryBuilder('cand')
+            .innerJoin('cand.offre', 'o')
+            .innerJoin('o.entreprise', 'ent')
+            .where('ent.id = :id', { id })
+            .getCount();
+
+        return {
+            id: company.id,
+            nom: company.nom || 'Sans nom',
+            email: company.email,
+            secteur: company.secteur || 'Non précisé',
+            ville: (company as any).ville || 'Non précisé',
+            taille: (company as any).taille || 'Non précisé',
+            estActif: company.isEmailVerified,
+            dateInscription: company.createdAt,
+            offresPubliees: offresCount,
+            nombreCandidats: candidatsCount,
+        };
+    }
+
+    /**
      * Update company information (Admin only).
      */
     async patchEntreprise(id: number, dto: any) {

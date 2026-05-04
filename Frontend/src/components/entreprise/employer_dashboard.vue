@@ -303,7 +303,8 @@ const candidatesSource = computed(() => {
     role: c.role || 'Candidat Évalué',
     score: c.score || 0,
     statut: c.statut || 'En attente',
-    email: c.email || ''
+    email: c.email || '',
+    avatar: c.avatar || null
   }));
 });
 

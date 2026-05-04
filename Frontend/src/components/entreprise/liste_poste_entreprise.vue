@@ -366,9 +366,10 @@
               <div class="qcm-config-field">
                 <label for="qcm-timer">
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-                  Chronomètre (min)
+                  Chronomètre (min) - Optionnel
                 </label>
-                <input id="qcm-timer" type="number" min="1" max="120" v-model="qcmConfig.timer" placeholder="Ex: 30" />
+                <input id="qcm-timer" type="number" min="0" max="120" v-model="qcmConfig.timer" placeholder="Laisser vide pour aucune limite" />
+                <small style="display: block; margin-top: 4px; color: #6b7280; font-size: 0.85rem;">Si vide, aucun chronomètre ne sera affiché aux candidats</small>
               </div>
             </div>
 
@@ -892,7 +893,14 @@ const saveQCM = async () => {
   qcmError.value = '';
 
   try {
-    // Transformer les questions au format attendu par le backend
+    // 1. Mettre à jour la durée du QCM au niveau de l'offre
+    if (qcmConfig.value.timer && qcmConfig.value.timer > 0) {
+      await axios.patch(`/api/offres/${createdOffreId.value}`, {
+        dureeQcm: qcmConfig.value.timer
+      });
+    }
+
+    // 2. Transformer les questions au format attendu par le backend
     const questionsToSave = generatedQuestions.value.map((q) => {
       return {
         question: q.text,
@@ -901,7 +909,6 @@ const saveQCM = async () => {
           isCorrect: optIndex === q.correct
         })),
         competence: q.competence,
-        chronometre: qcmConfig.value.timer * 60, // Convert minutes to seconds
       };
     });
 

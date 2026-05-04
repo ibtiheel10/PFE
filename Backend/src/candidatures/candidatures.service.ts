@@ -55,11 +55,14 @@ export class CandidaturesService {
             order: { createdAt: 'ASC' },
         });
 
+        // Utiliser la durée configurée par l'entreprise (en minutes) ou null si pas de limite
+        const dureeQcmMinutes = candidature.offre.dureeQcm;
+        const totalDurationSeconds = dureeQcmMinutes ? dureeQcmMinutes * 60 : null;
+
         return {
             candidatureId: candidature.id,
             offreTitle: candidature.offre.TitreDePost,
-            // La durée totale du QCM est fixée strictement à 3 minutes (180 secondes)
-            totalDurationSeconds: 180,
+            totalDurationSeconds: totalDurationSeconds, // null = pas de limite de temps
             questions: questions.map(q => ({
                 id: q.id,
                 text: q.contenu?.question ?? '',

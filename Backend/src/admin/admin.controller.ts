@@ -111,6 +111,16 @@ export class AdminController {
     }
 
     /**
+     * GET /api/Admin/entreprises/:id
+     * Returns detailed information about a specific company.
+     */
+    @Get('entreprises/:id')
+    @ApiOperation({ summary: 'Get company details by ID' })
+    async getCompanyDetails(@Param('id') id: string) {
+        return this.adminService.getCompanyDetails(+id);
+    }
+
+    /**
      * PATCH /api/Admin/entreprises/:id
      * Updates company information.
      */

@@ -63,6 +63,9 @@ export class OffreEmploi {
     @Column({ type: 'int', default: 50 })
     seuilMinimal: number;
 
+    @Column({ type: 'int', nullable: true })
+    dureeQcm: number; // Durée du QCM en minutes (null = pas de limite de temps)
+
     @ManyToOne(() => User, { nullable: true })
     entreprise: User;
 

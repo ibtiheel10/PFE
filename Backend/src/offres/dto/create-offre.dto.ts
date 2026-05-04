@@ -61,4 +61,9 @@ export class CreateOffreDto {
     @IsOptional()
     @IsNumber()
     seuilMinimal?: number;
+
+    @ApiPropertyOptional({ description: 'Durée du QCM en minutes (null = pas de limite de temps)' })
+    @IsOptional()
+    @IsNumber()
+    dureeQcm?: number;
 }
