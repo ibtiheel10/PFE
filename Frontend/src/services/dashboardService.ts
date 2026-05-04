@@ -1,7 +1,7 @@
 import api from './axios';
 
 export interface CandidaturesParMoisDto {
-    mois: string;
+    period: string;
     count: number;
 }
 
@@ -15,7 +15,9 @@ export interface CandidatDashboardDto {
 
 export interface TopCandidatDto {
     candidatId: number;
-    prenom: string | null;
+    name: string | null;
+    email: string | null;
+    avatar: string | null;
     score: number | null;
     note: string | null;
     statut: string | null;

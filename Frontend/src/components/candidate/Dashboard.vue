@@ -275,9 +275,9 @@
                                     <div class="text-[11px] text-gray-400">{{ result.date }}</div>
                                 </div>
                                 <div class="text-right shrink-0">
-                                    <span class="font-extrabold text-sm" :class="getScoreColor(result.score)">{{ result.score }}%</span>
+                                    <span class="font-extrabold text-sm" :class="getResultColor(result.statut)">{{ result.score }}%</span>
                                     <div class="score-bar-bg mt-1">
-                                        <div class="score-bar-fill" :class="getScoreColor(result.score).replace('text-', 'bg-')" :style="{ width: result.score + '%' }"></div>
+                                        <div class="score-bar-fill" :class="getResultBgColor(result.statut)" :style="{ width: result.score + '%' }"></div>
                                     </div>
                                 </div>
                             </div>
@@ -332,7 +332,8 @@ const results = computed(() =>
         .map(c => ({
             name: c.offre?.TitreDePost || 'Offre',
             date: new Date(c.datePostulation).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }),
-            score: c.score!
+            score: c.score!,
+            statut: c.statut
         }))
 );
 
@@ -346,6 +347,8 @@ const competenceChartData = computed(() => {
                 const details = JSON.parse(c.evaluationDetails);
                 if (details.ScoreParCompetence) {
                     for (const [key, val] of Object.entries(details.ScoreParCompetence)) {
+                        // Skip null = not evaluated
+                        if (val === null || val === undefined) continue;
                         if (!competenceMap[key]) competenceMap[key] = { total: 0, count: 0 };
                         competenceMap[key].total += Number(val);
                         competenceMap[key].count += 1;
@@ -386,6 +389,8 @@ const strongSkills = computed<string[]>(() => {
             const d = JSON.parse(c.evaluationDetails);
             if (d.ScoreParCompetence) {
                 for (const [key, val] of Object.entries(d.ScoreParCompetence)) {
+                    // Skip null = not evaluated
+                    if (val === null || val === undefined) continue;
                     if (!map[key]) map[key] = { total: 0, count: 0 };
                     map[key].total += Number(val);
                     map[key].count += 1;
@@ -400,14 +405,14 @@ const strongSkills = computed<string[]>(() => {
 });
 
 const dominantSkillScore = computed<number | null>(() => {
-    if (!dominantSkill.value) return null;
+    if (!strongSkills.value[0]) return null;
     const vals: number[] = [];
     for (const c of allCandidatures.value) {
         if (!c.evaluationDetails) continue;
         try {
             const d = JSON.parse(c.evaluationDetails);
-            if (d.ScoreParCompetence?.[dominantSkill.value] !== undefined) {
-                vals.push(Number(d.ScoreParCompetence[dominantSkill.value]));
+            if (d.ScoreParCompetence?.[strongSkills.value[0]] !== undefined) {
+                vals.push(Number(d.ScoreParCompetence[strongSkills.value[0]]));
             }
         } catch {}
     }
@@ -426,7 +431,7 @@ const smartSuggestions = computed(() => {
     const hasBackendScores = pool.some(o => (o as any).matchScore !== undefined);
     if (hasBackendScores) {
         return pool
-            .map(o => {
+            .map((o: any) => {
                 const matchScore: number = (o as any).matchScore ?? 0;
                 const color = matchScore >= 70 ? '#10b981' : matchScore >= 30 ? '#1e40af' : '#94a3b8';
                 return { ...o, _matchScore: matchScore || null, _isMatch: matchScore >= 30, _matchColor: color };
@@ -436,11 +441,11 @@ const smartSuggestions = computed(() => {
     }
 
     // Fallback: client-side skill keyword matching
-    const skill = dominantSkill.value?.toLowerCase() ?? '';
+    const skill = strongSkills.value[0]?.toLowerCase() ?? '';
     if (!skill) return pool.slice(0, 4).map(o => ({ ...o, _matchScore: null, _isMatch: false, _matchColor: '#1e40af' }));
-    const skillWords = skill.split(/[\s,\-\/]+/).filter((w: string) => w.length > 2);
+    const candidateSkillsNormalized = strongSkills.value.map((s: string) => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()); const normalizeText = (text: string) => text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     return pool
-        .map(o => {
+        .map((o: any) => {
             // Chaque offre contient une liste de compétences requises
             const offreCompetencesStr = (o as any).competences || o.ExperienceRequise || o.Categorie || '';
             const offreCompetences = offreCompetencesStr.split(/[,\-]/).map((c: string) => normalizeText(c)).filter((c: string) => c.length > 2);
@@ -466,7 +471,7 @@ const smartSuggestions = computed(() => {
             return { ...o, _matchScore: matchScore || null, _isMatch: isMatch, _matchColor: color };
         })
         // 5. Exclure les postes sans correspondance
-        .filter(o => o._isMatch)
+        .filter((o: any) => o._isMatch)
         .sort((a: any, b: any) => (b._matchScore ?? 0) - (a._matchScore ?? 0))
         .slice(0, 5); // Génération des suggestions finales prêtes pour affichage
 });
@@ -505,8 +510,8 @@ const getStatusBadgeClass = (statut: string) => {
         case 'Acceptée':   return 'bg-green-50 text-green-700 border-green-100';
         case 'Refusé':
         case 'Non retenu': return 'bg-red-50 text-red-700 border-red-100';
-        case 'Entretien':  return 'bg-purple-50 text-purple-700 border-purple-100';
-        case 'En attente': return 'bg-blue-50 text-blue-700 border-blue-100';
+        case 'Entretien':  return 'bg-[#eff6ff] text-[#1e40af] border-[#1e40af]';
+        case 'En attente': return 'bg-orange-50 text-orange-700 border-orange-100';
         default:           return 'bg-gray-100 text-gray-600 border-gray-200';
     }
 };
@@ -517,17 +522,28 @@ const getStatusAccent = (statut: string) => {
         case 'Acceptée':   return 'bg-green-400';
         case 'Refusé':
         case 'Non retenu': return 'bg-red-400';
-        case 'Entretien':  return 'bg-purple-400';
-        case 'En attente': return 'bg-blue-400';
+        case 'Entretien':  return 'bg-[#1e40af]';
+        case 'En attente': return 'bg-orange-400';
         default:           return 'bg-gray-300';
     }
 };
 
-const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';      // 80-100% : Vert
-    if (score >= 60) return 'text-blue-600';       // 60-79% : Bleu
-    if (score >= 40) return 'text-orange-500';     // 40-59% : Orange
-    return 'text-red-600';                         // 0-39% : Rouge
+const getResultColor = (statut: string | undefined) => {
+    const s = (statut || '').toLowerCase();
+    if (s === 'accepté' || s === 'acceptée') return 'text-green-500'; 
+    if (s === 'entretien' || s === 'interview') return 'text-[#1e40af]'; 
+    if (s === 'en attente' || s === 'pending') return 'text-orange-500'; 
+    if (s === 'refusé' || s === 'non retenu') return 'text-red-500'; 
+    return 'text-[#1e40af]'; 
+};
+
+const getResultBgColor = (statut: string | undefined) => {
+    const s = (statut || '').toLowerCase();
+    if (s === 'accepté' || s === 'acceptée') return 'bg-green-500'; 
+    if (s === 'entretien' || s === 'interview') return 'bg-[#1e40af]'; 
+    if (s === 'en attente' || s === 'pending') return 'bg-orange-500'; 
+    if (s === 'refusé' || s === 'non retenu') return 'bg-red-500'; 
+    return 'bg-[#1e40af]'; 
 };
 
 const goToJobs = () => router.push('/candidat/jobs');
@@ -613,8 +629,25 @@ const goToResults = () => router.push('/resultats');
 .bars-scroll-wrapper {
   width: 100%;
   height: 100%;
-  overflow-x: hidden;
+  overflow-x: auto;
   overflow-y: hidden;
+  padding-bottom: 8px; /* Space for scrollbar */
+}
+
+/* Custom Scrollbar */
+.bars-scroll-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+.bars-scroll-wrapper::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+.bars-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+.bars-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .bars-wrapper {
@@ -622,7 +655,7 @@ const goToResults = () => router.push('/resultats');
   justify-content: flex-start;
   align-items: flex-end;
   height: 100%;
-  gap: 0.5rem;
+  gap: 1.5rem; /* Increased gap for better readability */
   padding: 0 0.5rem;
 }
 
@@ -997,14 +1030,13 @@ const goToResults = () => router.push('/resultats');
 .result-row:hover { background-color: #f9fafb; }
 .score-bar-bg {
   width: 80px;
-  height: 5px;
+  height: 6px;
   background: #e5e7eb;
-  border-radius: 3px;
-  overflow: hidden;
+  border-radius: 10px;
 }
 .score-bar-fill {
   height: 100%;
-  border-radius: 3px;
+  border-radius: 10px;
   transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 

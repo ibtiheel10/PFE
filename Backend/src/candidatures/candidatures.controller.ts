@@ -80,17 +80,34 @@ export class CandidaturesController {
     }
 
     @Get(':id/result')
-    @Roles('Candidat')
+    @Roles('Candidat', 'Entreprise')
     @ApiOperation({ summary: 'Récupérer les détails d\'un résultat spécifique' })
     @ApiParam({ name: 'id', description: 'ID de la candidature' })
     async getResult(@Param('id') id: string, @Request() req: any) {
-        const candidature = await this.candidaturesService.findOne(+id);
-        if (candidature.candidat.id !== req.user.userId) {
-            throw new ConflictException('Accès refusé à ce résultat.');
+        const { userId, role } = req.user;
+        const candidatureId = parseInt(id, 10);
+
+        if (isNaN(candidatureId)) {
+            throw new ConflictException('ID de candidature invalide.');
         }
-        if (candidature.score === null || candidature.score === undefined) {
-            throw new ForbiddenException('Le résultat n\'est pas encore disponible. Terminez l\'évaluation d\'abord.');
+
+        // Fetch with all relations needed for both roles
+        const candidature = await this.candidaturesService.findOneWithEntreprise(candidatureId);
+
+        if (role === 'Candidat') {
+            if (Number(candidature.candidat?.id) !== Number(userId)) {
+                throw new ConflictException('Accès refusé à ce résultat.');
+            }
+            if (candidature.score === null || candidature.score === undefined) {
+                throw new ForbiddenException('Le résultat n\'est pas encore disponible.');
+            }
+        } else if (role === 'Entreprise') {
+            // Check if this entreprise owns the job offer
+            if (!candidature.offre || !candidature.offre.entreprise || Number(candidature.offre.entreprise.id) !== Number(userId)) {
+                throw new ConflictException('Accès refusé. Cette candidature ne concerne pas vos offres.');
+            }
         }
+
         return candidature;
     }
 

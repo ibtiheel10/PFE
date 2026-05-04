@@ -34,7 +34,6 @@ export class QuestionsService {
       id: q.id,
       contenu: q.contenu,
       chronometre: q.chronometre,
-      isCorrectVerified: q.isCorrectVerified,
       createdAt: q.createdAt
     }));
   }
@@ -58,7 +57,6 @@ export class QuestionsService {
     const newQuestion = this.questionRepo.create({
       contenu: data.contenu,
       chronometre: data.chronometre || 30,
-      isCorrectVerified: true, // Assuming the recruiter validates it during generation
       offre: offre,
     });
 
@@ -68,7 +66,6 @@ export class QuestionsService {
       id: saved.id,
       contenu: saved.contenu,
       chronometre: saved.chronometre,
-      isCorrectVerified: saved.isCorrectVerified,
       createdAt: saved.createdAt
     };
   }

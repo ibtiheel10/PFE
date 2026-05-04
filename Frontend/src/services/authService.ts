@@ -32,6 +32,8 @@ export interface RegisterPayload {
     password: string;
     role: 'Candidat' | 'Entreprise';
     secteur?: string;
+    ville?: string;
+    taille?: string;
     dateNaissance?: string;
 }
 

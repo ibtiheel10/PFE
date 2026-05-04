@@ -11,20 +11,16 @@ export class Question {
     contenu: {
         question: string;
         options: { text: string; isCorrect: boolean }[];
-        correctAnswer?: string;
         explanation?: string;
         points?: number;
         questionType?: string;
         difficulty?: string;
-        category?: string;
+        competence?: string;
     };
 
     @Column({ type: 'int' })
     chronometre: number; // seconds (updated from minutes representation)
 
-    /** Set to true once the recruiter has manually verified the correct answer */
-    @Column({ type: 'boolean', default: false })
-    isCorrectVerified: boolean;
 
     @ManyToOne(() => OffreEmploi, (offre) => offre.questions, { onDelete: 'CASCADE', nullable: true })
     @JoinColumn({ name: 'offre_id' })

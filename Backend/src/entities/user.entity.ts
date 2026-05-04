@@ -31,10 +31,10 @@ export class User {
   secteur: string;
 
   @Column({ nullable: true })
-  taille: string;
+  ville: string;
 
   @Column({ nullable: true })
-  ville: string;
+  taille: string;
 
   @Column({ default: false })
   isEmailVerified: boolean;

@@ -198,77 +198,67 @@ export class AdminService {
     }
 
     /**
-     * Get all companies for admin dashboard.
+     * Get all companies for admin dashboard, enriched with offresCount and candidatsCount.
      */
     async getCompanies() {
         const companies = await this.userRepo.find({
             where: { role: 'Entreprise' },
-            select: ['id', 'nom', 'secteur', 'email', 'isEmailVerified', 'createdAt', 'taille', 'ville']
         });
 
-        const results: any[] = [];
-        for (const company of companies) {
-            const offresCount = await this.offreRepo.count({ where: { entreprise: { id: company.id } } });
-            
-            // Count all candidates across all offers for this company
-            const candidaturesCount = await this.candidatureRepo.count({
-                where: { offre: { entreprise: { id: company.id } } }
+        const enriched = await Promise.all(companies.map(async (c) => {
+            const offresCount = await this.offreRepo.count({
+                where: { entreprise: { id: c.id } },
             });
 
-            results.push({
-                ...company,
-                nom: company.nom || 'Sans nom',
-                secteur: company.secteur || 'Non précisé',
-                email: company.email,
-                estActif: company.isEmailVerified,
-                dateCreation: company.createdAt,
-                taille: company.taille || 'Non précisé',
-                ville: company.ville || 'Non précisé',
+            const candidatsCount = await this.candidatureRepo
+                .createQueryBuilder('cand')
+                .innerJoin('cand.offre', 'o')
+                .innerJoin('o.entreprise', 'ent')
+                .where('ent.id = :id', { id: c.id })
+                .getCount();
+
+            return {
+                id: c.id,
+                nom: c.nom || 'Sans nom',
+                secteur: c.secteur || null,
+                email: c.email,
+                ville: (c as any).ville || null,
+                taille: (c as any).taille || null,
+                estActif: c.isEmailVerified,
+                createdAt: c.createdAt,
                 offresCount,
-                candidaturesCount
-            });
-        }
+                candidatsCount,
+            };
+        }));
 
-        return results;
+        return enriched;
     }
 
     /**
-     * Update a company.
+     * Update company information (Admin only).
      */
-    async updateCompany(id: number, updateData: any) {
-        const company = await this.userRepo.findOne({
-            where: { id, role: 'Entreprise' }
-        });
-        
-        if (!company) {
-            throw new NotFoundException('Entreprise introuvable.');
-        }
+    async patchEntreprise(id: number, dto: any) {
+        const company = await this.userRepo.findOneBy({ id, role: 'Entreprise' });
+        if (!company) throw new NotFoundException('Entreprise introuvable.');
 
-        // Update fields if provided
-        if (updateData.nom !== undefined) company.nom = updateData.nom;
-        if (updateData.secteur !== undefined) company.secteur = updateData.secteur;
-        if (updateData.taille !== undefined) company.taille = updateData.taille;
-        if (updateData.ville !== undefined) company.ville = updateData.ville;
-        if (updateData.estActif !== undefined) company.isEmailVerified = updateData.estActif;
+        if (dto.nom !== undefined)     company.nom = dto.nom;
+        if (dto.email !== undefined)   company.email = dto.email;
+        if (dto.secteur !== undefined) company.secteur = dto.secteur;
+        if (dto.ville !== undefined)   (company as any).ville = dto.ville;
+        if (dto.taille !== undefined)  (company as any).taille = dto.taille;
 
         await this.userRepo.save(company);
-        return { message: 'Entreprise mise à jour avec succès', company };
+        return { message: 'Entreprise mise à jour avec succès.' };
     }
 
     /**
-     * Delete a company.
+     * Delete a company (Admin only).
      */
-    async deleteCompany(id: number) {
-        const company = await this.userRepo.findOne({
-            where: { id, role: 'Entreprise' }
-        });
-        
-        if (!company) {
-            throw new NotFoundException('Entreprise introuvable.');
-        }
-
+    async deleteEntreprise(id: number) {
+        const company = await this.userRepo.findOneBy({ id, role: 'Entreprise' });
+        if (!company) throw new NotFoundException('Entreprise introuvable.');
         await this.userRepo.remove(company);
-        return { message: 'Entreprise supprimée avec succès' };
+        return { message: 'Entreprise supprimée avec succès.' };
     }
 
 private systemMockedLogs = [
@@ -303,7 +293,7 @@ private systemMockedLogs = [
      * Clears system logs.
      */
     async clearLogs() {
-        this.systemMockedLogs = [];
+        this.systemMockedLogs.splice(0, this.systemMockedLogs.length);
         return { message: 'Logs nettoyés avec succès' };
     }
 }

@@ -299,7 +299,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import LogoIcon from '../components/LogoIcon.vue';
+import LogoIcon from '../components/composants_reutilisables/LogoIcon.vue';
 import {
     Squares2X2Icon,
     BriefcaseIcon,

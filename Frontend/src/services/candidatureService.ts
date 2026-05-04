@@ -12,6 +12,8 @@ export interface CandidatureResponse {
     totalQuestions?: number;
     rapidite?: string;
     evaluationDetails?: string;
+    rank?: number | null;
+    isForfeit?: boolean;
     offre: {
         id: string;
         TitreDePost: string;
@@ -19,6 +21,7 @@ export interface CandidatureResponse {
         Localisation: string;
         DateLimite?: string | null;
         dateLancementQcm?: string | null;
+        seuilMinimal?: number;
     };
 }
 
@@ -27,6 +30,7 @@ export interface CandidatureStats {
     stats: {
         total: number;
         enAttente: number;
+        entretiens?: number;
         acceptées: number;
         refusées: number;
         reussis: number;

@@ -535,8 +535,7 @@ export class EntrepriseService {
             return {
                 question: questionText,
                 options: normalizedOpts,
-                category: q.category || q.contenu?.category || 'Compétence Technique',
-                correctAnswer: normalizedOpts.find((o: any) => o.isCorrect)?.text || '',
+                competence: q.competence || q.contenu?.competence || (q as any).category || (q.contenu as any)?.category || 'Compétence Technique',
                 chronometre: q.chronometre ?? 30,
             };
         });
@@ -583,8 +582,7 @@ export class EntrepriseService {
             return {
                 question: questionText,
                 options: normalizedOpts,
-                category: q.category || q.contenu?.category || 'Compétence Technique',
-                correctAnswer: normalizedOpts.find((o: any) => o.isCorrect)?.text || '',
+                competence: q.competence || q.contenu?.competence || (q as any).category || (q.contenu as any)?.category || 'Compétence Technique',
                 chronometre: q.chronometre ?? 30,
             };
         });
@@ -648,11 +646,9 @@ export class EntrepriseService {
                 contenu: {
                     question: q.question,
                     options: normalizedOptions,
-                    correctAnswer: correctAnswerText,
-                    category: q.category || 'Sujet ciblé',
+                    competence: q.competence || q.category || 'Compétence',
                 },
                 chronometre: q.chronometre || 30,
-                isCorrectVerified: false,
                 offre: { id: offre.id } as OffreEmploi,
             });
         });
@@ -752,13 +748,11 @@ Sujets: ${offre.competences || 'Non spécifié'}
                 isCorrect: opt.text === correctAnswer
             }));
         }
-        question.isCorrectVerified = true;
         await this.questionRepo.save(question);
         return {
             message: 'Reponse correcte mise a jour et question verifiee.',
             questionId,
             correctAnswer,
-            isCorrectVerified: true,
         };
     }
 
@@ -805,6 +799,86 @@ Sujets: ${offre.competences || 'Non spécifié'}
                 avatar: c.candidat?.avatar || null, // Use real avatar if exists, otherwise null
             };
         });
+    }
+
+    /** GET specific candidature details for an enterprise (Owner only) */
+    async getCandidatureDetails(candidatureId: number, userId: number) {
+        const candidature = await this.candidatureRepo.findOne({
+            where: { id: candidatureId },
+            relations: ['candidat', 'offre', 'offre.entreprise'],
+        });
+
+        if (!candidature) throw new NotFoundException(`Candidature ${candidatureId} introuvable.`);
+
+        // Assert ownership: entreprise viewing must own the offer
+        if (Number(candidature.offre?.entreprise?.id) !== Number(userId)) {
+            throw new ForbiddenException("Vous n'êtes pas autorisé à voir les détails de cette candidature.");
+        }
+
+        const score = candidature.score; // null if not passed
+        const seuil = candidature.offre?.seuilMinimal ?? 50;
+
+        // Final display status
+        let displayStatut: string;
+        if (candidature.statut === 'Entretien') {
+            displayStatut = 'Entretien';
+        } else if (score === null || score === undefined) {
+            displayStatut = 'En attente';
+        } else if (score >= seuil) {
+            displayStatut = 'Accepté';
+        } else {
+            displayStatut = 'Refusé';
+        }
+
+        // Fetch detailed answers if available
+        const responses = await this.reponseRepo.find({
+            where: { candidature: { id: candidatureId } },
+            relations: ['question'],
+            order: { id: 'ASC' }
+        });
+
+        let parsedDetails = null;
+        if (candidature.evaluationDetails) {
+            try {
+                parsedDetails = JSON.parse(candidature.evaluationDetails);
+            } catch (e) {
+                this.logger.error(`Failed to parse evaluationDetails for candidature ${candidatureId}`);
+            }
+        }
+
+        return {
+            id: candidature.id,
+            datePostulation: candidature.datePostulation,
+            statut: displayStatut,
+            decision: candidature.decision,
+            score: score,
+            nbReponsesCorrectes: candidature.nbReponsesCorrectes,
+            totalQuestions: candidature.totalQuestions,
+            tempsEcoule: candidature.tempsEcoule,
+            rank: candidature.rank,
+            candidat: {
+                id: candidature.candidat?.id,
+                nom: candidature.candidat?.nom,
+                prenom: candidature.candidat?.prenom,
+                email: candidature.candidat?.email,
+                avatar: candidature.candidat?.avatar,
+                bio: candidature.candidat?.bio,
+            },
+            offre: {
+                id: candidature.offre?.id,
+                titre: candidature.offre?.TitreDePost,
+                description: candidature.offre?.Description,
+                seuil: seuil,
+            },
+            evaluationDetails: parsedDetails,
+            responses: responses.map(r => ({
+                question: r.question?.contenu?.question || 'Question inconnue',
+                competence: r.question?.contenu?.competence || (r.question?.contenu as any)?.category || 'Technique',
+                reponse: r.reponse,
+                correctAnswer: (r.question?.contenu?.options?.find((o: any) => o.isCorrect)?.text || ''),
+                est_correct: r.est_correct
+            }))
+        };
     }
 
     /** PATCH update candidature status (accept / reject) */
@@ -917,9 +991,8 @@ Sujets: ${offre.competences || 'Non spécifié'}
                 isCorrect: typeof opt === 'object' && opt !== null ? !!opt.isCorrect : false,
             })),
             difficulty: q.contenu?.difficulty ?? 'Intermédiaire',
-            category: q.contenu?.category ?? 'Sujet ciblé',
+            competence: q.contenu?.competence ?? (q.contenu as any)?.category ?? 'Compétence',
             chronometre: q.chronometre,
-            isCorrectVerified: q.isCorrectVerified,
             createdAt: q.createdAt
         }));
     }
@@ -945,7 +1018,7 @@ Sujets: ${offre.competences || 'Non spécifié'}
                 questionId: q.id,
                 texteQuestion: q.contenu?.question || '',
                 difficulte: q.contenu?.difficulty || 'Intermédiaire',
-                categorie: q.contenu?.category || 'Sujet ciblé',
+                competence: q.contenu?.competence || (q.contenu as any)?.category || 'Compétence',
                 totalReponses,
                 bonnesReponses,
                 tauxReussite: Math.round(tauxReussite)

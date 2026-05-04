@@ -1,37 +1,33 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 
-import Login from '@/components/Login.vue'
-import Inscription from '@/components/Inscription.vue'
-import VerifyEmail from '@/components/VerifyEmail.vue'
-import SocialAuthSuccess from '@/components/SocialAuthSuccess.vue'
-import Home from '@/components/Home.vue'
-import Result from '@/components/Result.vue'
-import ResetPassword from '@/components/ResetPassword.vue'
-import ForgotPassword from '@/components/ForgotPassword.vue'
+import Login from '@/components/auth/Login.vue'
+import Inscription from '@/components/auth/Inscription.vue'
+import VerifyEmail from '@/components/auth/VerifyEmail.vue'
+import SocialAuthSuccess from '@/components/auth/SocialAuthSuccess.vue'
+import Home from '@/components/landing_page/Home.vue'
+import ResetPassword from '@/components/auth/ResetPassword.vue'
+import ForgotPassword from '@/components/auth/ForgotPassword.vue'
 
-import Evaluation from '@/components/Evaluation.vue'
-import JobBoard from '@/components/JobBoard.vue'
-import JobDetailEntreprise from '@/components/job_details_&_test_info.vue'
-import JobQCMEntreprise from '@/components/job_qcm_entreprise.vue'
-import EmployerDashboard from '@/components/employer_dashboard.vue'
-import Tarifs from '@/components/tarifs.vue'
-import VoirDemo from '@/components/Voirdemo.vue'
-import Securite from '@/components/Sécurité.vue'
-import Contact from '@/components/contact.vue'
-import Support from '@/components/Support.vue'
+import JobBoard from '@/components/candidate/Offre_Emploi.vue'
+import EmployerDashboard from '@/components/entreprise/employer_dashboard.vue'
+import Securite from '@/components/landing_page/Sécurité.vue'
+import Contact from '@/components/landing_page/contact.vue'
+import Support from '@/components/landing_page/Support.vue'
 
-import AjoutPoste from '@/components/ajoutposte.vue'
-import Messages from '@/components/Messages.vue'
-import AdminPage from '@/components/adminPage.vue'
-import JobDetailCondidat from '@/components/job_detail_condidat.vue'
+import AjoutPoste from '@/components/entreprise/ajoutposte.vue'
+
+import AdminPage from '@/components/admin/adminPage.vue'
+import JobDetailCondidat from '@/components/candidate/job_detail.vue'
+import AdminLayout from '@/layouts/AdminLayout.vue'
+
 
 // Candidate Section
 import CandidateLayout from '@/layouts/CandidateLayout.vue'
 import CandidateDashboard from '@/components/candidate/Dashboard.vue'
-import CandidateHistory from '@/components/candidate/History.vue'
-import CandidateEvaluations from '@/components/evaluations_candidat.vue'
-import EvaluationSession from '@/components/candidate/EvaluationSession.vue'
+import CandidateHistory from '@/components/candidate/Mes condidatures.vue'
+import CandidateEvaluations from '@/components/candidate/Evaluations.vue'
+import EvaluationSession from '@/components/candidate/QCM.vue'
 
 // ─── Route Meta type augmentation ─────────────────────────────────────────────
 declare module 'vue-router' {
@@ -94,16 +90,6 @@ const routes: RouteRecordRaw[] = [
     redirect: '/candidat/jobs'
   },
   {
-    path: '/tarifs',
-    name: 'Tarifs',
-    component: Tarifs
-  },
-  {
-    path: '/demo',
-    name: 'VoirDemo',
-    component: VoirDemo
-  },
-  {
     path: '/securite',
     name: 'Securite',
     component: Securite
@@ -147,45 +133,39 @@ const routes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, role: 'candidat' }
       },
       {
-        path: '/passer-test/:offreId',
-        name: 'PasserTest',
-        component: Evaluation,
-        meta: { requiresAuth: true, role: 'candidat' }
-      },
-      {
         path: '/resultats',
         name: 'MesResultats',
-        component: Result,
+        component: () => import('@/components/candidate/Mes Resultats.vue'),
         meta: { requiresAuth: true, role: 'candidat' }
       },
       {
-        path: 'evaluations', // Becomes /candidat/evaluations
+        path: 'evaluations',
         name: 'CandidateEvaluations',
         component: CandidateEvaluations,
         meta: { requiresAuth: true, role: 'candidat' }
       },
       {
-        path: '/historique-candidatures',
+        path: 'historique-candidatures',
         name: 'HistoriqueCandidatures',
         component: CandidateHistory,
         meta: { requiresAuth: true, role: 'candidat' }
       },
       {
-        path: '/resultat',
-        name: 'Resultat',
-        component: Result,
-        meta: { requiresAuth: true, role: 'candidat' }
-      },
-      {
-        path: '/modifier-profil',
+        path: 'modifier-profil',
         name: 'ModifierProfil',
         component: CandidateDashboard,
         meta: { requiresAuth: true, role: 'candidat' }
       },
       {
-        path: '/candidat/jobs',
+        path: 'jobs',
         name: 'CandidateJobs',
         component: JobBoard,
+        meta: { requiresAuth: true, role: 'candidat' }
+      },
+      {
+        path: 'evaluation-result/:id',
+        name: 'EvaluationResult',
+        component: () => import('@/components/candidate/Resultat_De_QCM.vue'),
         meta: { requiresAuth: true, role: 'candidat' }
       }
     ]
@@ -200,20 +180,13 @@ const routes: RouteRecordRaw[] = [
     component: EvaluationSession,
     meta: { requiresAuth: true, role: 'candidat' }
   },
-  {
-    path: '/candidat/evaluation-result/:id',
-    name: 'EvaluationResult',
-    component: () => import('@/components/candidate/EvaluationResult.vue'),
-    meta: { requiresAuth: true, role: 'candidat' }
-  },
 
   // ──────────────────────────────────────────────
-  // PROTECTED ENTREPRISE ROUTES  (role = entreprise)
+  // PROTECTED ENTREPRISE ROUTES (role = entreprise)
   // ──────────────────────────────────────────────
   {
     path: '/entreprise',
-    component: EmployerDashboard,
-    redirect: '/dashboard-entreprise',
+    component: () => import('@/layouts/EntrepriseLayout.vue'),
     meta: { requiresAuth: true, role: 'entreprise' },
     children: [
       {
@@ -231,46 +204,34 @@ const routes: RouteRecordRaw[] = [
       {
         path: '/mes-offres',
         name: 'MesOffres',
-        component: EmployerDashboard,           // Placeholder – replace with MesOffres.vue
+        component: () => import('@/components/entreprise/liste_poste_entreprise.vue'),
         meta: { requiresAuth: true, role: 'entreprise' }
       },
       {
-        path: '/candidats/:offreId',
-        name: 'CandidatsOffre',
-        component: EmployerDashboard,           // Placeholder – replace with ListeCandidats.vue
+        path: '/candidats-entreprise',
+        name: 'EntrepriseCandidates',
+        component: () => import('@/components/entreprise/liste_condidat.vue'),
         meta: { requiresAuth: true, role: 'entreprise' }
       },
       {
-        path: '/resultats-test/:offreId',
-        name: 'ResultatsTest',
-        component: EmployerDashboard,           // Placeholder – replace with ResultatsTest.vue
+        path: '/job-details/:id',
+        name: 'JobDetails',
+        component: JobDetailCondidat,
         meta: { requiresAuth: true, role: 'entreprise' }
       },
       {
-        path: '/modifier-profil-entreprise',
-        name: 'ModifierProfilEntreprise',
-        component: EmployerDashboard,           // Placeholder – replace with ModifierProfilEntreprise.vue
+        path: '/job-qcm/:id',
+        name: 'JobQCM',
+        component: () => import('@/components/entreprise/job_qcm_entreprise.vue'),
         meta: { requiresAuth: true, role: 'entreprise' }
       },
       {
-        path: '/messages',
-        name: 'Messages',
-        component: Messages,
+        path: '/candidat-detail/:id',
+        name: 'CandidateDetail',
+        component: () => import('@/components/entreprise/condidat_info.vue'),
         meta: { requiresAuth: true, role: 'entreprise' }
       }
     ]
-  },
-  {
-    path: '/job-details/:id',
-    name: 'JobDetails',
-    component: JobDetailEntreprise,
-    meta: { requiresAuth: true, role: 'entreprise' }
-  },
-  {
-    path: '/job-qcm/:id',
-    name: 'JobQCM',
-    component: JobQCMEntreprise,
-    meta: { requiresAuth: true, role: 'entreprise' }
   },
 
   // ──────────────────────────────────────────────
@@ -278,6 +239,7 @@ const routes: RouteRecordRaw[] = [
   // ──────────────────────────────────────────────
   {
     path: '/admin',
+    component: AdminLayout,
     redirect: '/admin/dashboard',
     meta: { requiresAuth: true, role: 'admin' },
     children: [
@@ -340,12 +302,11 @@ const routes: RouteRecordRaw[] = [
   { path: '/dashboard-candidat', redirect: '/dashboard' },
   { path: '/candidature', redirect: '/mes-candidatures' },
   { path: '/candidat/dashboard', redirect: '/dashboard' },
+  { path: '/candidature', redirect: '/mes-candidatures' },
   { path: '/candidat/history', redirect: '/mes-candidatures' },
-  { path: '/candidat/results', redirect: '/resultats' },
   { path: '/candidat/jobs', redirect: '/offres' },
   { path: '/employer-dashboard', redirect: '/dashboard-entreprise' },
-  { path: '/ajout-poste', redirect: '/creer-offre' },
-  { path: '/evaluation', redirect: '/dashboard' }
+  { path: '/ajout-poste', redirect: '/creer-offre' }
 ]
 
 const router = createRouter({
