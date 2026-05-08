@@ -7,20 +7,24 @@ export class Question {
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Column({ type: 'varchar', nullable: true })
+    qcmId: string; // Identifiant unique du QCM généré (ex: "gen_e3f7a2c1...")
+
     @Column({ type: 'jsonb' })
     contenu: {
         question: string;
         options: { text: string; isCorrect: boolean }[];
-        explanation?: string;
-        points?: number;
-        questionType?: string;
-        difficulty?: string;
-        competence?: string;
+        competence: string;
     };
 
-    @Column({ type: 'int' })
-    chronometre: number; // seconds (updated from minutes representation)
+    @Column({ type: 'int', default: 30 })
+    chronometre: number; // seconds
 
+    @Column({ type: 'varchar', nullable: true })
+    offreTitle: string; // Titre de l'offre (dénormalisé pour performance)
+
+    @Column({ type: 'int', nullable: true })
+    totalQuestions: number; // Nombre total de questions dans ce QCM
 
     @ManyToOne(() => OffreEmploi, (offre) => offre.questions, { onDelete: 'CASCADE', nullable: true })
     @JoinColumn({ name: 'offre_id' })
